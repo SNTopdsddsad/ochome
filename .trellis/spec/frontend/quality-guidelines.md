@@ -49,3 +49,9 @@ Questions to answer:
 <!-- What reviewers should check -->
 
 (To be filled by the team)
+
+---
+
+## Git Commits
+
+提交文案与拆分规则见 [Git Commit](./git-commit.md)：中文、`模块: 功能声明`、一模块一功能一次提交。

@@ -23,6 +23,7 @@ These guides help you **ask the right questions before coding**.
 |-------|---------|-------------|
 | [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | Identify patterns and reduce duplication | When you notice repeated patterns |
 | [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning multiple layers |
+| [Git Commit](../frontend/git-commit.md) | Chinese commits split by module and feature | Before every `git commit` |
 
 ---
 
@@ -50,6 +51,15 @@ These guides help you **ask the right questions before coding**.
 - [ ] Multiple branches update the same derived state from `kind` / `action`
 
 → Read [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md)
+
+### When Committing
+
+- [ ] Message is Chinese in `模块: 功能声明` form
+- [ ] One commit covers one module and one feature
+- [ ] Files from different modules are not staged together
+- [ ] History style does not override [Git Commit](../frontend/git-commit.md)
+
+→ Read [Git Commit](../frontend/git-commit.md)
 
 ### When Verifying AI Cross-Review Results
 
