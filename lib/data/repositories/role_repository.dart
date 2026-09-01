@@ -1,4 +1,5 @@
 import '../models/role.dart';
+import '../models/role_desc_revision.dart';
 
 /// 角色仓储接口。
 ///
@@ -33,4 +34,18 @@ abstract interface class RoleRepository {
 
   /// 监听全部角色；表数据变化时重新发出列表。
   Stream<List<Role>> watchAll();
+
+  /// 某角色设定修订，新的在前。
+  Stream<List<RoleDescRevision>> watchDescRevisions(int roleId);
+
+  /// 某角色设定修订快照，新的在前。
+  Future<List<RoleDescRevision>> listDescRevisions(int roleId);
+
+  /// 把 [revisionId] 写回当前设定，并追加一条新修订。
+  ///
+  /// 找不到角色或修订时抛 [StateError]。正文未变则原样返回。
+  Future<Role> restoreDescRevision({
+    required int roleId,
+    required int revisionId,
+  });
 }

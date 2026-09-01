@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/role.dart';
 import '../data/providers/role_repository_provider.dart';
 import '../data/services/cover_image_picker.dart';
+import '../theme/zaidang_tokens.dart';
+import 'role_desc_history_page.dart';
 
 /// 新建 / 编辑 OC 人设。传入 [role] 即为编辑，字段按原文回填。
 class RoleCreatePage extends ConsumerStatefulWidget {
@@ -129,8 +131,26 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
     }
   }
 
+  Future<void> _openDescHistory() async {
+    final role = widget.role;
+    if (role == null) {
+      return;
+    }
+    final restored = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(
+        builder: (_) => RoleDescHistoryPage(roleId: role.id),
+      ),
+    );
+    if (restored == null || !mounted) {
+      return;
+    }
+    _descController.text = restored;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? '编辑角色' : '新建角色'),
@@ -138,38 +158,35 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
         actions: [
           TextButton(
             onPressed: _saving ? null : _submit,
-            child: Text(_saving ? '保存中…' : '保存'),
+            child: _saving
+                ? const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 8),
+                      Text('保存中…'),
+                    ],
+                  )
+                : const Text('保存'),
           ),
         ],
       ),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(20, 8, 20, 32 + bottomInset),
           children: [
-            Center(
-              child: GestureDetector(
-                onTap: _pickCover,
-                child: CircleAvatar(
-                  radius: 44,
-                  backgroundImage: _coverImg.isEmpty
-                      ? null
-                      : FileImage(File(_coverImg)),
-                  child: _coverImg.isEmpty
-                      ? const Icon(Icons.add_a_photo, size: 28)
-                      : null,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Center(child: Text('立绘')),
-            const SizedBox(height: 20),
-            TextFormField(
+            _CoverPicker(path: _coverImg, onTap: _pickCover),
+            const SizedBox(height: 24),
+            const _SectionLabel('基本信息'),
+            _field(
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: '名字',
-                hintText: '角色怎么称呼',
-              ),
+              label: '名字',
+              hint: '角色怎么称呼',
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return '请填写名字';
@@ -178,58 +195,255 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
               },
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _sexController,
-              decoration: const InputDecoration(
-                labelText: '性别',
-                hintText: '女 / 非二元 / 不明',
+            _FieldRow(
+              left: _field(
+                controller: _sexController,
+                label: '性别',
+                hint: '女 / 非二元 / 不明',
+              ),
+              right: _field(
+                controller: _ageController,
+                label: '年龄',
+                hint: '十七、外表 20、不详',
               ),
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _ageController,
-              decoration: const InputDecoration(
-                labelText: '年龄',
-                hintText: '十七、外表 20、不详',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
+            _field(
               controller: _birthdayController,
-              decoration: const InputDecoration(
-                labelText: '生日',
-                hintText: '三月三日、第三历春、未知',
-              ),
+              label: '生日',
+              hint: '三月三日、第三历春、未知',
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _raceController,
-              decoration: const InputDecoration(
-                labelText: '种族',
-                hintText: '人类、兽人、吸血鬼',
+            _FieldRow(
+              left: _field(
+                controller: _raceController,
+                label: '种族',
+                hint: '人类、兽人、吸血鬼',
+              ),
+              right: _field(
+                controller: _occupationController,
+                label: '身份',
+                hint: '学生、骑士、无所属',
               ),
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _occupationController,
-              decoration: const InputDecoration(
-                labelText: '身份',
-                hintText: '学生、骑士、无所属',
-              ),
+            const SizedBox(height: 24),
+            _DescSectionHeader(
+              showHistory: _isEditing,
+              onHistoryTap: _openDescHistory,
             ),
-            const SizedBox(height: 12),
-            TextFormField(
+            _field(
               controller: _descController,
-              decoration: const InputDecoration(
-                labelText: '设定',
-                hintText: '性格、外貌、背景都可以写在这里',
-                alignLabelWithHint: true,
-              ),
-              maxLines: 6,
+              hint: '性格、外貌、背景都可以写在这里',
+              minLines: 5,
+              maxLines: 10,
+              textInputAction: TextInputAction.newline,
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _field({
+    required TextEditingController controller,
+    String? label,
+    required String hint,
+    int minLines = 1,
+    int maxLines = 1,
+    TextInputAction textInputAction = TextInputAction.next,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(labelText: label, hintText: hint),
+      minLines: minLines,
+      maxLines: maxLines,
+      textInputAction: textInputAction,
+      keyboardType: maxLines > 1 ? TextInputType.multiline : TextInputType.text,
+      scrollPadding: const EdgeInsets.all(80),
+      validator: validator,
+    );
+  }
+}
+
+/// 立绘用 3:4 圆角方图，避免圆形头像看起来像通讯录。
+class _CoverPicker extends StatelessWidget {
+  const _CoverPicker({required this.path, required this.onTap});
+
+  final String path;
+  final VoidCallback onTap;
+
+  static const double _width = 140;
+  static const double _height = 186;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = ZaidangTokens.of(context);
+    final file = File(path);
+    final hasCover = path.isNotEmpty && file.existsSync();
+    final label = hasCover ? '更换立绘' : '添加立绘';
+
+    return Center(
+      child: Semantics(
+        button: true,
+        label: label,
+        excludeSemantics: true,
+        child: Tooltip(
+          message: label,
+          child: Material(
+            color: tokens.surface,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: tokens.border),
+            ),
+            child: InkWell(
+              onTap: onTap,
+              child: SizedBox(
+                width: _width,
+                height: _height,
+                child: hasCover
+                    ? Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.file(file, fit: BoxFit.cover),
+                          Positioned(
+                            right: 8,
+                            bottom: 8,
+                            child: _CoverBadge(tokens: tokens),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_photo_alternate_outlined,
+                            size: 36,
+                            color: tokens.inkSecondary,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            '添加立绘',
+                            style: TextStyle(
+                              color: tokens.inkSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CoverBadge extends StatelessWidget {
+  const _CoverBadge({required this.tokens});
+
+  final ZaidangTokens tokens;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.surface.withValues(alpha: 0.92),
+        shape: BoxShape.circle,
+        border: Border.all(color: tokens.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(
+          Icons.photo_camera_outlined,
+          size: 16,
+          color: tokens.ink,
+        ),
+      ),
+    );
+  }
+}
+
+class _DescSectionHeader extends StatelessWidget {
+  const _DescSectionHeader({
+    required this.showHistory,
+    required this.onHistoryTap,
+  });
+
+  final bool showHistory;
+  final VoidCallback onHistoryTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = ZaidangTokens.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '设定',
+              style: TextStyle(
+                color: tokens.inkSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (showHistory)
+            TextButton(
+              onPressed: onHistoryTap,
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                minimumSize: const Size(44, 44),
+              ),
+              child: const Text('修改历史'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = ZaidangTokens.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: tokens.inkSecondary,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _FieldRow extends StatelessWidget {
+  const _FieldRow({required this.left, required this.right});
+
+  final Widget left;
+  final Widget right;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: left),
+        const SizedBox(width: 12),
+        Expanded(child: right),
+      ],
     );
   }
 }

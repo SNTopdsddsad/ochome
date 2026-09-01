@@ -552,15 +552,332 @@ class RolesCompanion extends UpdateCompanion<Role> {
   }
 }
 
+class $RoleDescRevisionsTable extends RoleDescRevisions
+    with TableInfo<$RoleDescRevisionsTable, RoleDescRevision> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RoleDescRevisionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _roleIdMeta = const VerificationMeta('roleId');
+  @override
+  late final GeneratedColumn<int> roleId = GeneratedColumn<int>(
+    'role_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES role (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, roleId, content, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'role_desc_revision';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RoleDescRevision> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('role_id')) {
+      context.handle(
+        _roleIdMeta,
+        roleId.isAcceptableOrUnknown(data['role_id']!, _roleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_roleIdMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RoleDescRevision map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RoleDescRevision(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      roleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}role_id'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $RoleDescRevisionsTable createAlias(String alias) {
+    return $RoleDescRevisionsTable(attachedDatabase, alias);
+  }
+}
+
+class RoleDescRevision extends DataClass
+    implements Insertable<RoleDescRevision> {
+  final int id;
+  final int roleId;
+  final String content;
+  final DateTime createdAt;
+  const RoleDescRevision({
+    required this.id,
+    required this.roleId,
+    required this.content,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['role_id'] = Variable<int>(roleId);
+    map['content'] = Variable<String>(content);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  RoleDescRevisionsCompanion toCompanion(bool nullToAbsent) {
+    return RoleDescRevisionsCompanion(
+      id: Value(id),
+      roleId: Value(roleId),
+      content: Value(content),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory RoleDescRevision.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RoleDescRevision(
+      id: serializer.fromJson<int>(json['id']),
+      roleId: serializer.fromJson<int>(json['roleId']),
+      content: serializer.fromJson<String>(json['content']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'roleId': serializer.toJson<int>(roleId),
+      'content': serializer.toJson<String>(content),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  RoleDescRevision copyWith({
+    int? id,
+    int? roleId,
+    String? content,
+    DateTime? createdAt,
+  }) => RoleDescRevision(
+    id: id ?? this.id,
+    roleId: roleId ?? this.roleId,
+    content: content ?? this.content,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  RoleDescRevision copyWithCompanion(RoleDescRevisionsCompanion data) {
+    return RoleDescRevision(
+      id: data.id.present ? data.id.value : this.id,
+      roleId: data.roleId.present ? data.roleId.value : this.roleId,
+      content: data.content.present ? data.content.value : this.content,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoleDescRevision(')
+          ..write('id: $id, ')
+          ..write('roleId: $roleId, ')
+          ..write('content: $content, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, roleId, content, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RoleDescRevision &&
+          other.id == this.id &&
+          other.roleId == this.roleId &&
+          other.content == this.content &&
+          other.createdAt == this.createdAt);
+}
+
+class RoleDescRevisionsCompanion extends UpdateCompanion<RoleDescRevision> {
+  final Value<int> id;
+  final Value<int> roleId;
+  final Value<String> content;
+  final Value<DateTime> createdAt;
+  const RoleDescRevisionsCompanion({
+    this.id = const Value.absent(),
+    this.roleId = const Value.absent(),
+    this.content = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  RoleDescRevisionsCompanion.insert({
+    this.id = const Value.absent(),
+    required int roleId,
+    required String content,
+    required DateTime createdAt,
+  }) : roleId = Value(roleId),
+       content = Value(content),
+       createdAt = Value(createdAt);
+  static Insertable<RoleDescRevision> custom({
+    Expression<int>? id,
+    Expression<int>? roleId,
+    Expression<String>? content,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (roleId != null) 'role_id': roleId,
+      if (content != null) 'content': content,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  RoleDescRevisionsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? roleId,
+    Value<String>? content,
+    Value<DateTime>? createdAt,
+  }) {
+    return RoleDescRevisionsCompanion(
+      id: id ?? this.id,
+      roleId: roleId ?? this.roleId,
+      content: content ?? this.content,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (roleId.present) {
+      map['role_id'] = Variable<int>(roleId.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoleDescRevisionsCompanion(')
+          ..write('id: $id, ')
+          ..write('roleId: $roleId, ')
+          ..write('content: $content, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $RolesTable roles = $RolesTable(this);
+  late final $RoleDescRevisionsTable roleDescRevisions =
+      $RoleDescRevisionsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [roles];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    roles,
+    roleDescRevisions,
+  ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'role',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('role_desc_revision', kind: UpdateKind.delete)],
+    ),
+  ]);
 }
 
 typedef $$RolesTableCreateCompanionBuilder = RolesCompanion Function({
@@ -585,6 +902,32 @@ typedef $$RolesTableUpdateCompanionBuilder = RolesCompanion Function({
   Value<String> desc,
   Value<String> coverImg,
 });
+
+final class $$RolesTableReferences
+    extends BaseReferences<_$AppDatabase, $RolesTable, Role> {
+  $$RolesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$RoleDescRevisionsTable, List<RoleDescRevision>>
+  _roleDescRevisionsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.roleDescRevisions,
+        aliasName: 'role__id__role_desc_revision__role_id',
+      );
+
+  $$RoleDescRevisionsTableProcessedTableManager get roleDescRevisionsRefs {
+    final manager = $$RoleDescRevisionsTableTableManager(
+      $_db,
+      $_db.roleDescRevisions,
+    ).filter((f) => f.roleId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _roleDescRevisionsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
 
 class $$RolesTableFilterComposer extends Composer<_$AppDatabase, $RolesTable> {
   $$RolesTableFilterComposer({
@@ -638,6 +981,31 @@ class $$RolesTableFilterComposer extends Composer<_$AppDatabase, $RolesTable> {
     column: $table.coverImg,
     builder: (column) => ColumnFilters(column),
   );
+
+  Expression<bool> roleDescRevisionsRefs(
+    Expression<bool> Function($$RoleDescRevisionsTableFilterComposer f) f,
+  ) {
+    final $$RoleDescRevisionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.roleDescRevisions,
+      getReferencedColumn: (t) => t.roleId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RoleDescRevisionsTableFilterComposer(
+            $db: $db,
+            $table: $db.roleDescRevisions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$RolesTableOrderingComposer
@@ -732,6 +1100,32 @@ class $$RolesTableAnnotationComposer
 
   GeneratedColumn<String> get coverImg =>
       $composableBuilder(column: $table.coverImg, builder: (column) => column);
+
+  Expression<T> roleDescRevisionsRefs<T extends Object>(
+    Expression<T> Function($$RoleDescRevisionsTableAnnotationComposer a) f,
+  ) {
+    final $$RoleDescRevisionsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.roleDescRevisions,
+          getReferencedColumn: (t) => t.roleId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$RoleDescRevisionsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.roleDescRevisions,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$RolesTableTableManager
@@ -745,9 +1139,9 @@ class $$RolesTableTableManager
           $$RolesTableAnnotationComposer,
           $$RolesTableCreateCompanionBuilder,
           $$RolesTableUpdateCompanionBuilder,
-          (Role, BaseReferences<_$AppDatabase, $RolesTable, Role>),
+          (Role, $$RolesTableReferences),
           Role,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool roleDescRevisionsRefs})
         > {
   $$RolesTableTableManager(_$AppDatabase db, $RolesTable table)
     : super(
@@ -805,9 +1199,42 @@ class $$RolesTableTableManager
                 coverImg: coverImg,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) =>
+                    (e.readTable(table), $$RolesTableReferences(db, table, e)),
+              )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({roleDescRevisionsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (roleDescRevisionsRefs) db.roleDescRevisions,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (roleDescRevisionsRefs)
+                    await $_getPrefetchedData<
+                      Role,
+                      $RolesTable,
+                      RoleDescRevision
+                    >(
+                      currentTable: table,
+                      referencedTable: $$RolesTableReferences
+                          ._roleDescRevisionsRefsTable(db),
+                      managerFromTypedResult: (p0) => $$RolesTableReferences(
+                        db,
+                        table,
+                        p0,
+                      ).roleDescRevisionsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.roleId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
         ),
       );
 }
@@ -822,9 +1249,313 @@ typedef $$RolesTableProcessedTableManager =
       $$RolesTableAnnotationComposer,
       $$RolesTableCreateCompanionBuilder,
       $$RolesTableUpdateCompanionBuilder,
-      (Role, BaseReferences<_$AppDatabase, $RolesTable, Role>),
+      (Role, $$RolesTableReferences),
       Role,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool roleDescRevisionsRefs})
+    >;
+typedef $$RoleDescRevisionsTableCreateCompanionBuilder =
+    RoleDescRevisionsCompanion Function({
+      Value<int> id,
+      required int roleId,
+      required String content,
+      required DateTime createdAt,
+    });
+typedef $$RoleDescRevisionsTableUpdateCompanionBuilder =
+    RoleDescRevisionsCompanion Function({
+      Value<int> id,
+      Value<int> roleId,
+      Value<String> content,
+      Value<DateTime> createdAt,
+    });
+
+final class $$RoleDescRevisionsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $RoleDescRevisionsTable,
+          RoleDescRevision
+        > {
+  $$RoleDescRevisionsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $RolesTable _roleIdTable(_$AppDatabase db) =>
+      db.roles.createAlias('role_desc_revision__role_id__role__id');
+
+  $$RolesTableProcessedTableManager get roleId {
+    final $_column = $_itemColumn<int>('role_id')!;
+
+    final manager = $$RolesTableTableManager(
+      $_db,
+      $_db.roles,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_roleIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$RoleDescRevisionsTableFilterComposer
+    extends Composer<_$AppDatabase, $RoleDescRevisionsTable> {
+  $$RoleDescRevisionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$RolesTableFilterComposer get roleId {
+    final $$RolesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.roleId,
+      referencedTable: $db.roles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RolesTableFilterComposer(
+            $db: $db,
+            $table: $db.roles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RoleDescRevisionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $RoleDescRevisionsTable> {
+  $$RoleDescRevisionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$RolesTableOrderingComposer get roleId {
+    final $$RolesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.roleId,
+      referencedTable: $db.roles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RolesTableOrderingComposer(
+            $db: $db,
+            $table: $db.roles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RoleDescRevisionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RoleDescRevisionsTable> {
+  $$RoleDescRevisionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$RolesTableAnnotationComposer get roleId {
+    final $$RolesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.roleId,
+      referencedTable: $db.roles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RolesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.roles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RoleDescRevisionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RoleDescRevisionsTable,
+          RoleDescRevision,
+          $$RoleDescRevisionsTableFilterComposer,
+          $$RoleDescRevisionsTableOrderingComposer,
+          $$RoleDescRevisionsTableAnnotationComposer,
+          $$RoleDescRevisionsTableCreateCompanionBuilder,
+          $$RoleDescRevisionsTableUpdateCompanionBuilder,
+          (RoleDescRevision, $$RoleDescRevisionsTableReferences),
+          RoleDescRevision,
+          PrefetchHooks Function({bool roleId})
+        > {
+  $$RoleDescRevisionsTableTableManager(
+    _$AppDatabase db,
+    $RoleDescRevisionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RoleDescRevisionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RoleDescRevisionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RoleDescRevisionsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> roleId = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => RoleDescRevisionsCompanion(
+                id: id,
+                roleId: roleId,
+                content: content,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int roleId,
+                required String content,
+                required DateTime createdAt,
+              }) => RoleDescRevisionsCompanion.insert(
+                id: id,
+                roleId: roleId,
+                content: content,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$RoleDescRevisionsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({roleId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (roleId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.roleId,
+                        referencedTable: $$RoleDescRevisionsTableReferences
+                            ._roleIdTable(db),
+                        referencedColumn: $$RoleDescRevisionsTableReferences
+                            ._roleIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$RoleDescRevisionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $RoleDescRevisionsTable,
+      RoleDescRevision,
+      $$RoleDescRevisionsTableFilterComposer,
+      $$RoleDescRevisionsTableOrderingComposer,
+      $$RoleDescRevisionsTableAnnotationComposer,
+      $$RoleDescRevisionsTableCreateCompanionBuilder,
+      $$RoleDescRevisionsTableUpdateCompanionBuilder,
+      (RoleDescRevision, $$RoleDescRevisionsTableReferences),
+      RoleDescRevision,
+      PrefetchHooks Function({bool roleId})
     >;
 
 class $AppDatabaseManager {
@@ -832,4 +1563,6 @@ class $AppDatabaseManager {
   $AppDatabaseManager(this._db);
   $$RolesTableTableManager get roles =>
       $$RolesTableTableManager(_db, _db.roles);
+  $$RoleDescRevisionsTableTableManager get roleDescRevisions =>
+      $$RoleDescRevisionsTableTableManager(_db, _db.roleDescRevisions);
 }
