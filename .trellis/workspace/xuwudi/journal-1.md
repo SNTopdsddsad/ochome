@@ -29,3 +29,45 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 2: iCloud 手动备份与恢复
+
+**Date**: 2026-09-01
+**Task**: iCloud 手动备份与恢复
+**Branch**: `main`
+
+### Summary
+
+完成 Drift 快照 + 立绘原图的 iCloud 手动备份与恢复：相对封面路径、版本闸、换机按清单拉取、WAL 安全替换。真机需登录 iCloud；icloud.com 看不到 App 容器。
+
+### Main Changes
+
+- 立绘改为相对路径 covers/<file>，Drift schema 升到 6
+- 增加 iCloud 手动备份/恢复编排、备份页与 iOS/macOS 文档容器通道
+- 换机恢复按 manifest 拉取；WAL 先挪走再换库；过新备份在确认前拒绝
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ad30962` | (see git log) |
+| `0662510` | (see git log) |
+| `832e5b0` | (see git log) |
+| `e2980b7` | (see git log) |
+| `984da89` | (see git log) |
+| `e4ec2f9` | (see git log) |
+| `9601d97` | (see git log) |
+
+### Testing
+
+- [OK] flutter test：相对路径、版本闸、空 list 恢复、空文件拒绝、WAL 替换
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 真机登录 iCloud 验收 AC1–AC3；Xcode 勾选 iCloud Documents 容器 iCloud.com.xuwudi.ochome
+- macOS bundle id 仍为 com.example.ochome，签名容器权限需核对

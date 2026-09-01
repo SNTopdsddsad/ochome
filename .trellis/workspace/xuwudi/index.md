@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 1
+- **Total Sessions**: 2
 - **Last Active**: 2026-09-01
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~31 | Active |
+| `journal-1.md` | ~73 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 2 | 2026-09-01 | iCloud 手动备份与恢复 | `ad30962`, `0662510`, `832e5b0`, `e2980b7`, `984da89`, `e4ec2f9`, `9601d97` | `main` |
 | 1 | 2026-09-01 | 优化 RoleCreatePage 沉浸式样式 | `ac70ce7`, `1097568`, `922475b`, `f421ba1` | `main` |
 <!-- @@@/auto:session-history -->
 
