@@ -25,8 +25,10 @@ void main() {
     final picker = CoverImagePicker(supportDirectory: () async => tempDir);
     final savedPath = await picker.savePickedFile(XFile(source.path));
 
-    expect(p.basename(p.dirname(savedPath)), CoverImagePicker.directoryName);
+    expect(savedPath, startsWith('${CoverImagePicker.directoryName}/'));
+    expect(p.isAbsolute(savedPath), isFalse);
     expect(savedPath, endsWith('.png'));
-    expect(await File(savedPath).readAsBytes(), const [1, 2, 3, 4]);
+    final written = File(p.join(tempDir.path, savedPath));
+    expect(await written.readAsBytes(), const [1, 2, 3, 4]);
   });
 }
