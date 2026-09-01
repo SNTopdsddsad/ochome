@@ -8,13 +8,26 @@ part of 'role_repository_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// 对外只提供 [RoleRepository]，默认实现为 [DriftRoleRepository]。
+///
+/// 页面应 `ref.watch/read(roleRepositoryProvider)`，不要直接 new 实现类。
+/// 测试时 `overrideWithValue` 即可换成假实现。
 
 @ProviderFor(roleRepository)
 final roleRepositoryProvider = RoleRepositoryProvider._();
 
+/// 对外只提供 [RoleRepository]，默认实现为 [DriftRoleRepository]。
+///
+/// 页面应 `ref.watch/read(roleRepositoryProvider)`，不要直接 new 实现类。
+/// 测试时 `overrideWithValue` 即可换成假实现。
+
 final class RoleRepositoryProvider
     extends $FunctionalProvider<RoleRepository, RoleRepository, RoleRepository>
     with $Provider<RoleRepository> {
+  /// 对外只提供 [RoleRepository]，默认实现为 [DriftRoleRepository]。
+  ///
+  /// 页面应 `ref.watch/read(roleRepositoryProvider)`，不要直接 new 实现类。
+  /// 测试时 `overrideWithValue` 即可换成假实现。
   RoleRepositoryProvider._()
     : super(
         from: null,

@@ -30,9 +30,12 @@ class DriftRoleRepository implements RoleRepository {
   Future<Role> create({
     required String name,
     required String sex,
-    required DateTime birthday,
+    required String age,
+    required String birthday,
+    required String race,
     required String occupation,
     required String desc,
+    required String coverImg,
   }) async {
     // insertReturning 可拿到自增 id 及写入后的完整行。
     final row = await _db
@@ -41,9 +44,12 @@ class DriftRoleRepository implements RoleRepository {
           db.RolesCompanion.insert(
             name: name,
             sex: sex,
+            age: age,
             birthday: birthday,
+            race: race,
             occupation: occupation,
             desc: desc,
+            coverImg: coverImg,
           ),
         );
     return _toDomain(row);
@@ -58,9 +64,12 @@ class DriftRoleRepository implements RoleRepository {
           db.RolesCompanion(
             name: Value(role.name),
             sex: Value(role.sex),
+            age: Value(role.age),
             birthday: Value(role.birthday),
+            race: Value(role.race),
             occupation: Value(role.occupation),
             desc: Value(role.desc),
+            coverImg: Value(role.coverImg),
           ),
         );
     if (updated.isEmpty) {
@@ -88,9 +97,12 @@ class DriftRoleRepository implements RoleRepository {
       id: row.id,
       name: row.name,
       sex: row.sex,
+      age: row.age,
       birthday: row.birthday,
+      race: row.race,
       occupation: row.occupation,
       desc: row.desc,
+      coverImg: row.coverImg,
     );
   }
 }

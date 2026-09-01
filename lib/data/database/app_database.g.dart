@@ -39,15 +39,33 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _ageMeta = const VerificationMeta('age');
+  @override
+  late final GeneratedColumn<String> age = GeneratedColumn<String>(
+    'age',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _birthdayMeta = const VerificationMeta(
     'birthday',
   );
   @override
-  late final GeneratedColumn<DateTime> birthday = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<String> birthday = GeneratedColumn<String>(
     'birthday',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _raceMeta = const VerificationMeta('race');
+  @override
+  late final GeneratedColumn<String> race = GeneratedColumn<String>(
+    'race',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
   static const VerificationMeta _occupationMeta = const VerificationMeta(
@@ -70,14 +88,28 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _coverImgMeta = const VerificationMeta(
+    'coverImg',
+  );
+  @override
+  late final GeneratedColumn<String> coverImg = GeneratedColumn<String>(
+    'coverimg',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     name,
     sex,
+    age,
     birthday,
+    race,
     occupation,
     desc,
+    coverImg,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -110,6 +142,14 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
     } else if (isInserting) {
       context.missing(_sexMeta);
     }
+    if (data.containsKey('age')) {
+      context.handle(
+        _ageMeta,
+        age.isAcceptableOrUnknown(data['age']!, _ageMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ageMeta);
+    }
     if (data.containsKey('birthday')) {
       context.handle(
         _birthdayMeta,
@@ -117,6 +157,14 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
       );
     } else if (isInserting) {
       context.missing(_birthdayMeta);
+    }
+    if (data.containsKey('race')) {
+      context.handle(
+        _raceMeta,
+        race.isAcceptableOrUnknown(data['race']!, _raceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_raceMeta);
     }
     if (data.containsKey('occupation')) {
       context.handle(
@@ -133,6 +181,14 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
       );
     } else if (isInserting) {
       context.missing(_descMeta);
+    }
+    if (data.containsKey('coverimg')) {
+      context.handle(
+        _coverImgMeta,
+        coverImg.isAcceptableOrUnknown(data['coverimg']!, _coverImgMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_coverImgMeta);
     }
     return context;
   }
@@ -155,9 +211,17 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
         DriftSqlType.string,
         data['${effectivePrefix}sex'],
       )!,
+      age: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}age'],
+      )!,
       birthday: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
+        DriftSqlType.string,
         data['${effectivePrefix}birthday'],
+      )!,
+      race: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}race'],
       )!,
       occupation: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -166,6 +230,10 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
       desc: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}desc'],
+      )!,
+      coverImg: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}coverimg'],
       )!,
     );
   }
@@ -180,16 +248,30 @@ class Role extends DataClass implements Insertable<Role> {
   final int id;
   final String name;
   final String sex;
-  final DateTime birthday;
+
+  /// 年龄按原文存储，如「十七」「外表 20」。
+  final String age;
+
+  /// 生日按用户输入的原文存储，不做日期解析。
+  final String birthday;
+
+  /// 种族，如人类、兽人、吸血鬼。
+  final String race;
   final String occupation;
   final String desc;
+
+  /// 封面图路径或 URL，列名与需求一致为 coverimg。
+  final String coverImg;
   const Role({
     required this.id,
     required this.name,
     required this.sex,
+    required this.age,
     required this.birthday,
+    required this.race,
     required this.occupation,
     required this.desc,
+    required this.coverImg,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -197,9 +279,12 @@ class Role extends DataClass implements Insertable<Role> {
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
     map['sex'] = Variable<String>(sex);
-    map['birthday'] = Variable<DateTime>(birthday);
+    map['age'] = Variable<String>(age);
+    map['birthday'] = Variable<String>(birthday);
+    map['race'] = Variable<String>(race);
     map['occupation'] = Variable<String>(occupation);
     map['desc'] = Variable<String>(desc);
+    map['coverimg'] = Variable<String>(coverImg);
     return map;
   }
 
@@ -208,9 +293,12 @@ class Role extends DataClass implements Insertable<Role> {
       id: Value(id),
       name: Value(name),
       sex: Value(sex),
+      age: Value(age),
       birthday: Value(birthday),
+      race: Value(race),
       occupation: Value(occupation),
       desc: Value(desc),
+      coverImg: Value(coverImg),
     );
   }
 
@@ -223,9 +311,12 @@ class Role extends DataClass implements Insertable<Role> {
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       sex: serializer.fromJson<String>(json['sex']),
-      birthday: serializer.fromJson<DateTime>(json['birthday']),
+      age: serializer.fromJson<String>(json['age']),
+      birthday: serializer.fromJson<String>(json['birthday']),
+      race: serializer.fromJson<String>(json['race']),
       occupation: serializer.fromJson<String>(json['occupation']),
       desc: serializer.fromJson<String>(json['desc']),
+      coverImg: serializer.fromJson<String>(json['coverImg']),
     );
   }
   @override
@@ -235,9 +326,12 @@ class Role extends DataClass implements Insertable<Role> {
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
       'sex': serializer.toJson<String>(sex),
-      'birthday': serializer.toJson<DateTime>(birthday),
+      'age': serializer.toJson<String>(age),
+      'birthday': serializer.toJson<String>(birthday),
+      'race': serializer.toJson<String>(race),
       'occupation': serializer.toJson<String>(occupation),
       'desc': serializer.toJson<String>(desc),
+      'coverImg': serializer.toJson<String>(coverImg),
     };
   }
 
@@ -245,27 +339,36 @@ class Role extends DataClass implements Insertable<Role> {
     int? id,
     String? name,
     String? sex,
-    DateTime? birthday,
+    String? age,
+    String? birthday,
+    String? race,
     String? occupation,
     String? desc,
+    String? coverImg,
   }) => Role(
     id: id ?? this.id,
     name: name ?? this.name,
     sex: sex ?? this.sex,
+    age: age ?? this.age,
     birthday: birthday ?? this.birthday,
+    race: race ?? this.race,
     occupation: occupation ?? this.occupation,
     desc: desc ?? this.desc,
+    coverImg: coverImg ?? this.coverImg,
   );
   Role copyWithCompanion(RolesCompanion data) {
     return Role(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       sex: data.sex.present ? data.sex.value : this.sex,
+      age: data.age.present ? data.age.value : this.age,
       birthday: data.birthday.present ? data.birthday.value : this.birthday,
+      race: data.race.present ? data.race.value : this.race,
       occupation: data.occupation.present
           ? data.occupation.value
           : this.occupation,
       desc: data.desc.present ? data.desc.value : this.desc,
+      coverImg: data.coverImg.present ? data.coverImg.value : this.coverImg,
     );
   }
 
@@ -275,15 +378,28 @@ class Role extends DataClass implements Insertable<Role> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('sex: $sex, ')
+          ..write('age: $age, ')
           ..write('birthday: $birthday, ')
+          ..write('race: $race, ')
           ..write('occupation: $occupation, ')
-          ..write('desc: $desc')
+          ..write('desc: $desc, ')
+          ..write('coverImg: $coverImg')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, sex, birthday, occupation, desc);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    sex,
+    age,
+    birthday,
+    race,
+    occupation,
+    desc,
+    coverImg,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -291,53 +407,74 @@ class Role extends DataClass implements Insertable<Role> {
           other.id == this.id &&
           other.name == this.name &&
           other.sex == this.sex &&
+          other.age == this.age &&
           other.birthday == this.birthday &&
+          other.race == this.race &&
           other.occupation == this.occupation &&
-          other.desc == this.desc);
+          other.desc == this.desc &&
+          other.coverImg == this.coverImg);
 }
 
 class RolesCompanion extends UpdateCompanion<Role> {
   final Value<int> id;
   final Value<String> name;
   final Value<String> sex;
-  final Value<DateTime> birthday;
+  final Value<String> age;
+  final Value<String> birthday;
+  final Value<String> race;
   final Value<String> occupation;
   final Value<String> desc;
+  final Value<String> coverImg;
   const RolesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.sex = const Value.absent(),
+    this.age = const Value.absent(),
     this.birthday = const Value.absent(),
+    this.race = const Value.absent(),
     this.occupation = const Value.absent(),
     this.desc = const Value.absent(),
+    this.coverImg = const Value.absent(),
   });
   RolesCompanion.insert({
     this.id = const Value.absent(),
     required String name,
     required String sex,
-    required DateTime birthday,
+    required String age,
+    required String birthday,
+    required String race,
     required String occupation,
     required String desc,
+    required String coverImg,
   }) : name = Value(name),
        sex = Value(sex),
+       age = Value(age),
        birthday = Value(birthday),
+       race = Value(race),
        occupation = Value(occupation),
-       desc = Value(desc);
+       desc = Value(desc),
+       coverImg = Value(coverImg);
   static Insertable<Role> custom({
     Expression<int>? id,
     Expression<String>? name,
     Expression<String>? sex,
-    Expression<DateTime>? birthday,
+    Expression<String>? age,
+    Expression<String>? birthday,
+    Expression<String>? race,
     Expression<String>? occupation,
     Expression<String>? desc,
+    Expression<String>? coverImg,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (sex != null) 'sex': sex,
+      if (age != null) 'age': age,
       if (birthday != null) 'birthday': birthday,
+      if (race != null) 'race': race,
       if (occupation != null) 'occupation': occupation,
       if (desc != null) 'desc': desc,
+      if (coverImg != null) 'coverimg': coverImg,
     });
   }
 
@@ -345,17 +482,23 @@ class RolesCompanion extends UpdateCompanion<Role> {
     Value<int>? id,
     Value<String>? name,
     Value<String>? sex,
-    Value<DateTime>? birthday,
+    Value<String>? age,
+    Value<String>? birthday,
+    Value<String>? race,
     Value<String>? occupation,
     Value<String>? desc,
+    Value<String>? coverImg,
   }) {
     return RolesCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
       sex: sex ?? this.sex,
+      age: age ?? this.age,
       birthday: birthday ?? this.birthday,
+      race: race ?? this.race,
       occupation: occupation ?? this.occupation,
       desc: desc ?? this.desc,
+      coverImg: coverImg ?? this.coverImg,
     );
   }
 
@@ -371,14 +514,23 @@ class RolesCompanion extends UpdateCompanion<Role> {
     if (sex.present) {
       map['sex'] = Variable<String>(sex.value);
     }
+    if (age.present) {
+      map['age'] = Variable<String>(age.value);
+    }
     if (birthday.present) {
-      map['birthday'] = Variable<DateTime>(birthday.value);
+      map['birthday'] = Variable<String>(birthday.value);
+    }
+    if (race.present) {
+      map['race'] = Variable<String>(race.value);
     }
     if (occupation.present) {
       map['occupation'] = Variable<String>(occupation.value);
     }
     if (desc.present) {
       map['desc'] = Variable<String>(desc.value);
+    }
+    if (coverImg.present) {
+      map['coverimg'] = Variable<String>(coverImg.value);
     }
     return map;
   }
@@ -389,9 +541,12 @@ class RolesCompanion extends UpdateCompanion<Role> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('sex: $sex, ')
+          ..write('age: $age, ')
           ..write('birthday: $birthday, ')
+          ..write('race: $race, ')
           ..write('occupation: $occupation, ')
-          ..write('desc: $desc')
+          ..write('desc: $desc, ')
+          ..write('coverImg: $coverImg')
           ..write(')'))
         .toString();
   }
@@ -412,17 +567,23 @@ typedef $$RolesTableCreateCompanionBuilder = RolesCompanion Function({
   Value<int> id,
   required String name,
   required String sex,
-  required DateTime birthday,
+  required String age,
+  required String birthday,
+  required String race,
   required String occupation,
   required String desc,
+  required String coverImg,
 });
 typedef $$RolesTableUpdateCompanionBuilder = RolesCompanion Function({
   Value<int> id,
   Value<String> name,
   Value<String> sex,
-  Value<DateTime> birthday,
+  Value<String> age,
+  Value<String> birthday,
+  Value<String> race,
   Value<String> occupation,
   Value<String> desc,
+  Value<String> coverImg,
 });
 
 class $$RolesTableFilterComposer extends Composer<_$AppDatabase, $RolesTable> {
@@ -448,8 +609,18 @@ class $$RolesTableFilterComposer extends Composer<_$AppDatabase, $RolesTable> {
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<DateTime> get birthday => $composableBuilder(
+  ColumnFilters<String> get age => $composableBuilder(
+    column: $table.age,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get birthday => $composableBuilder(
     column: $table.birthday,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get race => $composableBuilder(
+    column: $table.race,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -460,6 +631,11 @@ class $$RolesTableFilterComposer extends Composer<_$AppDatabase, $RolesTable> {
 
   ColumnFilters<String> get desc => $composableBuilder(
     column: $table.desc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get coverImg => $composableBuilder(
+    column: $table.coverImg,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -488,8 +664,18 @@ class $$RolesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<DateTime> get birthday => $composableBuilder(
+  ColumnOrderings<String> get age => $composableBuilder(
+    column: $table.age,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get birthday => $composableBuilder(
     column: $table.birthday,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get race => $composableBuilder(
+    column: $table.race,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -500,6 +686,11 @@ class $$RolesTableOrderingComposer
 
   ColumnOrderings<String> get desc => $composableBuilder(
     column: $table.desc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get coverImg => $composableBuilder(
+    column: $table.coverImg,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -522,8 +713,14 @@ class $$RolesTableAnnotationComposer
   GeneratedColumn<String> get sex =>
       $composableBuilder(column: $table.sex, builder: (column) => column);
 
-  GeneratedColumn<DateTime> get birthday =>
+  GeneratedColumn<String> get age =>
+      $composableBuilder(column: $table.age, builder: (column) => column);
+
+  GeneratedColumn<String> get birthday =>
       $composableBuilder(column: $table.birthday, builder: (column) => column);
+
+  GeneratedColumn<String> get race =>
+      $composableBuilder(column: $table.race, builder: (column) => column);
 
   GeneratedColumn<String> get occupation => $composableBuilder(
     column: $table.occupation,
@@ -532,6 +729,9 @@ class $$RolesTableAnnotationComposer
 
   GeneratedColumn<String> get desc =>
       $composableBuilder(column: $table.desc, builder: (column) => column);
+
+  GeneratedColumn<String> get coverImg =>
+      $composableBuilder(column: $table.coverImg, builder: (column) => column);
 }
 
 class $$RolesTableTableManager
@@ -565,32 +765,44 @@ class $$RolesTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> sex = const Value.absent(),
-                Value<DateTime> birthday = const Value.absent(),
+                Value<String> age = const Value.absent(),
+                Value<String> birthday = const Value.absent(),
+                Value<String> race = const Value.absent(),
                 Value<String> occupation = const Value.absent(),
                 Value<String> desc = const Value.absent(),
+                Value<String> coverImg = const Value.absent(),
               }) => RolesCompanion(
                 id: id,
                 name: name,
                 sex: sex,
+                age: age,
                 birthday: birthday,
+                race: race,
                 occupation: occupation,
                 desc: desc,
+                coverImg: coverImg,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 required String name,
                 required String sex,
-                required DateTime birthday,
+                required String age,
+                required String birthday,
+                required String race,
                 required String occupation,
                 required String desc,
+                required String coverImg,
               }) => RolesCompanion.insert(
                 id: id,
                 name: name,
                 sex: sex,
+                age: age,
                 birthday: birthday,
+                race: race,
                 occupation: occupation,
                 desc: desc,
+                coverImg: coverImg,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

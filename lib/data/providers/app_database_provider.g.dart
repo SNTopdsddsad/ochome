@@ -8,13 +8,26 @@ part of 'app_database_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// 进程内共享的 [AppDatabase]。
+///
+/// [keepAlive] 避免页面销毁后反复开关库；[Ref.onDispose] 在 ProviderScope
+/// 拆除时关闭连接。测试可传入 `NativeDatabase.memory()` 覆盖本 provider。
 
 @ProviderFor(appDatabase)
 final appDatabaseProvider = AppDatabaseProvider._();
 
+/// 进程内共享的 [AppDatabase]。
+///
+/// [keepAlive] 避免页面销毁后反复开关库；[Ref.onDispose] 在 ProviderScope
+/// 拆除时关闭连接。测试可传入 `NativeDatabase.memory()` 覆盖本 provider。
+
 final class AppDatabaseProvider
     extends $FunctionalProvider<AppDatabase, AppDatabase, AppDatabase>
     with $Provider<AppDatabase> {
+  /// 进程内共享的 [AppDatabase]。
+  ///
+  /// [keepAlive] 避免页面销毁后反复开关库；[Ref.onDispose] 在 ProviderScope
+  /// 拆除时关闭连接。测试可传入 `NativeDatabase.memory()` 覆盖本 provider。
   AppDatabaseProvider._()
     : super(
         from: null,

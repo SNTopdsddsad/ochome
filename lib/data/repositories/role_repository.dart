@@ -15,9 +15,12 @@ abstract interface class RoleRepository {
   Future<Role> create({
     required String name,
     required String sex,
-    required DateTime birthday,
+    required String age,
+    required String birthday,
+    required String race,
     required String occupation,
     required String desc,
+    required String coverImg,
   });
 
   /// 按 [Role.id] 全量更新。
