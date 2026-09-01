@@ -19,15 +19,18 @@ void main() {
     await database.close();
   });
 
-  final birthday = DateTime.utc(1990, 5, 20);
+  const birthday = '1990-05-20';
 
   Future<Role> insertSample({String name = 'Ada'}) {
     return repository.create(
       name: name,
       sex: 'female',
+      age: '17',
       birthday: birthday,
+      race: 'human',
       occupation: 'engineer',
       desc: 'sample',
+      coverImg: 'covers/ada.png',
     );
   }
 
@@ -36,6 +39,7 @@ void main() {
 
     expect(created.id, greaterThan(0));
     expect(created.name, 'Ada');
+    expect(created.coverImg, 'covers/ada.png');
 
     final loaded = await repository.getById(created.id);
     expect(loaded, created);
@@ -56,9 +60,12 @@ void main() {
         id: created.id,
         name: 'Ada Lovelace',
         sex: created.sex,
+        age: created.age,
         birthday: created.birthday,
+        race: created.race,
         occupation: 'mathematician',
         desc: created.desc,
+        coverImg: created.coverImg,
       ),
     );
 
@@ -71,9 +78,12 @@ void main() {
           id: 999,
           name: 'Ghost',
           sex: 'female',
+          age: '',
           birthday: birthday,
+          race: '',
           occupation: 'none',
           desc: '',
+          coverImg: '',
         ),
       ),
       throwsStateError,
