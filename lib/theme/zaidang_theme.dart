@@ -61,6 +61,41 @@ ThemeData zaidangTheme(ZaidangTokens tokens, {required Brightness brightness}) {
         disabledForegroundColor: tokens.inkSecondary,
       ),
     ),
+    textSelectionTheme: TextSelectionThemeData(
+      cursorColor: tokens.accent,
+      selectionColor: tokens.accent.withValues(alpha: 0.18),
+      selectionHandleColor: tokens.accent,
+    ),
+    inputDecorationTheme: InputDecorationThemeData(
+      filled: true,
+      fillColor: tokens.surface,
+      alignLabelWithHint: true,
+      labelStyle: TextStyle(color: tokens.inkSecondary, fontSize: 14),
+      floatingLabelStyle: TextStyle(color: tokens.ink, fontSize: 14),
+      hintStyle: TextStyle(color: tokens.inkSecondary, fontSize: 14),
+      errorStyle: TextStyle(color: tokens.ink, fontSize: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: tokens.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: tokens.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: tokens.accent, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: tokens.ink),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: tokens.ink, width: 1.5),
+      ),
+    ),
   );
 }
 
