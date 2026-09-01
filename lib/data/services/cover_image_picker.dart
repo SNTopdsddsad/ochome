@@ -4,10 +4,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'cover_path.dart';
+
 /// 选封面图并落到应用沙盒的工具类。
 ///
 /// 相册返回的路径是临时或 `content://`，不能直接写入 `Role.coverImg`。
-/// 本类会把文件复制到 `support/covers/`，只把这份稳定路径交给 `create`。
+/// 本类会把文件复制到 `support/covers/`，只把相对路径 `covers/<file>` 交给 `create`。
 ///
 /// 相册走系统选择器，一般不必再申请存储权限。
 /// 拍照走 [pickFromCamera]；iOS/macOS 已配置用途说明，Android 已声明 CAMERA。
@@ -21,9 +23,9 @@ class CoverImagePicker {
   final ImagePicker _picker;
   final Future<Directory> Function() _supportDirectory;
 
-  static const String directoryName = 'covers';
+  static const String directoryName = CoverPath.directoryName;
 
-  /// 从相册选图，复制到本地后返回绝对路径；用户取消时返回 `null`。
+  /// 从相册选图，复制到本地后返回相对路径；用户取消时返回 `null`。
   Future<String?> pickFromGallery() {
     return pick(source: ImageSource.gallery);
   }
@@ -42,7 +44,7 @@ class CoverImagePicker {
     return savePickedFile(picked);
   }
 
-  /// 把已选出的 [XFile] 写入沙盒 `covers/`，返回可长期使用的本地路径。
+  /// 把已选出的 [XFile] 写入沙盒 `covers/`，返回相对路径 `covers/<file>`。
   Future<String> savePickedFile(XFile picked) async {
     final root = await _supportDirectory();
     final dir = Directory(p.join(root.path, directoryName));
@@ -58,6 +60,6 @@ class CoverImagePicker {
     );
     // 用字节写入，避免 Android content:// 无法 File.copy。
     await dest.writeAsBytes(await picked.readAsBytes(), flush: true);
-    return dest.path;
+    return CoverPath.relative(dest.path);
   }
 }

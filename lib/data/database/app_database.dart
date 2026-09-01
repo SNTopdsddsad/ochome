@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../services/cover_path.dart';
 import 'tables/role.dart';
 import 'tables/role_desc_revision.dart';
 
@@ -15,8 +19,20 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   /// 表结构版本。增删列后必须递增并补 migration。
+  static const int currentSchemaVersion = 6;
+
+  static const String sqliteFileName = 'ochome.sqlite';
+
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => currentSchemaVersion;
+
+  /// Application Support 里的活库路径。备份只拷快照，不要把这个文件映射到 iCloud。
+  static Future<File> sqliteFile({
+    Future<Directory> Function()? supportDirectory,
+  }) async {
+    final dir = await (supportDirectory ?? getApplicationSupportDirectory)();
+    return File(p.join(dir.path, sqliteFileName));
+  }
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -38,11 +54,31 @@ class AppDatabase extends _$AppDatabase {
           "FROM role WHERE desc != ''",
         );
       }
+      if (from < 6) {
+        await _rewriteCoverImgToRelative();
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  /// 把仍落在 `covers/` 目录下的绝对路径改成 `covers/<basename>`。
+  /// 无法改写的绝对路径保留，展示层两种都认。
+  Future<void> _rewriteCoverImgToRelative() async {
+    final rows = await customSelect('SELECT id, coverimg FROM role').get();
+    for (final row in rows) {
+      final cover = row.read<String>('coverimg');
+      final rewritten = CoverPath.toRelativeIfUnderCovers(cover);
+      if (rewritten == cover) {
+        continue;
+      }
+      await customStatement('UPDATE role SET coverimg = ? WHERE id = ?', [
+        rewritten,
+        row.read<int>('id'),
+      ]);
+    }
+  }
 
   static QueryExecutor _openConnection() {
     return driftDatabase(

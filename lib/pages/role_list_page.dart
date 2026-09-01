@@ -1,11 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/models/role.dart';
 import '../data/providers/roles_provider.dart';
 import '../theme/zaidang_tokens.dart';
+import '../widgets/cover_file_view.dart';
 import 'role_create_page.dart';
 
 /// 首页：纸面上的角色档案列表。立绘是主体，火漆红只给添加按钮。
@@ -93,20 +92,17 @@ class _CoverThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = ZaidangTokens.of(context);
-    final file = File(path);
-    final hasCover = path.isNotEmpty && file.existsSync();
+    final placeholder = ColoredBox(
+      color: tokens.surface,
+      child: Icon(Icons.person_outline, color: tokens.inkSecondary),
+    );
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(6),
       child: SizedBox(
         width: _size,
         height: _size,
-        child: hasCover
-            ? Image.file(file, fit: BoxFit.cover)
-            : ColoredBox(
-                color: tokens.surface,
-                child: Icon(Icons.person_outline, color: tokens.inkSecondary),
-              ),
+        child: CoverFileView(coverImg: path, placeholder: placeholder),
       ),
     );
   }
