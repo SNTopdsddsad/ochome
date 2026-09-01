@@ -24,7 +24,7 @@ Questions to answer:
 
 <!-- Patterns that should never be used and why -->
 
-(To be filled by the team)
+Theme / color rules live in [Theming](./theming.md) (source: 崽档《主题色与设计 Token》). Do not use `ColorScheme.fromSeed` — red seeds become pink-purple.
 
 ---
 

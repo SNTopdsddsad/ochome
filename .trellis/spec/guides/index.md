@@ -24,6 +24,7 @@ These guides help you **ask the right questions before coding**.
 | [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | Identify patterns and reduce duplication | When you notice repeated patterns |
 | [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning multiple layers |
 | [Git Commit](../frontend/git-commit.md) | Chinese commits split by module and feature | Before every `git commit` |
+| [Theming](../frontend/theming.md) | 崽档火漆红 / 纸白 tokens — not Material seed | Before any ThemeData / color / AppBar change |
 
 ---
 
@@ -51,6 +52,15 @@ These guides help you **ask the right questions before coding**.
 - [ ] Multiple branches update the same derived state from `kind` / `action`
 
 → Read [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md)
+
+### When Styling UI
+
+- [ ] Colors come from [Theming](../frontend/theming.md) (崽档笔记《主题色与设计 Token》), not `ColorScheme.fromSeed`
+- [ ] Page canvas is paper `#FAF6F0` / warm black `#171412`, not white or Material purple
+- [ ] Accent 火漆红 is 5–10% area only (buttons / selected / seal); body text is ink
+- [ ] Delete is ink + confirm, not accent red
+
+→ Read [Theming](../frontend/theming.md)
 
 ### When Committing
 
