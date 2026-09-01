@@ -4,6 +4,8 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>崽档</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIconFile</key>
@@ -26,6 +28,20 @@
 	<string>用于拍摄角色封面图</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>用于选择角色封面图</string>
+	<key>NSUbiquitousContainers</key>
+	<dict>
+		<key>iCloud.com.xuwudi.ochome</key>
+		<dict>
+			<key>NSUbiquitousContainerIsDocumentScopePublic</key>
+			<true/>
+			<key>NSUbiquitousContainerIdentifier</key>
+			<string>iCloud.com.xuwudi.ochome</string>
+			<key>NSUbiquitousContainerName</key>
+			<string>崽档</string>
+			<key>NSUbiquitousContainerSupportedFolderLevels</key>
+			<string>Any</string>
+		</dict>
+	</dict>
 	<key>NSHumanReadableCopyright</key>
 	<string>$(PRODUCT_COPYRIGHT)</string>
 	<key>NSMainNibFile</key>
