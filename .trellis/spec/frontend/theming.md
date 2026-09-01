@@ -118,7 +118,7 @@ Brand extras that ship with A (do not invent a second accent):
 |---------|--------|
 | Scaffold | `bg` |
 | Card / dialog / input fill | `surface` + `border` |
-| AppBar | `bg` or `surface`, title `ink`, **no** `inversePrimary` |
+| AppBar | List/settings: `bg` or `surface`, title `ink`, **no** `inversePrimary`. Create/edit: **no AppBar** — blurred full-bleed cover, glass back/save, bottom-left 3:4 calling-card portrait, paper cap into the form. |
 | AppBar 保存 | `accent` text; disabled = `inkSecondary` |
 | List title / subtitle | `ink` / `inkSecondary` |
 | Empty state | `inkSecondary` |
@@ -221,6 +221,7 @@ darkTheme: zaidangTheme(ZaidangTokens.dark),
 - Don't use SiYuan Note's own `daylight` / `midnight` CSS as ochome tokens.
 - Don't apply this table to 设定卡 templates.
 - Don't introduce a third brand hue beyond 火漆红 and 琥珀金.
+- Don't sit a Material AppBar (opaque or transparent-with-title) on the create/edit 立绘. Use glass overlay controls and a paper bottom cap.
 
 ---
 
