@@ -50,6 +50,10 @@ void main() {
 
     expect(find.text('新建角色'), findsOneWidget);
     expect(find.widgetWithText(TextButton, '保存'), findsOneWidget);
+    expect(find.byType(CircleAvatar), findsNothing);
+    expect(find.text('添加立绘'), findsOneWidget);
+    expect(find.text('基本信息'), findsOneWidget);
+    expect(find.text('名字'), findsWidgets);
   });
 
   testWidgets('role list shows names from repository', (tester) async {
@@ -98,6 +102,37 @@ void main() {
     expect(find.text('编辑角色'), findsNothing);
     expect(find.text('Ada L'), findsOneWidget);
     expect(find.text('human · engineer · female'), findsOneWidget);
+  });
+
+  testWidgets('edit page can open 设定 history', (tester) async {
+    tester.view.physicalSize = const Size(390, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          roleRepositoryProvider.overrideWithValue(
+            FakeRoleRepository([_sampleRole()]),
+          ),
+        ],
+        child: const MyApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Ada'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('修改历史'), findsOneWidget);
+
+    await tester.tap(find.text('修改历史'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('设定修改历史'), findsOneWidget);
+    expect(find.text('当前'), findsOneWidget);
+    expect(find.text('sample'), findsOneWidget);
   });
 }
 
