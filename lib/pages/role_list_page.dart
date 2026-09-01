@@ -5,6 +5,7 @@ import '../data/models/role.dart';
 import '../data/providers/roles_provider.dart';
 import '../theme/zaidang_tokens.dart';
 import '../widgets/cover_file_view.dart';
+import 'backup_restore_page.dart';
 import 'role_create_page.dart';
 
 /// 首页：纸面上的角色档案列表。立绘是主体，火漆红只给添加按钮。
@@ -17,7 +18,22 @@ class RoleListPage extends ConsumerWidget {
     final tokens = ZaidangTokens.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('角色')),
+      appBar: AppBar(
+        title: const Text('角色'),
+        actions: [
+          IconButton(
+            tooltip: '备份与恢复',
+            icon: const Icon(Icons.cloud_outlined),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const BackupRestorePage(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: roles.when(
         data: (items) {
           if (items.isEmpty) {

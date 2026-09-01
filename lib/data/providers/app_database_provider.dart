@@ -4,10 +4,7 @@ import '../database/app_database.dart';
 
 part 'app_database_provider.g.dart';
 
-/// 进程内共享的 [AppDatabase]。
-///
-/// [keepAlive] 避免页面销毁后反复开关库；[Ref.onDispose] 在 ProviderScope
-/// 拆除时关闭连接。测试可传入 `NativeDatabase.memory()` 覆盖本 provider。
+/// 进程内共享的 [AppDatabase]。恢复前必须 `close` 再 `invalidate`。
 @Riverpod(keepAlive: true)
 AppDatabase appDatabase(Ref ref) {
   final db = AppDatabase();
