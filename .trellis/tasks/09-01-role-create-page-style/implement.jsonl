@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/frontend/theming.md", "reason": "Hero/cover, paper cards (surface+border), and AppBar 保存 must use paper tokens; accent only on save text; 立绘 is the largest color block; no seed palette."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend spec index and pre-dev checklist before touching RoleCreatePage."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Widgets read ZaidangTokens / Theme.of; do not hardcode hex."}
+{"file": ".trellis/spec/guides/index.md", "reason": "Styling thinking triggers: paper canvas, accent 5-10%, stock widgets on non-export screens."}
+{"file": ".trellis/spec/frontend/git-commit.md", "reason": "Chinese 模块: 功能声明; split 应用 then 测试."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Keep using CoverImagePicker and global InputDecorationTheme; do not fork a second form skin."}

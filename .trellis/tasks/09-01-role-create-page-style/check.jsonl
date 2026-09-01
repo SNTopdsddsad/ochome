@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/frontend/theming.md", "reason": "Verify AppBar is paper not accent fill; save is accent text; hero empty uses surface/border; no fromSeed."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend quality and test expectations for the create-page widget tests."}
+{"file": ".trellis/spec/frontend/git-commit.md", "reason": "Verify commit split 应用 / 测试 and Chinese title form."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Quality-check index for frontend layer."}
+{"file": ".trellis/spec/guides/index.md", "reason": "Catch accent-area and hardcoded-color regressions on the restyle."}
