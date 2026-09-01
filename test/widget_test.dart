@@ -35,6 +35,7 @@ void main() {
   });
 
   testWidgets('add button opens create page', (tester) async {
+    _usePhoneView(tester);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -50,10 +51,99 @@ void main() {
 
     expect(find.text('新建角色'), findsOneWidget);
     expect(find.widgetWithText(TextButton, '保存'), findsOneWidget);
+    expect(find.byTooltip('返回'), findsOneWidget);
     expect(find.byType(CircleAvatar), findsNothing);
     expect(find.text('添加立绘'), findsOneWidget);
+    expect(find.byKey(const Key('role-create-cover-portrait')), findsOneWidget);
     expect(find.text('基本信息'), findsOneWidget);
+    expect(find.text('设定'), findsOneWidget);
     expect(find.text('名字'), findsWidgets);
+
+    final hero = tester.getRect(
+      find.byKey(const Key('role-create-cover-hero')),
+    );
+    final basicCard = tester.getRect(
+      find.byKey(const Key('role-create-basic-card')),
+    );
+    final descCard = tester.getRect(
+      find.byKey(const Key('role-create-desc-card')),
+    );
+    expect(hero.width, 390);
+    expect(hero.height, 352);
+    expect(hero.width, isNot(140));
+    expect(hero.left, 0);
+    expect(hero.top, 0);
+    expect(basicCard.left, greaterThan(hero.left));
+    expect(basicCard.right, lessThan(hero.right));
+    expect(basicCard.width, lessThan(hero.width));
+    expect(descCard.left, basicCard.left);
+    expect(descCard.width, basicCard.width);
+    expect(descCard.top, greaterThan(basicCard.bottom));
+
+    final cardBox = tester.widget<DecoratedBox>(
+      find.descendant(
+        of: find.byKey(const Key('role-create-basic-card')),
+        matching: find.byType(DecoratedBox),
+      ),
+    );
+    final decoration = cardBox.decoration as BoxDecoration;
+    expect(decoration.color, ZaidangTokens.light.surface);
+    expect(decoration.border, isA<Border>());
+  });
+
+  testWidgets('create page requires a name then saves a new role', (
+    tester,
+  ) async {
+    _usePhoneView(tester);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          roleRepositoryProvider.overrideWithValue(FakeRoleRepository()),
+        ],
+        child: const MyApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(TextButton, '保存'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('请填写名字'), findsOneWidget);
+    expect(find.text('新建角色'), findsOneWidget);
+
+    await tester.enterText(find.widgetWithText(TextFormField, '名字'), 'Nana');
+    await tester.tap(find.widgetWithText(TextButton, '保存'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('新建角色'), findsNothing);
+    expect(find.text('Nana'), findsOneWidget);
+  });
+
+  testWidgets('create page caps hero width on a wide window', (tester) async {
+    _useView(tester, const Size(800, 1200));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          roleRepositoryProvider.overrideWithValue(FakeRoleRepository()),
+        ],
+        child: const MyApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    final hero = tester.getRect(
+      find.byKey(const Key('role-create-cover-hero')),
+    );
+    expect(hero.width, 800);
+    expect(hero.height, 352);
+    expect(hero.left, 0);
+    expect(hero.top, 0);
   });
 
   testWidgets('role list shows names from repository', (tester) async {
@@ -77,6 +167,7 @@ void main() {
   testWidgets('tapping a role opens the edit page and saves changes', (
     tester,
   ) async {
+    _usePhoneView(tester);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -94,8 +185,11 @@ void main() {
 
     expect(find.text('编辑角色'), findsOneWidget);
     expect(find.widgetWithText(TextFormField, 'Ada'), findsOneWidget);
+    expect(find.text('修改历史'), findsOneWidget);
 
-    await tester.enterText(find.widgetWithText(TextFormField, 'Ada'), 'Ada L');
+    final nameField = find.widgetWithText(TextFormField, 'Ada');
+    await tester.ensureVisible(nameField);
+    await tester.enterText(nameField, 'Ada L');
     await tester.tap(find.widgetWithText(TextButton, '保存'));
     await tester.pumpAndSettle();
 
@@ -105,10 +199,7 @@ void main() {
   });
 
   testWidgets('edit page can open 设定 history', (tester) async {
-    tester.view.physicalSize = const Size(390, 1200);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+    _usePhoneView(tester);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -127,6 +218,7 @@ void main() {
 
     expect(find.text('修改历史'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('修改历史'));
     await tester.tap(find.text('修改历史'));
     await tester.pumpAndSettle();
 
@@ -134,6 +226,17 @@ void main() {
     expect(find.text('当前'), findsOneWidget);
     expect(find.text('sample'), findsOneWidget);
   });
+}
+
+void _usePhoneView(WidgetTester tester) {
+  _useView(tester, const Size(390, 1200));
+}
+
+void _useView(WidgetTester tester, Size size) {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
 }
 
 Role _sampleRole() {
