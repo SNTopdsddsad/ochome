@@ -33,4 +33,19 @@ void main() {
     expect(dark.appBarTheme.backgroundColor, const Color(0xFF171412));
     expect(dark.colorScheme.error, isNot(const Color(0xFFD96C5A)));
   });
+
+  test('input fields fill with surface and outline with border', () {
+    final light = zaidangLightTheme();
+    final theme = light.inputDecorationTheme;
+
+    expect(theme.filled, isTrue);
+    expect(theme.fillColor, ZaidangTokens.light.surface);
+    expect(theme.errorStyle?.color, ZaidangTokens.light.ink);
+
+    final enabled = theme.enabledBorder as OutlineInputBorder;
+    expect(enabled.borderSide.color, ZaidangTokens.light.border);
+
+    final focused = theme.focusedBorder as OutlineInputBorder;
+    expect(focused.borderSide.color, ZaidangTokens.light.accent);
+  });
 }
