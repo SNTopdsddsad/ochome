@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/frontend/theming.md", "reason": "Restore confirm must not use accent/error red fill; page chrome uses tokens."}
+{"file": ".trellis/spec/frontend/git-commit.md", "reason": "Verify commit split 应用/iOS/桌面/测试."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Lint/test expectations for frontend changes."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "All coverImg readers must resolve relative paths; missed call sites fail restore."}
+{"file": ".trellis/tasks/09-01-icloud-manual-backup/research/icloud-drift-backup.md", "reason": "Check version gate and no live-db-in-iCloud."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Migration must stay lossless for schema >= 3 backups."}

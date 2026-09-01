@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/frontend/theming.md", "reason": "Backup/restore UI and destructive restore confirm must use paper tokens; delete/restore is ink + confirm, not accent fill."}
+{"file": ".trellis/spec/frontend/git-commit.md", "reason": "Split commits by module: 应用 / iOS / 桌面 / 测试, Chinese 模块: 功能声明."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "coverImg format crosses picker, DB, UI, and iCloud restore; relative path must be one contract."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Drift migration policy for restore-from-old-backup; no delete-and-recreate of live user tables."}
+{"file": ".trellis/tasks/09-01-icloud-manual-backup/research/icloud-drift-backup.md", "reason": "Snapshot vs live sqlite, version gate, ubiquity download, original covers."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend spec index and pre-dev checklist."}
