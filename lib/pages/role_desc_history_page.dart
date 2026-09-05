@@ -6,6 +6,7 @@ import '../data/providers/role_desc_revisions_provider.dart';
 import '../data/providers/role_repository_provider.dart';
 import '../theme/zaidang_tokens.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
+import '../widgets/zaidang_snack_bar.dart';
 
 /// 单个角色的设定修订列表。点某一版可回看全文并恢复。
 class RoleDescHistoryPage extends ConsumerWidget {
@@ -119,8 +120,11 @@ class RoleDescHistoryPage extends ConsumerWidget {
       }
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('恢复失败：$error')));
+        showZaidangSnackBar(
+          context,
+          '恢复失败：$error',
+          tone: ZaidangSnackBarTone.error,
+        );
       }
     }
   }

@@ -51,6 +51,25 @@ ThemeData zaidangTheme(ZaidangTokens tokens, {required Brightness brightness}) {
         side: BorderSide(color: tokens.border),
       ),
     ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: tokens.surface,
+      contentTextStyle: TextStyle(
+        color: tokens.ink,
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        height: 1.4,
+      ),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: tokens.border),
+      ),
+      insetPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      showCloseIcon: true,
+      closeIconColor: tokens.ink,
+      actionTextColor: tokens.ink,
+    ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: tokens.accent,
       foregroundColor: tokens.onAccent,

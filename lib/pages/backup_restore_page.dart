@@ -11,6 +11,7 @@ import '../data/services/icloud_container.dart';
 import '../data/services/restore_progress.dart';
 import '../theme/zaidang_tokens.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
+import '../widgets/zaidang_snack_bar.dart';
 
 /// 手动备份 / 恢复。非 Apple 平台只展示不可用说明。
 class BackupRestorePage extends ConsumerStatefulWidget {
@@ -91,11 +92,14 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
         return;
       }
       setState(() => _manifest = manifest);
-      _snack('已备份到 iCloud。换机后可直接恢复；「保存到文件」只是额外拷贝');
+      _snack(
+        '已备份到 iCloud。换机后可直接恢复；「保存到文件」只是额外拷贝',
+        tone: ZaidangSnackBarTone.success,
+      );
     } on BackupException catch (error) {
-      _snack(error.userMessage);
+      _snack(error.userMessage, tone: ZaidangSnackBarTone.error);
     } catch (error) {
-      _snack('备份失败：$error');
+      _snack('备份失败：$error', tone: ZaidangSnackBarTone.error);
     } finally {
       if (mounted) {
         setState(() {
@@ -177,13 +181,13 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
       if (!mounted) {
         return;
       }
-      _snack('已从 iCloud 恢复');
+      _snack('已从 iCloud 恢复', tone: ZaidangSnackBarTone.success);
     } on BackupException catch (error) {
       await inspection?.dispose();
-      _snack(error.userMessage);
+      _snack(error.userMessage, tone: ZaidangSnackBarTone.error);
     } catch (error) {
       await inspection?.dispose();
-      _snack('恢复失败：$error');
+      _snack('恢复失败：$error', tone: ZaidangSnackBarTone.error);
     } finally {
       if (mounted) {
         setState(() {
@@ -203,9 +207,9 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
     try {
       await ref.read(iCloudContainerProvider).exportToDrive();
     } on BackupException catch (error) {
-      _snack(error.userMessage);
+      _snack(error.userMessage, tone: ZaidangSnackBarTone.error);
     } catch (error) {
-      _snack('无法打开文件：$error');
+      _snack('无法打开文件：$error', tone: ZaidangSnackBarTone.error);
     }
   }
 
@@ -222,12 +226,14 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
     );
   }
 
-  void _snack(String message) {
+  void _snack(
+    String message, {
+    ZaidangSnackBarTone tone = ZaidangSnackBarTone.info,
+  }) {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    showZaidangSnackBar(context, message, tone: tone);
   }
 
   @override
