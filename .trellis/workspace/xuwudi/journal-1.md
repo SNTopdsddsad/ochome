@@ -108,3 +108,38 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 4: 角色自定义属性
+
+**Date**: 2026-09-05
+**Task**: 角色自定义属性
+**Branch**: `main`
+
+### Summary
+
+完成每个 OC 独立自定义属性的行内编辑、排序和统一保存，验证数据升级与恢复，并按用户要求完成归档。
+
+### Main Changes
+
+- 角色基本信息保持固定，新增自定义属性名称和多行内容，支持添加、修改、确认删除、拖动及上下移动。
+- schema 升至 7，属性使用有序 JSON 保存；恢复设定历史保留属性，修复非空 schema-3 数据库升级年龄和种族字段失败。
+- 独立审查修复重排键映射，补充键盘长列表、离屏校验、保存失败和历史恢复回归；同步前后端规范。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `29269d4` | (see git log) |
+| `53e10f2` | (see git log) |
+| `bf19baa` | (see git log) |
+
+### Testing
+
+- [OK] flutter analyze --no-pub：No issues found；完整 flutter test --no-pub：110 项全部通过。
+- [OK] 16 个改动 Dart 文件格式检查无变化；git diff --check、归档后 implement/check 两份各 6 项上下文引用校验通过。
+- [OK] 完成 390×844 明暗主题渲染检查；备份验证使用临时 SQLite 和 fake iCloud 容器。
+
+### Status
+
+[OK] **Completed**
