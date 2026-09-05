@@ -4,4 +4,4 @@
 {"file": ".trellis/spec/guides/index.md", "reason": "Styling thinking triggers: paper canvas, accent 5-10%, stock widgets on non-export screens."}
 {"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Use photo_view for gallery gestures per the updated user request; reuse CoverPath and leave CoverImagePicker/storage unchanged."}
 {"file": ".trellis/spec/frontend/git-commit.md", "reason": "Chinese 模块: 功能声明; split 应用 then 测试."}
-{"file": ".trellis/tasks/09-03-role-cover-preview/research/photo-view-gallery.md", "reason": "Published PhotoViewGallery API, gesture integration, path resolution and real-image widget test strategy."}
+{"file": ".trellis/tasks/archive/2026-09/09-03-role-cover-preview/research/photo-view-gallery.md", "reason": "Published PhotoViewGallery API, gesture integration, path resolution and real-image widget test strategy."}

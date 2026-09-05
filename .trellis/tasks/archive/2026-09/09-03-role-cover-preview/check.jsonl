@@ -3,4 +3,4 @@
 {"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend quality bar, forbidden theme patterns, and test expectations."}
 {"file": ".trellis/spec/frontend/git-commit.md", "reason": "Commit message and split rules if the check pass reviews the change set."}
 {"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Verify photo_view owns gallery gestures and the cover picker/path contract is reused without duplicate storage logic."}
-{"file": ".trellis/tasks/09-03-role-cover-preview/research/photo-view-gallery.md", "reason": "Verify gallery callback forwarding and actual image/gesture validation against the published package."}
+{"file": ".trellis/tasks/archive/2026-09/09-03-role-cover-preview/research/photo-view-gallery.md", "reason": "Verify gallery callback forwarding and actual image/gesture validation against the published package."}
