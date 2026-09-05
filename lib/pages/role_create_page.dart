@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui' as ui show ImageFilter, TileMode;
 
 import 'package:flutter/material.dart';
@@ -9,13 +10,25 @@ import '../data/providers/role_repository_provider.dart';
 import '../data/services/cover_image_picker.dart';
 import '../theme/zaidang_tokens.dart';
 import '../widgets/cover_file_view.dart';
+import 'cover_preview_page.dart';
 import 'role_desc_history_page.dart';
 
 /// 新建 / 编辑 OC 人设。传入 [role] 即为编辑，字段按原文回填。
 class RoleCreatePage extends ConsumerStatefulWidget {
-  const RoleCreatePage({super.key, this.role});
+  const RoleCreatePage({
+    super.key,
+    this.role,
+    this.picker,
+    this.supportDirectory,
+  });
 
   final Role? role;
+
+  /// 测试注入：替换系统相册选择器。
+  final CoverImagePicker? picker;
+
+  /// 测试注入：立绘沙盒根目录；正式运行用系统 Application Support。
+  final Future<Directory> Function()? supportDirectory;
 
   @override
   ConsumerState<RoleCreatePage> createState() => _RoleCreatePageState();
@@ -40,7 +53,7 @@ const double _portraitHeight = 120;
 
 class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
   final _formKey = GlobalKey<FormState>();
-  final _picker = CoverImagePicker();
+  late final CoverImagePicker _picker = widget.picker ?? CoverImagePicker();
 
   late final TextEditingController _nameController;
   late final TextEditingController _sexController;
@@ -52,6 +65,9 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
 
   late String _coverImg;
   bool _saving = false;
+
+  /// 立绘是否可读（路径非空且文件存在）。决定槽位是预览还是选图、是否出现「更换」。
+  bool _coverReadable = false;
 
   bool get _isEditing => widget.role != null;
 
@@ -70,6 +86,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
     _nameController.addListener(_onCallingCardChanged);
     _raceController.addListener(_onCallingCardChanged);
     _occupationController.addListener(_onCallingCardChanged);
+    _refreshCoverReadable();
   }
 
   void _onCallingCardChanged() {
@@ -101,6 +118,34 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
     setState(() {
       _coverImg = path;
     });
+    await _refreshCoverReadable();
+  }
+
+  /// 打开全屏预览，只退出预览层，不提交表单、不改 [_coverImg]。
+  Future<void> _openCoverPreview() async {
+    if (_saving) {
+      return;
+    }
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => CoverPreviewPage(
+          coverImages: [_coverImg],
+          supportDirectory: widget.supportDirectory,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _refreshCoverReadable() async {
+    final readable = await CoverFileView.exists(
+      _coverImg,
+      supportDirectory: widget.supportDirectory,
+    );
+    if (mounted && readable != _coverReadable) {
+      setState(() {
+        _coverReadable = readable;
+      });
+    }
   }
 
   Future<void> _submit() async {
@@ -220,7 +265,10 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
                       race: _raceController.text.trim(),
                       occupation: _occupationController.text.trim(),
                       overlayStyle: overlayStyle,
+                      hasCover: _coverReadable,
+                      supportDirectory: widget.supportDirectory,
                       onPick: _pickCover,
+                      onPreview: _saving ? null : _openCoverPreview,
                     ),
                     SliverToBoxAdapter(
                       child: ColoredBox(
@@ -395,9 +443,10 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
 
 /// 钉在滚动层下面的模糊头图。下拉回弹时露出的是这张图，不是画布白边。
 class _HeroBackdrop extends StatelessWidget {
-  const _HeroBackdrop({required this.path});
+  const _HeroBackdrop({required this.path, this.supportDirectory});
 
   final String path;
+  final Future<Directory> Function()? supportDirectory;
 
   @override
   Widget build(BuildContext context) {
@@ -417,7 +466,11 @@ class _HeroBackdrop extends StatelessWidget {
                 ),
                 child: Transform.scale(
                   scale: 1.04,
-                  child: CoverFileView(coverImg: path, placeholder: fill),
+                  child: CoverFileView(
+                    coverImg: path,
+                    placeholder: fill,
+                    supportDirectory: supportDirectory,
+                  ),
                 ),
               )
             : fill,
@@ -456,7 +509,10 @@ class _ImmersiveCover extends StatelessWidget {
     required this.race,
     required this.occupation,
     required this.overlayStyle,
+    required this.hasCover,
     required this.onPick,
+    required this.onPreview,
+    this.supportDirectory,
   });
 
   final String path;
@@ -464,13 +520,14 @@ class _ImmersiveCover extends StatelessWidget {
   final String race;
   final String occupation;
   final SystemUiOverlayStyle overlayStyle;
+  final bool hasCover;
   final VoidCallback onPick;
+  final VoidCallback? onPreview;
+  final Future<Directory> Function()? supportDirectory;
 
   @override
   Widget build(BuildContext context) {
     final tokens = ZaidangTokens.of(context);
-    final hasCover = path.isNotEmpty;
-    final label = hasCover ? '更换立绘' : '添加立绘';
 
     return SliverAppBar(
       primary: false,
@@ -496,10 +553,9 @@ class _ImmersiveCover extends StatelessWidget {
             child: FlexibleSpaceBar(
               collapseMode: CollapseMode.none,
               stretchModes: const [StretchMode.zoomBackground],
-              background: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: onPick,
-                child: _HeroBackdrop(path: path),
+              background: _HeroBackdrop(
+                path: path,
+                supportDirectory: supportDirectory,
               ),
             ),
           ),
@@ -514,8 +570,10 @@ class _ImmersiveCover extends StatelessWidget {
                 name: name,
                 race: race,
                 occupation: occupation,
-                label: label,
+                hasCover: hasCover,
+                supportDirectory: supportDirectory,
                 onPick: onPick,
+                onPreview: onPreview,
               ),
             ),
           ),
@@ -547,21 +605,24 @@ class _CallingCard extends StatelessWidget {
     required this.name,
     required this.race,
     required this.occupation,
-    required this.label,
+    required this.hasCover,
     required this.onPick,
+    required this.onPreview,
+    this.supportDirectory,
   });
 
   final String path;
   final String name;
   final String race;
   final String occupation;
-  final String label;
+  final bool hasCover;
   final VoidCallback onPick;
+  final VoidCallback? onPreview;
+  final Future<Directory> Function()? supportDirectory;
 
   @override
   Widget build(BuildContext context) {
     final tokens = ZaidangTokens.of(context);
-    final hasCover = path.isNotEmpty;
     final subtitle = [
       race,
       occupation,
@@ -570,25 +631,29 @@ class _CallingCard extends StatelessWidget {
         ? CoverFileView(
             coverImg: path,
             placeholder: _PortraitPlaceholder(tokens: tokens, compact: true),
+            supportDirectory: supportDirectory,
           )
         : _PortraitPlaceholder(tokens: tokens, compact: false);
+    final portraitLabel = hasCover ? '查看立绘' : '添加立绘';
+    final onPortraitTap = hasCover ? onPreview : onPick;
 
     return Material(
       color: tokens.surface,
       elevation: 2,
       shadowColor: tokens.ink.withValues(alpha: 0.18),
       borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onPick,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Semantics(
-                button: true,
-                label: label,
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Semantics(
+              button: true,
+              enabled: onPortraitTap != null,
+              label: portraitLabel,
+              child: InkWell(
+                onTap: onPortraitTap,
+                borderRadius: BorderRadius.circular(6),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(6),
                   child: SizedBox(
@@ -599,46 +664,64 @@ class _CallingCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (name.isNotEmpty || subtitle.isNotEmpty) ...[
-                const SizedBox(width: 12),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 168),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (name.isNotEmpty)
-                        Text(
-                          name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: tokens.ink,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            height: 1.25,
-                          ),
+            ),
+            if (name.isNotEmpty || subtitle.isNotEmpty || hasCover) ...[
+              const SizedBox(width: 12),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 168),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (name.isNotEmpty)
+                      Text(
+                        name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: tokens.ink,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          height: 1.25,
                         ),
-                      if (subtitle.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: tokens.inkSecondary,
-                            fontSize: 12,
-                            height: 1.3,
-                          ),
+                      ),
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: tokens.inkSecondary,
+                          fontSize: 12,
+                          height: 1.3,
                         ),
-                      ],
+                      ),
                     ],
-                  ),
+                    if (hasCover) ...[
+                      const SizedBox(height: 4),
+                      Tooltip(
+                        message: '更换立绘',
+                        excludeFromSemantics: true,
+                        child: TextButton(
+                          onPressed: onPick,
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            minimumSize: const Size(0, 32),
+                            padding: EdgeInsets.zero,
+                            alignment: Alignment.centerLeft,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text('更换', semanticsLabel: '更换立绘'),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-                const SizedBox(width: 8),
-              ],
+              ),
+              const SizedBox(width: 8),
             ],
-          ),
+          ],
         ),
       ),
     );

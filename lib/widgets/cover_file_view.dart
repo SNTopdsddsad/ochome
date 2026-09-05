@@ -31,6 +31,26 @@ class CoverFileView extends StatelessWidget {
     return _cachedSupportDir ??= getApplicationSupportDirectory();
   }
 
+  /// 立绘文件是否可读（路径非空且文件存在）。相对路径需 [supportDirectory]。
+  ///
+  /// 供页面判断「有可读立绘」：预览入口、是否出现「更换」都取决于此。
+  static Future<bool> exists(
+    String coverImg, {
+    Future<Directory> Function()? supportDirectory,
+  }) async {
+    if (coverImg.isEmpty) {
+      return false;
+    }
+    if (p.isAbsolute(coverImg)) {
+      return File(coverImg).existsSync();
+    }
+    final lookup = supportDirectory;
+    final dir = await (lookup != null
+        ? lookup()
+        : (_cachedSupportDir ??= getApplicationSupportDirectory()));
+    return File(CoverPath.resolve(dir.path, coverImg)).existsSync();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (coverImg.isEmpty) {
