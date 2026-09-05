@@ -179,3 +179,50 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 6: 角色卡导出与悬浮便笺提示
+
+**Date**: 2026-09-05
+**Task**: 角色卡导出与悬浮便笺提示
+**Branch**: `main`
+
+### Summary
+
+完成同人设定纸角色卡导出、字段选择、完整分页和保存分享，并统一操作提示；已按用户要求本地提交及归档。
+
+### Main Changes
+
+- 新增独立角色卡模块，预览与1440×1920 PNG共用排版绘制，隐藏字段先过滤，导出保留当前编辑草稿。
+- 接入iOS相册单批保存、macOS文件夹保存与系统分享，保留原生权限边界、取消语义和临时文件生命周期。
+- 统一保存、备份、导出反馈为可复用悬浮便笺，长消息与无障碍阅读保留到手动关闭。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f31bf8e` | (see git log) |
+| `6ab3570` | (see git log) |
+| `dd7b2f9` | (see git log) |
+| `7ea9beb` | (see git log) |
+| `5bfbdb6` | (see git log) |
+| `8cc2da8` | (see git log) |
+| `2683520` | (see git log) |
+| `f19e20e` | (see git log) |
+| `1e848fd` | (see git log) |
+| `9909e76` | (see git log) |
+| `dfc6665` | (see git log) |
+
+### Testing
+
+- [OK] Flutter全量173项通过，静态分析、格式、diff及归档上下文验证通过。
+- [OK] iOS/macOS无签名构建和Android调试包构建通过；原生文件处理13项宿主XCTest通过。
+- [OK] 已检查真实HEIC导出PNG、多页正文、深浅色UI、字体许可和便笺提示截图。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 发布前在签名Apple设备上验收相册授权、完整批量保存、沙盒文件夹和真实系统分享；不以无签名构建替代实机结论。
