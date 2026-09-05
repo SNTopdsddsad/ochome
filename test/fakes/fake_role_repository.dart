@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ochome/data/models/role.dart';
+import 'package:ochome/data/models/role_custom_attribute.dart';
 import 'package:ochome/data/models/role_desc_revision.dart';
 import 'package:ochome/data/repositories/role_repository.dart';
 
@@ -85,7 +86,9 @@ class FakeRoleRepository implements RoleRepository {
     required String occupation,
     required String desc,
     required String coverImg,
+    List<RoleCustomAttribute> customAttributes = const [],
   }) async {
+    final attributes = _attributesForWrite(customAttributes);
     final role = Role(
       id: _nextId++,
       name: name,
@@ -96,6 +99,7 @@ class FakeRoleRepository implements RoleRepository {
       occupation: occupation,
       desc: desc,
       coverImg: coverImg,
+      customAttributes: attributes,
     );
     _roles.add(role);
     if (desc.isNotEmpty) {
@@ -107,17 +111,47 @@ class FakeRoleRepository implements RoleRepository {
 
   @override
   Future<Role> update(Role role) async {
+    final attributes = _attributesForWrite(role.customAttributes);
     final index = _roles.indexWhere((item) => item.id == role.id);
     if (index < 0) {
       throw StateError('Role ${role.id} not found');
     }
     final previous = _roles[index].desc;
-    _roles[index] = role;
+    final saved = Role(
+      id: role.id,
+      name: role.name,
+      sex: role.sex,
+      age: role.age,
+      birthday: role.birthday,
+      race: role.race,
+      occupation: role.occupation,
+      desc: role.desc,
+      coverImg: role.coverImg,
+      customAttributes: attributes,
+    );
+    _roles[index] = saved;
     if (previous != role.desc) {
       _appendDescRevision(role.id, role.desc);
     }
     _emit();
-    return role;
+    return saved;
+  }
+
+  List<RoleCustomAttribute> _attributesForWrite(
+    List<RoleCustomAttribute> attributes,
+  ) {
+    return List.unmodifiable(
+      attributes.map((attribute) {
+        final name = attribute.name.trim();
+        if (name.isEmpty) {
+          throw ArgumentError.value(attribute.name, 'name', '属性名称不能为空');
+        }
+        return RoleCustomAttribute(
+          name: name,
+          content: attribute.content.trim(),
+        );
+      }),
+    );
   }
 
   @override
@@ -180,6 +214,7 @@ class FakeRoleRepository implements RoleRepository {
         occupation: role.occupation,
         desc: revision.content,
         coverImg: role.coverImg,
+        customAttributes: role.customAttributes,
       ),
     );
   }

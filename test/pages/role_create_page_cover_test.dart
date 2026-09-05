@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ochome/data/models/role.dart';
+import 'package:ochome/data/models/role_custom_attribute.dart';
 import 'package:ochome/data/providers/role_repository_provider.dart';
 import 'package:ochome/pages/cover_preview_page.dart';
 import 'package:ochome/pages/role_create_page.dart';
@@ -257,6 +258,7 @@ class _DelayedSaveRoleRepository extends FakeRoleRepository {
     required String occupation,
     required String desc,
     required String coverImg,
+    List<RoleCustomAttribute> customAttributes = const [],
   }) async {
     await saveCompleted.future;
     return super.create(
@@ -268,6 +270,7 @@ class _DelayedSaveRoleRepository extends FakeRoleRepository {
       occupation: occupation,
       desc: desc,
       coverImg: coverImg,
+      customAttributes: customAttributes,
     );
   }
 

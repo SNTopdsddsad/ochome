@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ochome/data/database/app_database.dart' hide Role;
 import 'package:ochome/data/models/role.dart';
+import 'package:ochome/data/models/role_custom_attribute.dart';
 import 'package:ochome/data/repositories/drift_role_repository.dart';
 import 'package:ochome/data/services/backup_exceptions.dart';
 import 'package:ochome/data/services/backup_manifest.dart';
@@ -49,6 +50,7 @@ void main() {
     String name = 'Ada',
     String desc = 'sample',
     String coverImg = 'covers/ada.png',
+    List<RoleCustomAttribute> customAttributes = const [],
   }) {
     return DriftRoleRepository(database).create(
       name: name,
@@ -59,6 +61,7 @@ void main() {
       occupation: 'engineer',
       desc: desc,
       coverImg: coverImg,
+      customAttributes: customAttributes,
     );
   }
 
@@ -121,7 +124,12 @@ void main() {
   test('same-version restore replaces sqlite and covers', () async {
     final database = await openLive();
     await writeCover('ada.png', const [1, 2, 3]);
-    await seedRole(database);
+    const attributes = [
+      RoleCustomAttribute(name: '能力代价', content: '失去部分记忆\n无法回忆名字'),
+      RoleCustomAttribute(name: '魔法属性', content: '冰 ❄️'),
+      RoleCustomAttribute(name: '契约对象', content: ''),
+    ];
+    await seedRole(database, customAttributes: attributes);
     await service.backup(database: database);
     await database.close();
 
@@ -130,9 +138,10 @@ void main() {
     final mutated = await openLive();
     final repo = DriftRoleRepository(mutated);
     final existing = await repo.getById(1);
+    expect(existing!.customAttributes, attributes);
     await repo.update(
       Role(
-        id: existing!.id,
+        id: existing.id,
         name: 'Mutated',
         sex: existing.sex,
         age: existing.age,
@@ -141,8 +150,10 @@ void main() {
         occupation: existing.occupation,
         desc: existing.desc,
         coverImg: existing.coverImg,
+        customAttributes: const [],
       ),
     );
+    expect((await repo.getById(1))!.customAttributes, isEmpty);
     await mutated.close();
 
     final plan = await service.prepareRestore();
@@ -152,6 +163,8 @@ void main() {
     addTearDown(restored.close);
     final rows = await restored.customSelect('SELECT name FROM role').get();
     expect(rows.single.read<String>('name'), 'Ada');
+    final restoredRole = await DriftRoleRepository(restored).getById(1);
+    expect(restoredRole!.customAttributes, attributes);
     expect(
       await File(p.join(support.path, 'covers', 'ada.png')).readAsBytes(),
       const [1, 2, 3],
@@ -172,10 +185,7 @@ void main() {
     addTearDown(plan.dispose);
 
     expect(messages.first, '正在检查 iCloud…');
-    expect(
-      messages.any((line) => line.contains('正在恢复第 1 个')),
-      isTrue,
-    );
+    expect(messages.any((line) => line.contains('正在恢复第 1 个')), isTrue);
   });
 
   test('inspectBackup then restore works when list is empty', () async {
@@ -274,9 +284,12 @@ void main() {
         .customSelect('SELECT content FROM role_desc_revision')
         .get();
     expect(revisions.single.read<String>('content'), 'from-v4');
+    final restoredRole = (await DriftRoleRepository(restored).list()).single;
+    expect(restoredRole.customAttributes, isEmpty);
+    expect(restoredRole.desc, 'from-v4');
   });
 
-  test('schema 7 backup is refused and local rows stay', () async {
+  test('newer-schema backup is refused and local rows stay', () async {
     final live = await openLive();
     await seedRole(live, name: 'KeepMe');
     await live.close();

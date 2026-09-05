@@ -142,7 +142,7 @@ void main() {
       RestoreVersionGate.compare(
         appSchemaVersion: AppDatabase.currentSchemaVersion,
         sqliteUserVersion: 5,
-        manifestSchemaVersion: 7,
+        manifestSchemaVersion: AppDatabase.currentSchemaVersion + 1,
       ),
       RestoreVersionDecision.refuseNewer,
     );
