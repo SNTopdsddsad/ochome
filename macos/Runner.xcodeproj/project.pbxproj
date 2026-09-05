@@ -31,6 +31,7 @@
 		589C459E6BC77D9BBC95C197 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 78DB5959255CC5DEA7D56986 /* Pods_Runner.framework */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		C81C0E121ED2DC5600515831 /* ICloudChannelHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C81C0E111ED2DC5600515830 /* ICloudChannelHandler.swift */; };
+		D90C0E121ED2DC5600515852 /* RoleCardExportHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D90C0E111ED2DC5600515851 /* RoleCardExportHandler.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -91,6 +92,7 @@
 		A08B2C3EA1A06919441EB164 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1F0AFC09C05F5D2A33ED24D /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		C81C0E111ED2DC5600515830 /* ICloudChannelHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICloudChannelHandler.swift; sourceTree = "<group>"; };
+		D90C0E111ED2DC5600515851 /* RoleCardExportHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleCardExportHandler.swift; sourceTree = "<group>"; };
 		D20D8BD4C39288C82218E488 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -184,6 +186,7 @@
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
 				C81C0E111ED2DC5600515830 /* ICloudChannelHandler.swift */,
+				D90C0E111ED2DC5600515851 /* RoleCardExportHandler.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
 				33E51914231749380026EE4D /* Release.entitlements */,
 				33CC11242044D66E0003C045 /* Resources */,
@@ -435,6 +438,7 @@
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				C81C0E121ED2DC5600515831 /* ICloudChannelHandler.swift in Sources */,
+				D90C0E121ED2DC5600515852 /* RoleCardExportHandler.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
