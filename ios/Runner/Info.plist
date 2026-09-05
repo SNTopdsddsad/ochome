@@ -34,6 +34,8 @@
 	<string>用于拍摄角色封面图</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>用于选择角色封面图</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>用于将你导出的角色卡保存到相册</string>
 	<key>NSUbiquitousContainers</key>
 	<dict>
 		<key>iCloud.com.xuwudi.ochome</key>
