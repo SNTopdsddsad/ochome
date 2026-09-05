@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend scope and review entry point."}
+{"file": ".trellis/spec/backend/index.md", "reason": "Data-layer scope and review entry point."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Accessible controls and pending-save navigation contract."}
+{"file": ".trellis/spec/frontend/theming.md", "reason": "Paper cards, light/dark tokens and deletion styling."}
+{"file": ".trellis/tasks/09-05-role-custom-attributes/research/repository-context.md", "reason": "Observed data, migration, history, backup and test boundaries."}
+{"file": ".trellis/spec/backend/role-custom-attributes.md", "reason": "Ordered role attributes, migration and preservation contracts"}

@@ -164,3 +164,37 @@ single-tap dismissal.
 Wrong: `GestureDetector(onPanUpdate: ..., child: PhotoViewGallery(...))`.
 Correct: configure `PhotoViewGalleryPageOptions` with `FileImage`, scale limits
 and `onTapUp`, leaving its existing gesture recognizers in charge.
+
+## Editable Custom-Attribute Slivers
+
+`RoleCreatePage` puts `SliverReorderableList` in the existing page scroll, with
+`DecoratedSliver` using the same paper-card decoration as fixed fields. Do not
+introduce a separately scrolling list inside the form.
+
+Each draft owns its name/content controllers, a `FocusNode` and a `UniqueKey`.
+Keep that identity through rename, move and drag operations. The current Flutter
+reorderable sliver wraps child keys in `GlobalObjectKey`; unwrap `.value` in
+`findChildIndexCallback` before locating the draft. Comparing the wrapper directly
+with the draft key always misses the entry.
+
+Lazy rows can be unmounted when the user saves. Validate the entire controller
+list and the fixed role-name controller, in addition to `FormState.validate()`.
+Surface a visible error for an invalid offscreen name. Store immutable values
+only after validation and disable both controls and stale mutation callbacks
+while saving. Cancel an active reorder before submitting or structurally
+changing the list.
+
+After deletion, remove the row first and dispose its controllers after the
+frame unmounts the old text fields. Returning from description history only
+changes the description controller; custom-attribute drafts remain untouched.
+
+For abbreviated icon actions, verify the resulting semantics label and tap
+action on the actual `IconButton`. Explicit `Icon.semanticLabel` is used here;
+finding a tooltip alone does not prove the button is accessible.
+
+Regression tests must cover edit→reorder→save pairing, offscreen validation,
+repeated inline addition with a keyboard, failed-save drafts, stale callbacks,
+history return, and actual drag gestures in both themes. See
+`test/pages/role_create_page_custom_attributes_test.dart` and
+`test/pages/role_custom_attributes_keyboard_test.dart`. The persistence boundary
+is documented in [Role Custom Attributes](../backend/role-custom-attributes.md).
