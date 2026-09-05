@@ -10,6 +10,7 @@ import 'package:ochome/data/providers/role_repository_provider.dart';
 import 'package:ochome/pages/role_create_page.dart';
 import 'package:ochome/theme/zaidang_theme.dart';
 import 'package:ochome/theme/zaidang_tokens.dart';
+import 'package:ochome/widgets/zaidang_confirm_dialog.dart';
 
 import '../fakes/fake_role_repository.dart';
 
@@ -140,12 +141,13 @@ void main() {
       await _reveal(tester, find.byTooltip('删除第 1 条属性'));
       await tester.tap(find.byTooltip('删除第 1 条属性'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('取消'));
+      expect(find.text('保存角色后生效。'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('zaidang-confirm-cancel')));
       await tester.pumpAndSettle();
       expect(find.text('契约对象'), findsOneWidget);
       await tester.tap(find.byTooltip('删除第 1 条属性'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, '删除'));
+      await tester.tap(find.byKey(const Key('zaidang-confirm-action')));
       await tester.pumpAndSettle();
       expect(
         find.byKey(const Key('role-create-custom-attributes-card')),
@@ -255,7 +257,7 @@ void main() {
         staleDelete();
         if (editing) staleReorder(0, 1);
         await tester.pump();
-        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.byType(ZaidangConfirmDialog), findsNothing);
         expect(
           tester.widget<IconButton>(_iconButton('删除第 1 条属性')).onPressed,
           isNull,
@@ -283,7 +285,7 @@ void main() {
   }
 
   testWidgets(
-    'restoring description history keeps the unsaved attribute draft',
+    'history warns before replacing unsaved description and keeps attribute drafts',
     (tester) async {
       _phone(tester, height: 1200);
       final repository = FakeRoleRepository([
@@ -294,6 +296,8 @@ void main() {
       await _reveal(tester, find.text('魔法属性'));
       await tester.enterText(_inputFinder('魔法属性'), '草稿名称');
       await tester.enterText(_inputFinder('冰'), '草稿内容');
+      await _reveal(tester, find.text('新设定'));
+      await tester.enterText(_inputFinder('新设定'), '还没有保存的设定草稿');
       await _reveal(tester, find.text('修改历史'));
       await tester.tap(find.text('修改历史'));
       await tester.pumpAndSettle();
@@ -301,9 +305,16 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('恢复此版'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, '恢复'));
+      expect(find.textContaining('还没保存的设定修改会丢失。'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('zaidang-confirm-action')));
       await tester.pumpAndSettle();
       expect((await repository.getById(1))!.customAttributes, [_magic]);
+      expect((await repository.getById(1))!.desc, '旧设定');
+      expect(
+        (await repository.listDescRevisions(1))
+            .map((revision) => revision.content),
+        isNot(contains('还没有保存的设定草稿')),
+      );
       await _reveal(tester, find.text('草稿名称'));
       expect(_input(tester, '草稿内容').controller!.text, '草稿内容');
       await tester.tap(find.text('保存'));
