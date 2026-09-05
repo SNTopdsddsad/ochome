@@ -71,3 +71,40 @@
 
 - 真机登录 iCloud 验收 AC1–AC3；Xcode 勾选 iCloud Documents 容器 iCloud.com.xuwudi.ochome
 - macOS bundle id 仍为 com.example.ochome，签名容器权限需核对
+
+
+## Session 3: 立绘预览与多图图库
+
+**Date**: 2026-09-05
+**Task**: 立绘预览与多图图库
+**Branch**: `main`
+
+### Summary
+
+完成立绘预览交互修复并接入 photo_view 图库，支持多图滑动、缩放与单击退出；同步远端后按模块提交，完成任务归档。
+
+### Main Changes
+
+- 角色页拆分查看立绘与更换入口，完善无障碍标签和保存期间的预览禁用，避免返回栈与重复保存问题。
+- CoverPreviewPage 接入 photo_view 0.15.0，支持本地图片列表、初始索引、左右滑动、双指及双击缩放、拖动、单击退出、页码和失败状态；角色仍以单张立绘接入。
+- 补充真实图片与手势回归测试，将组件契约和排错经验写入前端规范。
+- 已完成 rebase 与 pull，4 个工作提交按依赖、应用、测试和 Trellis 拆分；未推送。任务归档至 .trellis/tasks/archive/2026-09/09-03-role-cover-preview。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `962b482` | (see git log) |
+| `374339e` | (see git log) |
+| `e23919e` | (see git log) |
+| `2202cac` | (see git log) |
+
+### Testing
+
+- [OK] flutter test --no-pub test/pages/cover_preview_page_test.dart test/pages/role_create_page_cover_test.dart test/widget_test.dart test/widgets/cover_file_view_test.dart：31 项通过。
+- [OK] flutter analyze --no-pub：No issues found；git diff --check 通过；归档后的 implement.jsonl 7 项与 check.jsonl 6 项路径校验通过。
+- [OK] 完成代码审查，未进行真机手动验收。
+
+### Status
+
+[OK] **Completed**
