@@ -3,7 +3,7 @@
   "name": "role-custom-attributes",
   "title": "角色自定义属性",
   "description": "为每个 OC 增加独立的名称与多行文本属性，支持页面内增删改排序并随角色统一保存。",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": "fullstack",
   "scope": "role",
   "package": null,
@@ -11,11 +11,11 @@
   "creator": "xuwudi",
   "assignee": "xuwudi",
   "createdAt": "2026-09-05",
-  "completedAt": null,
-  "branch": null,
+  "completedAt": "2026-09-05",
+  "branch": "main",
   "base_branch": "main",
   "worktree_path": null,
-  "commit": null,
+  "commit": "bf19baa6f5330ada720ff4cc44efa7efddcfcaea",
   "pr_url": null,
   "subtasks": [],
   "children": [],
@@ -38,6 +38,6 @@
     "test/pages/role_create_page_custom_attributes_test.dart",
     "test/pages/role_custom_attributes_keyboard_test.dart"
   ],
-  "notes": "User approved implementation and the three work-commit groups on 2026-09-05. Full-scope review, flutter analyze and all 110 tests pass. Application commit 29269d4; test commit 53e10f2. Task/spec records form the third approved commit. Ready for finish-work archival.",
+  "notes": "Completed and archived at user request on 2026-09-05. Work commits: 29269d4, 53e10f2, bf19baa. Independent review, flutter analyze and all 110 tests passed. Archive and session-journal records complete the Trellis workflow.",
   "meta": {}
 }

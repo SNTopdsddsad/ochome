@@ -32,4 +32,4 @@ The root session also rendered and visually inspected light/dark 390×844 layout
 
 ## Delivery State
 
-Product implementation, regression checks and spec updates are complete. The user approved all three work-commit groups. Application commit: `29269d4`; test commit: `53e10f2`. The task remains `in_progress` until the project's finish-work archival step. `.vscode/` and `CLAUDE.md` were present before this task and are excluded from its commits.
+Product implementation, regression checks and spec updates are complete. The user approved all three work-commit groups. Application commit: `29269d4`; test commit: `53e10f2`. The task is `completed` and archived at the user's request on 2026-09-05. `.vscode/` and `CLAUDE.md` were present before this task and are excluded from its commits.

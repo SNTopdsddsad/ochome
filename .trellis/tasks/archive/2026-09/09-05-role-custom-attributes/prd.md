@@ -40,4 +40,4 @@ The current role editor contains “基本信息” and “设定”. The new se
 
 ## Delivery Status
 
-The user approved implementation with “开始” on 2026-09-05 and approved the work-commit plan after all 110 tests passed. All acceptance criteria are verified. The task remains open for the project's finish-work archival step; implementation and verification details are recorded alongside this PRD.
+The user approved implementation with “开始” on 2026-09-05 and approved the work-commit plan after all 110 tests passed. All acceptance criteria are verified. The task was archived at the user's request on 2026-09-05; implementation and verification details are recorded alongside this PRD.
