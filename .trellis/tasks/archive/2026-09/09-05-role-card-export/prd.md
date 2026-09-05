@@ -40,4 +40,4 @@ Let OC creators export an attractive, locally generated set of character-card im
 - Current constraints: only one stored cover per role, no export renderer or image sharing dependency yet.
 - The user provided `IMG_0031.HEIC` for visual sampling and confirmed the name “度漪”. No identity/description was provided; do not invent it. The sample is a portrait poster photo with existing text and watermarks; retain the whole image for the layout review.
 - Distinguish the section-location mock (empty placeholder rules for discussion) from actual output, which omits empty fields and adapts the composition to the provided content. The current sparse-data preview only uses the confirmed name and supplied artwork.
-- Implementation is complete and locally validated; see `verification.md`. The user authorized local commits on 2026-09-05. The task remains unarchived, with signed-device acceptance explicitly recorded before release.
+- Implementation is complete and locally validated; see `verification.md`. The user authorized local commits on 2026-09-05. The user requested archival on 2026-09-05; signed-device acceptance remains explicitly recorded before release.

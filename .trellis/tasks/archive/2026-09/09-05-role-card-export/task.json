@@ -3,7 +3,7 @@
   "name": "role-card-export",
   "title": "角色卡导出",
   "description": "已实现用户批准的同人设定纸角色卡导出：字段选择、固定PNG分页、预览与Apple保存/系统分享，自动化验证与平台编译通过。",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": "fullstack",
   "scope": "role-card-export",
   "package": null,
@@ -11,7 +11,7 @@
   "creator": "xuwudi",
   "assignee": "xuwudi",
   "createdAt": "2026-09-05",
-  "completedAt": null,
+  "completedAt": "2026-09-05",
   "branch": "main",
   "base_branch": "main",
   "worktree_path": null,
@@ -33,7 +33,7 @@
     "lib/theme/zaidang_theme.dart",
     "test/widgets/zaidang_snack_bar_test.dart"
   ],
-  "notes": "用户于2026-09-05授权本地提交。角色卡导出及悬浮便笺提示已按模块提交，173项Flutter测试和分析通过。任务未归档、未推送；签名设备上的相册权限/真实保存分享发布前验收仍保留。",
+  "notes": "角色卡导出与悬浮便笺提示已完成10次本地工作提交，并于2026-09-05按用户要求归档。173项Flutter测试及分析通过；无远端推送。签名设备上的相册权限、真实保存分享等发布前验收仍在verification.md中保留。",
   "meta": {
     "work_commits": [
       {
@@ -71,6 +71,10 @@
       {
         "title": "测试: 验证角色卡排版与保存分享流程",
         "commit": "1e848fd8c21c02b053b3cbab468625806640af18"
+      },
+      {
+        "title": "Trellis: 记录角色卡导出实现与验证",
+        "commit": "9909e76751212dea595ef4e40bd985bd0e1e7dca"
       }
     ]
   }
