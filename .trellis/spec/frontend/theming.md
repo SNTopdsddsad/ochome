@@ -14,7 +14,7 @@
 
 **Does not apply to**: 设定卡导出模板。模板审美基准见调研笔记第四节（10 张圈内设卡），在 Figma/纸上定版式后再自绘渲染。
 
-**Current app gap**: `lib/app.dart` still uses `ColorScheme.fromSeed(seedColor: Colors.deepPurple)`. That violates this spec.
+**Current implementation**: `lib/theme/zaidang_tokens.dart` defines the hand-written light/dark palette, and `lib/theme/zaidang_theme.dart` maps it into `ThemeData`. Do not reintroduce a seed palette.
 
 ---
 
@@ -128,6 +128,12 @@ Brand extras that ship with A (do not invent a second accent):
 | Body / heading text | `ink` only — never accent paragraphs |
 | Delete / dangerous | ink button + second confirm; no red fill |
 
+Secondary confirmations use the approved **创作便笺** layout in
+`ZaidangConfirmDialog`; see [Component Guidelines](./component-guidelines.md#reusable-confirmation-dialogs).
+The global `DialogThemeData` shares surface, transparent tint, 26-radius border
+and soft shadow with the separate history-content viewer. It does not change
+that viewer into a confirmation flow.
+
 ### Type (prep checklist, UI-related)
 
 Ship only fonts that are free for commercial use: 思源宋体 / 思源黑体 / 霞鹜文楷. Pick with the visual draft. Do not embed licensed display fonts.
@@ -157,9 +163,9 @@ Product brief: **only the export card is allowed to be pixel-obsessed.** Other s
 
 **Good**: `theme` / `darkTheme` both from `ZaidangTokens`; pages read `Theme.of(context)` or `ZaidangTokens.of(context)`; 立绘 is the largest color block.
 
-**Base**: First pass only replaces `lib/app.dart` seed theme and AppBar `inversePrimary`. No custom illustrations on list/create.
+**Base**: Pages consume the existing semantic theme; app canvas is paper and primary actions use the hand-written accent. No new illustration dependency is needed for routine chrome.
 
-**Bad**: Material purple seed (current). Or treating SiYuan Note's `daylight`/`midnight` CSS as 崽档 tokens (wrong source).
+**Bad**: Reintroducing a Material purple seed, or treating SiYuan Note's `daylight`/`midnight` CSS as 崽档 tokens (wrong source).
 
 ---
 

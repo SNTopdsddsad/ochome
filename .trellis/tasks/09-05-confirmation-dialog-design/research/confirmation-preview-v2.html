@@ -1,0 +1,109 @@
+<div id="oc-gentle-confirmation">
+  <style>
+    #oc-gentle-confirmation {
+      --oc-bg: light-dark(#FAF6F0, #171412);
+      --oc-surface: light-dark(#FFFFFF, #201C19);
+      --oc-ink: light-dark(#2B2622, #EDE7DF);
+      --oc-secondary: light-dark(#8C8177, #A79C90);
+      --oc-border: light-dark(#EAE3D9, #35302B);
+      --oc-accent: light-dark(#C2402A, #D96C5A);
+      --oc-shadow: light-dark(rgb(43 38 34 / 8%), rgb(0 0 0 / 20%));
+      --oc-radius: 26px;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      font-weight: 400;
+      color: var(--oc-ink);
+      width: 100%;
+    }
+    #oc-gentle-confirmation[data-appearance="light"] .oc-dialog { color-scheme: light; }
+    #oc-gentle-confirmation[data-appearance="dark"] .oc-dialog { color-scheme: dark; }
+    #oc-gentle-confirmation * { box-sizing: border-box; }
+    #oc-gentle-confirmation .oc-options { display: flex; flex-wrap: wrap; gap: 12px 20px; margin: 0 0 30px; }
+    #oc-gentle-confirmation .oc-options label { display: grid; gap: 6px; font-size: 13px; }
+    #oc-gentle-confirmation .oc-options select { font: inherit; font-size: 14px; color: var(--oc-ink); background: var(--oc-surface); border: 1px solid var(--oc-border); border-radius: 10px; padding: 8px 28px 8px 10px; min-height: 40px; max-width: 100%; }
+    #oc-gentle-confirmation .oc-stage { width: min(100%, 380px); margin: 0 auto; }
+    #oc-gentle-confirmation .oc-dialog { padding: 28px 24px 22px; background: var(--oc-surface); border: 1px solid var(--oc-border); border-radius: var(--oc-radius); box-shadow: 0 8px 30px -12px var(--oc-shadow); overflow-wrap: anywhere; }
+    #oc-gentle-confirmation .oc-mark { width: 46px; height: 46px; display: grid; place-items: center; position: relative; color: var(--oc-ink); background: var(--oc-bg); border: 1px solid var(--oc-border); border-radius: 14px; margin-bottom: 22px; transform: rotate(-6deg); }
+    #oc-gentle-confirmation .oc-mark > svg { width: 23px; height: 23px; stroke-width: 1.6; }
+    #oc-gentle-confirmation .oc-spark { position: absolute; top: -7px; right: -7px; width: 18px; height: 18px; color: var(--oc-accent); background: var(--oc-surface); border-radius: 50%; display: grid; place-items: center; }
+    #oc-gentle-confirmation .oc-spark svg { width: 16px; height: 16px; stroke-width: 1.6; }
+    #oc-gentle-confirmation .oc-title { font-family: inherit; font-size: 20px; font-weight: 500; line-height: 1.5; letter-spacing: 0; color: var(--oc-ink); margin: 0 0 12px; }
+    #oc-gentle-confirmation .oc-description { font-size: 15px; line-height: 1.8; color: var(--oc-ink); margin: 0; font-weight: 400; }
+    #oc-gentle-confirmation .oc-effect { margin: 8px 0 0; font-size: 15px; line-height: 1.8; color: var(--oc-ink); font-weight: 400; }
+    #oc-gentle-confirmation .oc-actions { display: flex; gap: 12px; margin-top: 26px; }
+    #oc-gentle-confirmation .oc-action { flex: 1 1 0; min-width: 0; min-height: 48px; padding: 11px 12px; border: 1px solid var(--oc-border); border-radius: 15px; font-family: inherit; font-size: 15px; font-weight: 500; line-height: 1.5; white-space: normal; color: var(--oc-ink); background: var(--oc-bg); cursor: pointer; }
+    #oc-gentle-confirmation .oc-action-confirm { color: var(--oc-surface); background: var(--oc-ink); border-color: var(--oc-ink); }
+    #oc-gentle-confirmation .oc-action:hover { filter: brightness(.96); }
+    #oc-gentle-confirmation .oc-action:active { transform: translateY(1px); }
+    #oc-gentle-confirmation .oc-status { margin: 14px 0 0; min-height: 24px; color: var(--oc-ink); font-size: 13px; }
+    #oc-gentle-confirmation .oc-sample { margin: 18px 0 0; color: var(--oc-ink); font-size: 12px; text-align: center; }
+    #oc-gentle-confirmation [hidden] { display: none !important; }
+    @media (pointer: coarse) { #oc-gentle-confirmation .oc-options select { font-size: 16px; min-height: 44px; } }
+    @media (max-width: 350px) { #oc-gentle-confirmation .oc-dialog { padding: 24px 20px 20px; } }
+    @media (prefers-reduced-motion: reduce) { #oc-gentle-confirmation .oc-action:active { transform: none; } }
+  </style>
+  <div class="oc-options">
+    <label for="oc-scene">场景
+      <select id="oc-scene">
+        <option value="attribute">删除属性</option>
+        <option value="history">恢复设定</option>
+        <option value="cloud">恢复云端备份</option>
+      </select>
+    </label>
+    <label for="oc-mode">外观
+      <select id="oc-mode">
+        <option value="auto">跟随系统</option>
+        <option value="light">浅色</option>
+        <option value="dark">深色</option>
+      </select>
+    </label>
+  </div>
+  <div class="oc-stage">
+    <section class="oc-dialog" aria-label="创作便笺弹窗预览" aria-describedby="oc-example">
+      <div class="oc-mark" id="oc-mark" aria-hidden="true">
+        <i data-lucide="notebook-pen"></i>
+        <span class="oc-spark" id="oc-spark"><i data-lucide="sparkle"></i></span>
+      </div>
+      <h2 class="oc-title" id="oc-title">要删掉这条属性吗？</h2>
+      <p class="oc-description" id="oc-description">「随身物品」和里面的内容会一起移除。</p>
+      <p class="oc-effect" id="oc-effect">保存角色后生效。</p>
+      <div class="oc-actions">
+        <button type="button" class="oc-action" id="oc-cancel" aria-label="先留着，保留这条属性">先留着</button>
+        <button type="button" class="oc-action oc-action-confirm" id="oc-confirm">删除属性</button>
+      </div>
+    </section>
+    <p class="oc-sample" id="oc-example">交互预览 · 名称和时间为示例</p>
+    <p class="oc-status" id="oc-result" role="status" aria-live="polite"></p>
+  </div>
+  <script>
+    (() => {
+      const root = document.getElementById('oc-gentle-confirmation');
+      const el = (name) => root.querySelector('#' + name);
+      const state = { scene: 'attribute', appearance: 'auto', decoration: true, radius: 26 };
+      const scenes = {
+        attribute: { title: '要删掉这条属性吗？', description: '「随身物品」和里面的内容会一起移除。', effect: '保存角色后生效。', cancel: '先留着', cancelLabel: '先留着，保留这条属性', confirm: '删除属性' },
+        history: { title: '换回这一版设定吗？', description: '将立即换回 9月3日 21:36 的设定。还没保存的设定修改会丢失。', effect: '已经存下的修改历史会保留。', cancel: '先不换', cancelLabel: '先不换，取消恢复设定', confirm: '恢复此版' },
+        cloud: { title: '用云端备份替换本机内容？', description: '本机的角色资料、设定历史和立绘都会被 iCloud 备份替换。', effect: '这次替换无法撤销。', cancel: '先不恢复', cancelLabel: '先不恢复，保留本机内容', confirm: '覆盖恢复' }
+      };
+      function render() {
+        const scene = scenes[state.scene];
+        root.dataset.appearance = state.appearance;
+        root.style.setProperty('--oc-radius', state.radius + 'px');
+        ['title', 'description', 'effect', 'cancel', 'confirm'].forEach((key) => { el('oc-' + key).textContent = scene[key]; });
+        el('oc-cancel').setAttribute('aria-label', scene.cancelLabel);
+        el('oc-mark').hidden = !state.decoration;
+        el('oc-spark').hidden = state.scene === 'cloud';
+      }
+      el('oc-scene').addEventListener('change', (event) => { state.scene = event.target.value; el('oc-result').textContent = ''; render(); });
+      el('oc-mode').addEventListener('change', (event) => { state.appearance = event.target.value; render(); });
+      ['cancel', 'confirm'].forEach((action) => { el('oc-' + action).addEventListener('click', () => { el('oc-result').textContent = '预览选择：' + scenes[state.scene][action]; }); });
+      render();
+      if (globalThis.Tweak) {
+        const tweak = new Tweak({ container: root.querySelector('.oc-dialog'), onChange: render });
+        tweak.addToggle(state, 'decoration', { label: '小便笺装饰' });
+        tweak.addSlider(state, 'radius', { label: '圆润程度', min: 20, max: 30, step: 2, unit: 'px' });
+      }
+    })();
+  </script>
+</div>

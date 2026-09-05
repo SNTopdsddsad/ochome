@@ -198,3 +198,77 @@ history return, and actual drag gestures in both themes. See
 `test/pages/role_create_page_custom_attributes_test.dart` and
 `test/pages/role_custom_attributes_keyboard_test.dart`. The persistence boundary
 is documented in [Role Custom Attributes](../backend/role-custom-attributes.md).
+
+## Reusable Confirmation Dialogs
+
+Use `lib/widgets/zaidang_confirm_dialog.dart` for secondary confirmation. The
+user-approved OC direction is **创作便笺**: soft corners, a small tilted notebook
+mark and conversational copy. Avoid category mastheads, separate labeled target
+sections and internal rules; they made the first proposal too formal.
+
+The public `ZaidangConfirmDialog` Widget can be built directly inside a standard
+`showDialog<bool>`. Prefer `showZaidangConfirmDialog` at page call sites:
+
+```dart
+final confirmed = await showZaidangConfirmDialog(
+  context: context,
+  title: '要删掉这条属性吗？',
+  body: '「$name」和里面的内容会一起移除。',
+  consequence: '保存角色后生效。',
+  cancelLabel: '先留着',
+  cancelSemanticLabel: '先留着，保留这条属性',
+  confirmLabel: '删除属性',
+);
+if (!confirmed || !context.mounted) return;
+// The caller owns the actual draft or persisted change.
+```
+
+### Contract
+
+- Required inputs: `title`, `body`, `consequence`, `confirmLabel`. Optional:
+  `cancelLabel` (default `取消`), `cancelSemanticLabel`, `showSparkle` (default
+  true). The Widget also accepts a normal `key`; the helper takes `context` and
+  returns `Future<bool>`.
+- The Widget pops true only for the explicit action and false for cancel. The
+  helper maps null from back/Escape/barrier dismissal to false. Cancel takes
+  initial focus; route focus traversal is closed-loop. Repeated action callbacks
+  during exit must not pop the caller's page.
+- Dangerous actions use `ink` fill with `surface` text in both themes. The
+  cancellation uses `bg`, `border` and `ink`. Essential body/consequence text
+  also uses `ink`: light `inkSecondary` on `surface` is only about 3.8:1.
+- Use 26 outer radius, 15 button radius and at least 48 logical pixel action
+  height. Measure action labels with the effective text scaler before choosing
+  a row or a vertical stack. Keep the standard cancel-then-confirm traversal
+  order in both arrangements.
+- Normally only the content scrolls and the buttons stay visible. Exceptionally
+  short windows or huge action labels allow whole-sheet scrolling so every
+  element remains reachable. Leave space inside the scroll viewport for the
+  rotated mark/sparkle; outer padding alone does not prevent clipping.
+- `showSparkle: false` is used for full-device overwrite. The accent sparkle is
+  decorative brand detail, never a red danger cue. The notebook decoration is
+  excluded from semantics. Button accessible names must include their visible
+  wording and preserve the stock button role/action.
+- The helper honors reduced motion. Keep async work, progress, errors and
+  mounted/busy/stale-callback guards in the caller; never move repositories or
+  cloud services into the shared Widget.
+
+### Existing scenarios
+
+| Scenario | Persistence boundary | Required copy |
+|---|---|---|
+| Custom attribute deletion | Remove draft, persist on role save | 保存角色后生效 |
+| Description history restore | Immediately write saved description and replace editor description draft | Unsaved description changes will be lost; existing history stays |
+| iCloud restore | Confirm after inspection, then prepare/commit full snapshot and covers | All local role data/history/art is replaced; no user undo |
+
+The history-content viewer remains a selectable/scrollable `AlertDialog` with
+its own read/close/restore controls. It only inherits compatible theme defaults.
+
+### Validation
+
+`test/widgets/zaidang_confirm_dialog_test.dart` covers direct Widget reuse,
+helper confirmation/dismissal, focus safety, semantics, contrast and large-text
+layouts. Page integration tests keep actual draft/persistence assertions in
+`role_create_page_custom_attributes_test.dart` and verify the cloud confirmation
+boundary/inspection cleanup with a service fake in `backup_restore_page_test.dart`.
+Use stable action keys instead of binding tests to the old `TextButton` type or
+generic “删除”/“恢复” labels.

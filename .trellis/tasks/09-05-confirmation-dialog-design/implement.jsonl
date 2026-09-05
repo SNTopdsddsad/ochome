@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development entry point"}
+{"file": ".trellis/spec/frontend/theming.md", "reason": "Approved paper/ink palette and destructive-action contract"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Button semantics, save guards and draft ownership"}
+{"file": ".trellis/tasks/09-05-confirmation-dialog-design/research/behavior-audit.md", "reason": "Verified dialog effects, current copy mismatch and preserved behavior boundaries"}
