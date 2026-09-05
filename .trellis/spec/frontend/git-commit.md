@@ -31,6 +31,7 @@
 | Web | `web/` |
 | 测试 | `test/` 以及各平台测试目录 |
 | 依赖 | `pubspec.yaml` `pubspec.lock` |
+| 资源 | `assets/` 字体、静态资源及其授权说明 |
 | Trellis | `.trellis/` `.grok/` `AGENTS.md` `.gitattributes` |
 | 技能 | `.agents/skills/` 项目级技能及配套资源 |
 | 文档 | `README.md` 及其他给人看的说明 |

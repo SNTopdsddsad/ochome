@@ -1,0 +1,105 @@
+<div id="duyi-setting-sheet">
+  <style>
+    #duyi-setting-sheet { --sheet-ui-ink: light-dark(#2B2622,#EDE7DF); --sheet-ui-surface: light-dark(#FFFFFF,#201C19); --sheet-ui-line: light-dark(#EAE3D9,#35302B); width: 100%; color: var(--sheet-ui-ink); font: 400 14px/1.5 -apple-system,"PingFang SC",sans-serif; }
+    #duyi-setting-sheet * { box-sizing: border-box; }
+    #duyi-setting-sheet .sheet-study { max-width: 480px; margin: 0 auto; }
+    #duyi-setting-sheet .study-views { display: flex; gap: 8px; margin-bottom: 16px; }
+    #duyi-setting-sheet .study-view { min-height: 40px; border: 1px solid var(--sheet-ui-line); border-radius: 10px; padding: 8px 12px; color: var(--sheet-ui-ink); background: var(--sheet-ui-surface); font: inherit; cursor: pointer; }
+    #duyi-setting-sheet .study-view[aria-pressed="true"] { color: var(--sheet-ui-surface); background: var(--sheet-ui-ink); border-color: var(--sheet-ui-ink); }
+    #duyi-setting-sheet .setting-sheet { --paper: #F4F1E9; --ink: #223B56; --subtle: #52627A; --rule: #B7C0C8; --wash: #E7E9E7; color-scheme: light; width: 100%; aspect-ratio: 3 / 4; background: var(--paper); color: var(--ink); padding: 20px; position: relative; display: grid; grid-template-columns: minmax(0, 2.25fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto auto; grid-template-areas: 'title title' 'middle middle' 'story story' 'foot foot'; gap: 14px 18px; overflow: hidden; }
+    #duyi-setting-sheet .sheet-middle { grid-area: middle; min-height: 0; display: grid; grid-template-columns: minmax(0,2.4fr) minmax(0,1fr); grid-template-areas: 'art profile'; gap: 14px; padding: 10px; background: #1B2B42; }
+    #duyi-setting-sheet .sheet-title { grid-area: title; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid var(--ink); padding: 0 0 12px; position: relative; }
+    #duyi-setting-sheet .name-block { display: flex; align-items: flex-end; gap: 18px; }
+    #duyi-setting-sheet .role-name { margin: 0; font-family: "Songti SC","Noto Serif CJK SC",serif; font-size: 52px; font-weight: 700; line-height: 1.02; letter-spacing: 5px; color: var(--ink); }
+    #duyi-setting-sheet .roman-name { font-family: Georgia,serif; font-style: italic; font-size: 16px; line-height: 1.2; padding-bottom: 4px; letter-spacing: 3px; }
+    #duyi-setting-sheet .sheet-tag { font-size: 11px; letter-spacing: 1.5px; line-height: 1.65; text-align: right; white-space: nowrap; }
+    #duyi-setting-sheet .sheet-tag strong { display: block; font-weight: 500; font-size: 12px; letter-spacing: 3px; }
+    #duyi-setting-sheet .art-region { grid-area: art; min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center; background: var(--wash); position: relative; }
+    #duyi-setting-sheet .art-region img { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; }
+    #duyi-setting-sheet .profile-region { grid-area: profile; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+    #duyi-setting-sheet .section-name { color: var(--ink); margin: 0; font-size: 12px; font-weight: 500; line-height: 1.4; letter-spacing: 2px; }
+    #duyi-setting-sheet .section-name::after { content: ''; display: block; height: 1px; background: var(--ink); width: 18px; margin-top: 8px; }
+    #duyi-setting-sheet .sheet-middle .section-name { color: #F2F2EC; }
+    #duyi-setting-sheet .sheet-middle .section-name::after { background: #A6B9CF; }
+    #duyi-setting-sheet .sheet-middle .profile-field { border-color: #4C6078; }
+    #duyi-setting-sheet .sheet-middle .profile-field dt { color: #C3CDDA; }
+    #duyi-setting-sheet .sheet-middle .profile-field dd { color: #F2F2EC; }
+    #duyi-setting-sheet .field-list { display: flex; flex-direction: column; flex: 1; justify-content: space-between; margin: 12px 0 0; gap: 7px; }
+    #duyi-setting-sheet .profile-field { margin: 0; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
+    #duyi-setting-sheet .profile-field dt { font-size: 11px; color: var(--subtle); letter-spacing: 2px; margin: 0; }
+    #duyi-setting-sheet .profile-field dd { font-size: 15px; margin: 4px 0 0; line-height: 1.2; }
+    #duyi-setting-sheet .story-region { grid-area: story; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding-top: 2px; }
+    #duyi-setting-sheet .story-block { min-width: 0; }
+    #duyi-setting-sheet .story-title { margin: 0 0 7px; color: var(--ink); font-size: 12px; line-height: 1.4; font-weight: 500; letter-spacing: 2px; }
+    #duyi-setting-sheet .sample-line { border-bottom: 1px solid var(--rule); height: 17px; }
+    #duyi-setting-sheet .sample-line.short { width: 70%; }
+    #duyi-setting-sheet .sheet-foot { grid-area: foot; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--subtle); font-size: 11px; line-height: 1.3; }
+    #duyi-setting-sheet .foot-label { letter-spacing: 1.5px; }
+    #duyi-setting-sheet .brand-seal { color: #C2402A; border: 1px solid currentColor; border-radius: 2px; padding: 2px 4px; transform: rotate(-4deg); font-family: "Songti SC",serif; font-size: 12px; }
+    #duyi-setting-sheet .study-caption { margin: 12px 0 0; font-size: 13px; line-height: 1.65; }
+    #duyi-setting-sheet .setting-sheet[data-view="actual"] { grid-template-columns: minmax(0, 4.2fr) minmax(0, 1fr); grid-template-rows: minmax(0,1fr) auto; grid-template-areas: 'middle title' 'foot foot'; gap: 14px; }
+    #duyi-setting-sheet .setting-sheet[data-view="actual"] .sheet-middle { padding: 0; background: transparent; display: flex; }
+    #duyi-setting-sheet .setting-sheet[data-view="actual"] .profile-region, #duyi-setting-sheet .setting-sheet[data-view="actual"] .story-region { display: none; }
+    #duyi-setting-sheet .setting-sheet[data-view="actual"] .art-region { background: transparent; }
+    #duyi-setting-sheet .setting-sheet[data-view="actual"] .sheet-title { flex-direction: column; align-items: center; justify-content: space-between; border-bottom: 0; border-left: 1px solid var(--rule); padding: 12px 0 12px 12px; }
+    #duyi-setting-sheet .setting-sheet[data-view="actual"] .name-block { flex-direction: column; align-items: center; gap: 28px; }
+    #duyi-setting-sheet .setting-sheet[data-view="actual"] .role-name { writing-mode: vertical-rl; font-size: 54px; letter-spacing: 12px; }
+    #duyi-setting-sheet .setting-sheet[data-view="actual"] .roman-name { writing-mode: vertical-rl; font-size: 17px; letter-spacing: 5px; }
+    #duyi-setting-sheet .setting-sheet[data-view="actual"] .sheet-tag { writing-mode: vertical-rl; text-align: left; font-size: 11px; }
+    #duyi-setting-sheet .setting-sheet[data-view="actual"] .sheet-tag strong { display: none; }
+    @media (max-width: 390px) {
+      #duyi-setting-sheet .setting-sheet { padding: 15px; gap: 11px 13px; }
+      #duyi-setting-sheet .sheet-middle { padding: 7px; gap: 10px; }
+      #duyi-setting-sheet .role-name { font-size: 40px; }
+      #duyi-setting-sheet .name-block { gap: 10px; }
+      #duyi-setting-sheet .roman-name { font-size: 13px; }
+      #duyi-setting-sheet .sheet-tag { font-size: 11px; letter-spacing: .2px; }
+      #duyi-setting-sheet .sheet-tag strong { letter-spacing: 1px; font-size: 11px; }
+      #duyi-setting-sheet .sheet-title { padding-bottom: 8px; }
+      #duyi-setting-sheet .field-list { margin-top: 8px; gap: 3px; }
+      #duyi-setting-sheet .profile-field { padding-bottom: 3px; }
+      #duyi-setting-sheet .profile-field dd { margin-top: 1px; font-size: 13px; }
+      #duyi-setting-sheet .section-name, #duyi-setting-sheet .story-title { font-size: 11px; letter-spacing: 1px; }
+      #duyi-setting-sheet .sample-line { height: 13px; }
+      #duyi-setting-sheet .story-region { gap: 14px; }
+      #duyi-setting-sheet .setting-sheet[data-view="actual"] .role-name { font-size: 42px; }
+      #duyi-setting-sheet .setting-sheet[data-view="actual"] .sheet-title { padding-left: 8px; }
+    }
+    @media (pointer:coarse) { #duyi-setting-sheet .study-view { min-height: 44px; } }
+  </style>
+  <div class="sheet-study">
+    <div class="study-views" role="group" aria-label="查看设定纸状态">
+      <button type="button" class="study-view" id="sheet-sections" aria-pressed="true">设定纸分区</button>
+      <button type="button" class="study-view" id="sheet-actual" aria-pressed="false">仅现有资料</button>
+    </div>
+    <article class="setting-sheet" id="setting-paper" data-view="sections" aria-label="度漪同人设定纸版式，除名字和立绘外资料均为占位">
+      <header class="sheet-title"><div class="name-block"><h3 class="role-name">度漪</h3><span class="roman-name">DU YI</span></div><div class="sheet-tag"><strong>人设纸</strong>CHARACTER SHEET</div></header>
+      <div class="sheet-middle"><div class="art-region"><img src="__OC_IMAGE_DATA_URL__" alt="用户提供的角色海报照片，完整保留画面及原有文字和水印"></div>
+      <section class="profile-region" aria-label="基本资料位置示意，尚未提供实际内容"><h4 class="section-name">基本资料</h4><dl class="field-list"><div class="profile-field"><dt>性别</dt><dd>—</dd></div><div class="profile-field"><dt>年龄</dt><dd>—</dd></div><div class="profile-field"><dt>生日</dt><dd>—</dd></div><div class="profile-field"><dt>种族</dt><dd>—</dd></div><div class="profile-field"><dt>身份</dt><dd>—</dd></div></dl></section></div>
+      <div class="story-region" aria-label="设定文字排版位置示意"><section class="story-block"><h4 class="story-title">角色设定</h4><div class="sample-line"></div><div class="sample-line"></div><div class="sample-line short"></div></section><section class="story-block"><h4 class="story-title">自定义属性</h4><div class="sample-line"></div><div class="sample-line"></div><div class="sample-line short"></div></section></div>
+      <footer class="sheet-foot"><span class="foot-label">ORIGINAL CHARACTER</span><span class="brand-seal">崽档</span></footer>
+    </article>
+    <p class="study-caption" id="sheet-caption">分区位置示意：你尚未提供的资料留空，仅展示版式。</p>
+  </div>
+  <script>
+    (() => {
+      const root=document.getElementById('duyi-setting-sheet');
+      const paper=root.querySelector('#setting-paper');
+      const state={view:'sections',tone:'paper'};
+      function render(){
+        paper.dataset.view=state.view;
+        root.querySelector('#sheet-sections').setAttribute('aria-pressed',String(state.view==='sections'));
+        root.querySelector('#sheet-actual').setAttribute('aria-pressed',String(state.view==='actual'));
+        root.querySelector('#sheet-caption').textContent=state.view==='sections'?'分区位置示意：你尚未提供的资料留空，仅展示版式。':'仅使用已提供的度漪名字和原图，未填写的分区收起。';
+        paper.setAttribute('aria-label',state.view==='sections'?'度漪同人设定纸版式，除名字和立绘外资料均为占位':'度漪角色卡，仅显示已提供的名字和完整原图');
+        paper.style.setProperty('--paper',state.tone==='paper'?'#F4F1E9':'#EDEFEF');
+        paper.style.setProperty('--ink',state.tone==='paper'?'#223B56':'#273646');
+        paper.style.setProperty('--wash',state.tone==='paper'?'#E7E9E7':'#DEE3E6');
+      }
+      root.querySelector('#sheet-sections').addEventListener('click',()=>{state.view='sections';render();});
+      root.querySelector('#sheet-actual').addEventListener('click',()=>{state.view='actual';render();});
+      render();
+      if(globalThis.Tweak){const tweak=new Tweak({container:paper,onChange:render});tweak.addSelect(state,'tone',{label:'纸面色调',options:[{label:'暖纸墨蓝',value:'paper'},{label:'银灰墨蓝',value:'silver'}]});}
+    })();
+  </script>
+</div>

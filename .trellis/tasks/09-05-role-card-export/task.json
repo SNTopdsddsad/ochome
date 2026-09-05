@@ -1,0 +1,77 @@
+{
+  "id": "role-card-export",
+  "name": "role-card-export",
+  "title": "角色卡导出",
+  "description": "已实现用户批准的同人设定纸角色卡导出：字段选择、固定PNG分页、预览与Apple保存/系统分享，自动化验证与平台编译通过。",
+  "status": "in_progress",
+  "dev_type": "fullstack",
+  "scope": "role-card-export",
+  "package": null,
+  "priority": "P0",
+  "creator": "xuwudi",
+  "assignee": "xuwudi",
+  "createdAt": "2026-09-05",
+  "completedAt": null,
+  "branch": "main",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "5bfbdb6f9eb6092324465db8c5c85c707d8f5e5a",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "lib/features/role_card/",
+    "lib/pages/role_card_export_page.dart",
+    "lib/pages/role_create_page.dart",
+    "ios/Runner/RoleCardExportHandler.swift",
+    "macos/Runner/RoleCardExportHandler.swift",
+    "assets/fonts/role_card/",
+    "test/features/role_card/",
+    "test/pages/role_card_export_page_test.dart",
+    "lib/widgets/zaidang_snack_bar.dart",
+    "lib/theme/zaidang_theme.dart",
+    "test/widgets/zaidang_snack_bar_test.dart"
+  ],
+  "notes": "用户于2026-09-05授权本地提交。角色卡导出及悬浮便笺提示已按模块提交，173项Flutter测试和分析通过。任务未归档、未推送；签名设备上的相册权限/真实保存分享发布前验收仍保留。",
+  "meta": {
+    "work_commits": [
+      {
+        "title": "资源: 增加角色卡离线字体与授权文件",
+        "commit": "f31bf8ecc174542059c434f726e3c953c293cc40"
+      },
+      {
+        "title": "依赖: 增加角色卡图片分享插件",
+        "commit": "6ab3570bed326efe2d04c61e8e0d1c4a287148fa"
+      },
+      {
+        "title": "Android: 适配图片分享插件构建",
+        "commit": "dd7b2f977df33b4541c6eeccf5786390aa40defc"
+      },
+      {
+        "title": "应用: 统一悬浮便笺操作提示",
+        "commit": "7ea9bebab2a134c4d4799bbe6137baa43f2d8fa0"
+      },
+      {
+        "title": "应用: 增加角色卡导出与分页预览",
+        "commit": "5bfbdb6f9eb6092324465db8c5c85c707d8f5e5a"
+      },
+      {
+        "title": "iOS: 增加角色卡相册批量保存",
+        "commit": "8cc2da895d9446d50c7cc017d1c6d304339fed44"
+      },
+      {
+        "title": "桌面: 增加角色卡文件保存与分享集成",
+        "commit": "2683520dbd405fefd7e28fb52d72bcc35af96987"
+      },
+      {
+        "title": "测试: 验证便笺提示与可访问阅读",
+        "commit": "f19e20e5c64805df0256ca8fb61984c28514f5f9"
+      },
+      {
+        "title": "测试: 验证角色卡排版与保存分享流程",
+        "commit": "1e848fd8c21c02b053b3cbab468625806640af18"
+      }
+    ]
+  }
+}

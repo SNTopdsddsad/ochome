@@ -1,0 +1,9 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend conventions and quality entry point"}
+{"file": ".trellis/spec/frontend/theming.md", "reason": "Separate app chrome tokens from export template colors"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Draft preservation, image paths, button semantics and modal reuse"}
+{"file": ".trellis/spec/backend/role-custom-attributes.md", "reason": "Ordered attributes and persistence boundaries"}
+{"file": ".trellis/tasks/09-05-role-card-export/research/product-source.md", "reason": "Verified brief, roadmap and user-selected sharing scope"}
+{"file": ".trellis/tasks/09-05-role-card-export/research/export-pipeline.md", "reason": "Rendering, native delivery and primary-source technical research"}
+{"file": ".trellis/tasks/09-05-role-card-export/research/heic-sample.md", "reason": "Actual user HEIC orientation/codec verification and platform limitations"}
+{"file": ".trellis/tasks/09-05-role-card-export/research/setting-sheet-proof.md", "reason": "User rejected photo frame and chose structured fan character-sheet design; distinguish placeholders from actual output"}
+{"file": ".trellis/spec/frontend/role-card-export.md", "reason": "Implemented and verified selection, render, lifetime, native-save and font contracts"}

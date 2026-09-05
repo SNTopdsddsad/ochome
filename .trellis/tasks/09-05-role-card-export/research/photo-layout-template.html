@@ -1,0 +1,63 @@
+<div id="duyi-card-proof">
+  <style>
+    #duyi-card-proof { --proof-ink: light-dark(#2B2622,#EDE7DF); --proof-line: light-dark(#EAE3D9,#35302B); --proof-accent: light-dark(#C2402A,#D96C5A); color: var(--proof-ink); font: 400 14px/1.5 -apple-system,"PingFang SC",sans-serif; width: 100%; }
+    #duyi-card-proof * { box-sizing: border-box; }
+    #duyi-card-proof .proof-stage { width: min(100%,440px); margin: 0 auto; }
+    #duyi-card-proof .proof-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 14px; font-size: 12px; }
+    #duyi-card-proof .oc-cover { --cover-bg: #EFF1F6; --cover-ink: #20293B; --cover-muted: #5B667B; --cover-seal: #C2402A; color-scheme: light; aspect-ratio: 3 / 4; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: var(--cover-bg); color: var(--cover-ink); overflow: hidden; }
+    #duyi-card-proof .oc-art { flex: 1 1 0; min-height: 0; width: 100%; display: grid; place-items: center; }
+    #duyi-card-proof .oc-art img { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; min-height: 0; }
+    #duyi-card-proof .oc-card-caption { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 8px 2px; flex: 0 0 auto; min-height: 38px; }
+    #duyi-card-proof .oc-name-line { display: flex; align-items: baseline; gap: 14px; min-width: 0; flex-wrap: wrap; }
+    #duyi-card-proof .oc-name { font: 500 28px/1.2 "Songti SC","Noto Serif CJK SC",serif; color: var(--cover-ink); letter-spacing: 3px; margin: 0; }
+    #duyi-card-proof .oc-category { font-size: 11px; letter-spacing: 1.5px; color: var(--cover-muted); white-space: nowrap; }
+    #duyi-card-proof .oc-seal { display: inline-block; flex: 0 0 auto; color: var(--cover-seal); border: 1px solid var(--cover-seal); border-radius: 3px; padding: 3px 5px; font: 500 12px/1.3 "Songti SC",serif; transform: rotate(-4deg); }
+    #duyi-card-proof .oc-cover[data-order="name-first"] .oc-card-caption { order: -1; }
+    #duyi-card-proof .proof-choices { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 18px; }
+    #duyi-card-proof .proof-choice { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; font-size: 13px; cursor: pointer; }
+    #duyi-card-proof .proof-choice input { accent-color: var(--proof-accent); width: 16px; height: 16px; margin: 0; }
+    #duyi-card-proof .proof-note { margin: 6px 0 0; font-size: 12px; }
+    #duyi-card-proof [hidden] { display: none !important; }
+    @media (max-width:360px) { #duyi-card-proof .oc-cover { padding: 10px; gap: 8px; } #duyi-card-proof .oc-name { font-size: 24px; } #duyi-card-proof .oc-name-line { gap: 8px; } #duyi-card-proof .oc-category { letter-spacing: .5px; } #duyi-card-proof .oc-card-caption { padding: 0 4px 2px; } }
+    @media (pointer:coarse) { #duyi-card-proof .proof-choice { min-height: 44px; } }
+  </style>
+  <div class="proof-stage">
+    <div class="proof-meta"><span id="duyi-proof-title">度漪 · 主卡打样</span><span>3 : 4</span></div>
+    <section class="oc-cover" id="duyi-cover" aria-label="度漪角色卡，完整原图与独立下方名字栏" data-order="image-first">
+      <div class="oc-art"><img src="__OC_IMAGE_DATA_URL__" alt="用户提供的角色海报照片，深蓝背景、白色服装，保留原有文字和水印"></div>
+      <footer class="oc-card-caption">
+        <div class="oc-name-line"><h3 class="oc-name" id="duyi-cover-name">度漪</h3><span class="oc-category">ORIGINAL CHARACTER</span></div>
+        <span class="oc-seal">崽档</span>
+      </footer>
+    </section>
+    <div class="proof-choices"><label class="proof-choice"><input type="checkbox" id="duyi-show-name" checked>显示卡片名字</label></div>
+    <p class="proof-note">隐藏卡片名字不会遮盖原图里已有的文字。</p>
+  </div>
+  <script>
+    (() => {
+      const root = document.getElementById('duyi-card-proof');
+      const card = root.querySelector('#duyi-cover');
+      const showName = root.querySelector('#duyi-show-name');
+      const name = root.querySelector('#duyi-cover-name');
+      const state = { paper: 'cool', order: 'image-first', type: 'serif' };
+      function render() {
+        name.hidden = !showName.checked;
+        root.querySelector('#duyi-proof-title').textContent = showName.checked ? '度漪 · 主卡打样' : '主卡打样';
+        card.dataset.order = state.order;
+        card.style.setProperty('--cover-bg',state.paper === 'cool' ? '#EFF1F6' : '#F5F1EA');
+        card.style.setProperty('--cover-ink',state.paper === 'cool' ? '#20293B' : '#2B2622');
+        card.style.setProperty('--cover-muted',state.paper === 'cool' ? '#5B667B' : '#716254');
+        name.style.fontFamily = state.type === 'serif' ? '"Songti SC", "Noto Serif CJK SC", serif' : '"PingFang SC", sans-serif';
+        card.setAttribute('aria-label',showName.checked ? '度漪角色卡，完整原图与独立名字栏' : '角色卡，卡片名字已隐藏，原图内容保留');
+      }
+      showName.addEventListener('change',render);
+      render();
+      if (globalThis.Tweak) {
+        const tweak = new Tweak({container:card,onChange:render});
+        tweak.addSelect(state,'paper',{label:'卡纸色调',options:[{label:'冷白',value:'cool'},{label:'暖纸',value:'warm'}]});
+        tweak.addSelect(state,'order',{label:'名字位置',options:[{label:'图下',value:'image-first'},{label:'图上',value:'name-first'}]});
+        tweak.addSelect(state,'type',{label:'名字字体',options:[{label:'宋体',value:'serif'},{label:'黑体',value:'sans'}]});
+      }
+    })();
+  </script>
+</div>

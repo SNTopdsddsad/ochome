@@ -3,6 +3,7 @@
 > Visual contract for **崽档** App UI. Source note (v1, 2026-08-31, 已拍板): SiYuan `/需求讨论/OC 档案馆 · 立项调研与产品简报/主题色与设计 Token`.
 >
 > Export-card templates have their own palette and are **not** bound by this file.
+> The implemented character-sheet template is specified in [Role-card Export](./role-card-export.md).
 
 ---
 
@@ -127,12 +128,17 @@ Brand extras that ship with A (do not invent a second accent):
 | Buyout / member badge | `accentGold` |
 | Body / heading text | `ink` only — never accent paragraphs |
 | Delete / dangerous | ink button + second confirm; no red fill |
+| SnackBar feedback | floating `surface` + `border`, `ink` text, 16-radius corners; small accent check only for success |
 
 Secondary confirmations use the approved **创作便笺** layout in
 `ZaidangConfirmDialog`; see [Component Guidelines](./component-guidelines.md#reusable-confirmation-dialogs).
 The global `DialogThemeData` shares surface, transparent tint, 26-radius border
 and soft shadow with the separate history-content viewer. It does not change
 that viewer into a confirmation flow.
+
+Use `showZaidangSnackBar` for operation feedback. Its shared content and global
+SnackBar theme replace the default inverse gray strip; see the floating-feedback
+contract in [Component Guidelines](./component-guidelines.md#floating-feedback).
 
 ### Type (prep checklist, UI-related)
 

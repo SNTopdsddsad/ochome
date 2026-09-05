@@ -1,0 +1,135 @@
+<div id="zaidang-role-card-study">
+  <style>
+    #zaidang-role-card-study { --ui-bg: light-dark(#FAF6F0,#171412); --ui-surface: light-dark(#FFFFFF,#201C19); --ui-ink: light-dark(#2B2622,#EDE7DF); --ui-line: light-dark(#EAE3D9,#35302B); --ui-accent: light-dark(#C2402A,#D96C5A); font-family: -apple-system, "PingFang SC", sans-serif; color: var(--ui-ink); font-size: 14px; line-height: 1.5; width: 100%; }
+    #zaidang-role-card-study * { box-sizing: border-box; }
+    #zaidang-role-card-study .preview-shell { width: min(100%,440px); margin: 0 auto; }
+    #zaidang-role-card-study .preview-tabs { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
+    #zaidang-role-card-study .preview-tab { border: 1px solid var(--ui-line); background: var(--ui-surface); color: var(--ui-ink); border-radius: 12px; min-height: 40px; padding: 8px 16px; font: inherit; cursor: pointer; }
+    #zaidang-role-card-study .preview-tab[aria-selected="true"] { background: var(--ui-ink); color: var(--ui-surface); border-color: var(--ui-ink); }
+    #zaidang-role-card-study .preview-tab:disabled { opacity: .45; cursor: default; }
+    #zaidang-role-card-study .page-total { margin-left: auto; font-size: 12px; }
+    #zaidang-role-card-study .print-page { color-scheme: light; --print-bg: #F5F2EB; --print-paper: #FCFBF8; --print-ink: #292D2A; --print-muted: #62675F; --print-line: #DCDDD2; --print-accent: #526958; --print-seal: #C2402A; width: 100%; aspect-ratio: 3 / 4; padding: 22px; display: flex; flex-direction: column; gap: 14px; background: var(--print-bg); color: var(--print-ink); border: 1px solid var(--print-line); overflow: hidden; }
+    #zaidang-role-card-study .print-page p { margin: 0; }
+    #zaidang-role-card-study .print-eyebrow { color: var(--print-accent); font-size: 11px; letter-spacing: 2px; display: flex; align-items: center; gap: 9px; }
+    #zaidang-role-card-study .print-eyebrow::before { content: ''; width: 20px; height: 1px; background: var(--print-accent); }
+    #zaidang-role-card-study .character-name { font-family: "Songti SC", "Noto Serif CJK SC", serif; font-weight: 500; font-size: clamp(28px,6vw,42px); line-height: 1.2; margin: 6px 0 0; letter-spacing: 3px; }
+    #zaidang-role-card-study .art-placeholder { flex: 1 1 0; min-height: 80px; position: relative; background: var(--print-paper); border: 1px dashed var(--print-line); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; color: var(--print-muted); font-size: 13px; }
+    #zaidang-role-card-study .art-placeholder i, #zaidang-role-card-study .art-placeholder svg { width: 24px; height: 24px; stroke-width: 1; }
+    #zaidang-role-card-study .art-caption { font-size: 11px; letter-spacing: 2px; }
+    #zaidang-role-card-study .identity-line { display: flex; gap: 8px 12px; flex-wrap: wrap; font-size: 13px; }
+    #zaidang-role-card-study .identity-item { display: flex; gap: 6px; align-items: baseline; }
+    #zaidang-role-card-study .identity-label { color: var(--print-muted); font-size: 11px; }
+    #zaidang-role-card-study .print-footer { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-top: 10px; border-top: 1px solid var(--print-line); font-size: 11px; color: var(--print-muted); }
+    #zaidang-role-card-study .brand-stamp { border: 1px solid var(--print-seal); color: var(--print-seal); padding: 2px 4px; border-radius: 3px; font-family: "Songti SC", serif; font-size: 12px; font-weight: 500; transform: rotate(-4deg); }
+    #zaidang-role-card-study .page-count { letter-spacing: 2px; margin-right: 8px; }
+    #zaidang-role-card-study .continuation { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+    #zaidang-role-card-study .continued-name { font-family: "Songti SC", serif; font-size: 28px; letter-spacing: 2px; font-weight: 500; }
+    #zaidang-role-card-study .text-section { display: grid; gap: 9px; }
+    #zaidang-role-card-study .section-title { color: var(--print-accent); font-size: 12px; font-weight: 500; letter-spacing: 2px; }
+    #zaidang-role-card-study .section-body { font-size: 14px; line-height: 1.85; white-space: pre-line; }
+    #zaidang-role-card-study .choices { margin-top: 20px; }
+    #zaidang-role-card-study .choices-title { margin: 0 0 10px; font-size: 13px; font-weight: 500; }
+    #zaidang-role-card-study .field-choices { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+    #zaidang-role-card-study .field-choice { display: inline-flex; gap: 7px; align-items: center; min-height: 36px; cursor: pointer; font-size: 13px; }
+    #zaidang-role-card-study input { width: 16px; height: 16px; margin: 0; accent-color: var(--ui-accent); }
+    #zaidang-role-card-study .sample-label { font-size: 12px; margin: 14px 0 0; }
+    #zaidang-role-card-study [hidden] { display: none !important; }
+    @media (max-width:360px) {
+      #zaidang-role-card-study .print-page { padding: 17px; gap: 10px; }
+      #zaidang-role-card-study .character-name { font-size: 30px; }
+      #zaidang-role-card-study .section-body { font-size: 12px; line-height: 1.65; }
+      #zaidang-role-card-study .continuation { gap: 14px; }
+      #zaidang-role-card-study .identity-line { font-size: 12px; gap: 6px 9px; }
+      #zaidang-role-card-study .continued-name { font-size: 24px; }
+    }
+    @media (pointer:coarse) { #zaidang-role-card-study .field-choice { min-height: 44px; } #zaidang-role-card-study .preview-tab { min-height: 44px; } }
+  </style>
+  <div class="preview-shell">
+    <div class="preview-tabs" role="tablist" aria-label="角色卡页面">
+      <button type="button" class="preview-tab" id="role-main-tab" role="tab" aria-selected="true" aria-controls="role-main-page">主卡</button>
+      <button type="button" class="preview-tab" id="role-more-tab" role="tab" aria-selected="false" aria-controls="role-more-page">续页</button>
+      <span class="page-total" id="role-page-total" aria-live="polite">共 2 张</span>
+    </div>
+    <section class="print-page" id="role-main-page" role="tabpanel" aria-labelledby="role-main-tab">
+      <header>
+        <p class="print-eyebrow">ORIGINAL CHARACTER</p>
+        <h3 class="character-name" data-role-name>白鸦</h3>
+      </header>
+      <div class="art-placeholder" id="role-art-placeholder" role="img" aria-label="立绘位置示意，尚未使用角色图片">
+        <i data-lucide="image" aria-hidden="true"></i>
+        <span>你的立绘</span><span class="art-caption">构图占位</span>
+      </div>
+      <div class="identity-line" aria-label="选中的角色信息">
+        <span class="identity-item" data-field="race"><span class="identity-label">种族</span>羽族</span>
+        <span class="identity-item" data-field="occupation"><span class="identity-label">身份</span>信使</span>
+        <span class="identity-item" data-field="birthday"><span class="identity-label">生日</span>10.24</span>
+      </div>
+      <footer class="print-footer"><span><span class="page-count" id="main-counter">01 / 02</span><span id="role-more-hint">故事在下一页</span></span><span class="brand-stamp">崽档</span></footer>
+    </section>
+    <section class="print-page" id="role-more-page" role="tabpanel" aria-labelledby="role-more-tab" hidden>
+      <header><p class="print-eyebrow">CHARACTER NOTES</p><p class="continued-name" data-role-name>白鸦</p></header>
+      <div class="continuation">
+        <section class="text-section" data-field="description"><h4 class="section-title">角色设定</h4><p class="section-body">在山间送信的羽族信使，总把信件收在外套内侧。
+
+习惯在每次启程前确认天气，也会为沿途遇见的人带回一片羽毛。</p></section>
+        <section class="text-section" data-field="custom"><h4 class="section-title">随身物品</h4><p class="section-body">旧邮包、写了一半的地图，以及一枚朋友送的铜制书签。</p></section>
+      </div>
+      <footer class="print-footer"><span class="page-count">02 / 02</span><span class="brand-stamp">崽档</span></footer>
+    </section>
+    <div class="choices">
+      <p class="choices-title">试着选择要展示的内容</p>
+      <div class="field-choices">
+        <label class="field-choice"><input type="checkbox" data-toggle="name" checked>名字</label>
+        <label class="field-choice"><input type="checkbox" data-toggle="race" checked>种族</label>
+        <label class="field-choice"><input type="checkbox" data-toggle="occupation" checked>身份</label>
+        <label class="field-choice"><input type="checkbox" data-toggle="birthday" checked>生日</label>
+        <label class="field-choice"><input type="checkbox" data-toggle="description" checked>设定</label>
+        <label class="field-choice"><input type="checkbox" data-toggle="custom" checked>自定义属性</label>
+      </div>
+    </div>
+    <p class="sample-label">构图讨论稿 · 角色信息为示例，立绘待替换</p>
+  </div>
+  <script>
+    (() => {
+      const root = document.getElementById('zaidang-role-card-study');
+      const state = { page: 'main', paper: 'warm', type: 'literary' };
+      const $ = (id) => root.querySelector('#' + id);
+      const inputs = [...root.querySelectorAll('input[data-toggle]')];
+      const on = (key) => inputs.find((input) => input.dataset.toggle === key).checked;
+      function render() {
+        const hasMore = on('description') || on('custom');
+        if (!hasMore) state.page = 'main';
+        root.querySelectorAll('[data-field]').forEach((node) => { node.hidden = !on(node.dataset.field); });
+        root.querySelectorAll('[data-role-name]').forEach((node) => { node.hidden = !on('name'); });
+        $('role-main-page').hidden = state.page !== 'main';
+        $('role-more-page').hidden = state.page !== 'more';
+        $('role-main-tab').setAttribute('aria-selected', String(state.page === 'main'));
+        $('role-more-tab').setAttribute('aria-selected', String(state.page === 'more'));
+        $('role-more-tab').disabled = !hasMore;
+        $('role-page-total').textContent = hasMore ? '共 2 张' : '共 1 张';
+        $('main-counter').textContent = hasMore ? '01 / 02' : '01 / 01';
+        $('role-more-hint').hidden = !hasMore;
+        root.querySelectorAll('.print-page').forEach((page) => { page.style.setProperty('--print-bg', state.paper === 'warm' ? '#F5F2EB' : '#FAFAF7'); });
+        root.querySelectorAll('[data-role-name]').forEach((name) => { name.style.fontFamily = state.type === 'literary' ? '"Songti SC", "Noto Serif CJK SC", serif' : '"PingFang SC", sans-serif'; });
+      }
+      inputs.forEach((input) => input.addEventListener('change', render));
+      [['role-main-tab','main'],['role-more-tab','more']].forEach(([id,page]) => {
+        $(id).addEventListener('click', () => { state.page = page; render(); });
+        $(id).addEventListener('keydown', (event) => {
+          if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+          event.preventDefault();
+          if ($('role-more-tab').disabled) return;
+          state.page = event.key === 'Home' ? 'main' : event.key === 'End' ? 'more' : state.page === 'main' ? 'more' : 'main';
+          render();
+          $(state.page === 'main' ? 'role-main-tab' : 'role-more-tab').focus();
+        });
+      });
+      render();
+      if (globalThis.Tweak) {
+        const tweak = new Tweak({ container: root.querySelector('.preview-shell'), onChange: render });
+        tweak.addSelect(state,'paper',{label:'纸面色调',options:[{label:'暖纸',value:'warm'},{label:'素白',value:'white'}]});
+        tweak.addSelect(state,'type',{label:'名字排版',options:[{label:'文艺宋体',value:'literary'},{label:'清爽黑体',value:'clean'}]});
+      }
+    })();
+  </script>
+</div>

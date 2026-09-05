@@ -201,6 +201,10 @@ is documented in [Role Custom Attributes](../backend/role-custom-attributes.md).
 
 ## Reusable Confirmation Dialogs
 
+Character-card export has a separate renderer/preview/lifetime contract in
+[Role-card Export](./role-card-export.md). Do not render export images by
+capturing the editor or repurpose this confirmation dialog as an export view.
+
 Use `lib/widgets/zaidang_confirm_dialog.dart` for secondary confirmation. The
 user-approved OC direction is **创作便笺**: soft corners, a small tilted notebook
 mark and conversational copy. Avoid category mastheads, separate labeled target
@@ -272,3 +276,45 @@ layouts. Page integration tests keep actual draft/persistence assertions in
 boundary/inspection cleanup with a service fake in `backup_restore_page_test.dart`.
 Use stable action keys instead of binding tests to the old `TextButton` type or
 generic “删除”/“恢复” labels.
+
+## Floating Feedback
+
+Use `showZaidangSnackBar(context, message, tone: ...)` from
+`lib/widgets/zaidang_snack_bar.dart`. `ZaidangSnackBarTone` provides `info`,
+`success` and `error`. The separate `ZaidangSnackBarContent` Widget is reusable
+presentation; the helper owns queue, width and timing policy.
+
+- Keep the native `SnackBar`/`ScaffoldMessenger` for live-region announcements,
+  close control and lifecycle. Do not add a toast dependency or an unmanaged
+  Overlay/timer implementation for ordinary feedback.
+- The global theme uses a floating surface, ink text, thin token border,
+  16-radius corners and restrained elevation. On desktop the helper caps width
+  at 480; mobile uses native safe-area handling and 16-unit theme insets. Never
+  provide both `width` and `margin` to a SnackBar.
+- A success message has a small accent-colored check on a 10% tint; info and
+  errors use ink icons. Essential copy stays ink, without a second title or
+  a broad red/green background. Error/success comes from the actual operation,
+  not from parsing its message string. Share cancellation/unknown completion
+  remains silent.
+- Clear stale queued messages before showing the latest one. Short messages
+  normally last 4 seconds, errors 5; a caller can supply `duration`.
+- In Flutter 3.47, a close icon alone does not prevent timeout. Set `persist`
+  when `accessibleNavigation` is enabled or the scaled message needs scrolling.
+  The helper measures with the same text style/scaler and a conservative text
+  width; do not estimate fit by ASCII character count.
+- The full Text remains in the widget/semantics tree. Very long content scrolls
+  within a bounded height; never silently apply `maxLines`/ellipsis to the
+  notification. Persistent notices can be closed with the native close control.
+- Keep the original caller's mounted guards and business/error flow. A visual
+  feedback wrapper must not change save/restore timing or imply success before
+  the operation completes.
+
+`test/widgets/zaidang_snack_bar_test.dart` covers light/dark surface readability,
+close behavior, latest-message replacement, long text and accessible reading
+without timeout, and desktop width. Existing save/export/backup tests retain
+their data/result assertions.
+
+For visual QA, Flutter widget tests set `debugDisableShadows=true`, which draws
+physical elevation as an opaque outline. Temporarily use false when capturing
+runtime-like shadow appearance, then restore the binding's previous value;
+do not “fix” the production border based on that test-only outline.
