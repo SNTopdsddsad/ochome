@@ -12,7 +12,10 @@ import '../data/services/cover_image_picker.dart';
 import '../theme/zaidang_tokens.dart';
 import '../widgets/cover_file_view.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
+import '../widgets/zaidang_snack_bar.dart';
+import '../features/role_card/role_card_content.dart';
 import 'cover_preview_page.dart';
+import 'role_card_export_page.dart';
 import 'role_desc_history_page.dart';
 
 /// 新建 / 编辑 OC 人设。传入 [role] 即为编辑，字段按原文回填。
@@ -72,11 +75,48 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
 
   late String _coverImg;
   bool _saving = false;
+  bool _exportOpen = false;
 
   /// 立绘是否可读（路径非空且文件存在）。决定槽位是预览还是选图、是否出现「更换」。
   bool _coverReadable = false;
 
   bool get _isEditing => widget.role != null;
+
+  Future<void> _openRoleCardExport() async {
+    if (_saving || _exportOpen) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    _attributesKey.currentState?.cancelReorder();
+    final snapshot = RoleCardSnapshot(
+      name: _nameController.text,
+      sex: _sexController.text,
+      age: _ageController.text,
+      birthday: _birthdayController.text,
+      race: _raceController.text,
+      occupation: _occupationController.text,
+      desc: _descController.text,
+      coverImg: _coverImg,
+      customAttributes: [
+        for (final attribute in _attributes)
+          RoleCustomAttribute(
+            name: attribute.name.text,
+            content: attribute.content.text,
+          ),
+      ],
+    );
+    setState(() => _exportOpen = true);
+    try {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => RoleCardExportPage(
+            snapshot: snapshot,
+            supportDirectory: widget.supportDirectory,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _exportOpen = false);
+    }
+  }
 
   @override
   void initState() {
@@ -176,8 +216,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
     );
     if (!fieldsValid || !attributesValid) {
       if (!attributesValid) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('请填写每条自定义属性的名称')));
+        showZaidangSnackBar(context, '请填写每条自定义属性的名称');
       }
       return;
     }
@@ -236,8 +275,11 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('保存失败：$error')));
+        showZaidangSnackBar(
+          context,
+          '保存失败：$error',
+          tone: ZaidangSnackBarTone.error,
+        );
       }
     } finally {
       if (mounted) {
@@ -333,13 +375,31 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Text(
-                                  _isEditing ? '编辑角色' : '新建角色',
-                                  style: TextStyle(
-                                    color: tokens.ink,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                Wrap(
+                                  alignment: WrapAlignment.spaceBetween,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 16,
+                                  children: [
+                                    Text(
+                                      _isEditing ? '编辑角色' : '新建角色',
+                                      style: TextStyle(
+                                        color: tokens.ink,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    TextButton.icon(
+                                      key: const Key('role-card-export'),
+                                      onPressed: _saving || _exportOpen
+                                          ? null
+                                          : _openRoleCardExport,
+                                      icon: const Icon(
+                                        Icons.style_outlined,
+                                        size: 18,
+                                      ),
+                                      label: const Text('导出角色卡'),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(height: 16),
                                 _buildBasicCard(),
