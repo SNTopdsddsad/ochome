@@ -19,7 +19,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   /// 表结构版本。增删列后必须递增并补 migration。
-  static const int currentSchemaVersion = 6;
+  static const int currentSchemaVersion = 7;
 
   static const String sqliteFileName = 'ochome.sqlite';
 
@@ -42,8 +42,13 @@ class AppDatabase extends _$AppDatabase {
         await migrator.deleteTable('role');
         await migrator.createTable(roles);
       } else if (from < 4) {
-        await migrator.addColumn(roles, roles.age);
-        await migrator.addColumn(roles, roles.race);
+        // 已有行需要空文本初值，SQLite 不允许直接添加无默认值的 NOT NULL 列。
+        await customStatement(
+          "ALTER TABLE role ADD COLUMN age TEXT NOT NULL DEFAULT ''",
+        );
+        await customStatement(
+          "ALTER TABLE role ADD COLUMN race TEXT NOT NULL DEFAULT ''",
+        );
       }
       if (from < 5) {
         await migrator.createTable(roleDescRevisions);
@@ -56,6 +61,10 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 6) {
         await _rewriteCoverImgToRelative();
+      }
+      // 更早的重建分支已经使用最新表定义，不能重复添加这一列。
+      if (from >= 3 && from < 7) {
+        await migrator.addColumn(roles, roles.customAttributes);
       }
     },
     beforeOpen: (details) async {

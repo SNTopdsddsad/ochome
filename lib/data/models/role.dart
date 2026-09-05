@@ -1,3 +1,5 @@
+import 'role_custom_attribute.dart';
+
 /// 业务层 OC 人设。
 ///
 /// 与 Drift 生成的 `Role` 行类型同名，因此仓库实现里通过
@@ -13,6 +15,7 @@ class Role {
     required this.occupation,
     required this.desc,
     required this.coverImg,
+    this.customAttributes = const [],
   });
 
   /// 数据库主键，插入后由 Drift 回填。
@@ -42,6 +45,9 @@ class Role {
   /// 立绘路径。
   final String coverImg;
 
+  /// 当前角色自定义的属性，按展示顺序排列；仓库和表单提供不可变快照。
+  final List<RoleCustomAttribute> customAttributes;
+
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
@@ -54,7 +60,20 @@ class Role {
             other.race == race &&
             other.occupation == occupation &&
             other.desc == desc &&
-            other.coverImg == coverImg;
+            other.coverImg == coverImg &&
+            _sameAttributes(other.customAttributes);
+  }
+
+  bool _sameAttributes(List<RoleCustomAttribute> other) {
+    if (other.length != customAttributes.length) {
+      return false;
+    }
+    for (var index = 0; index < customAttributes.length; index++) {
+      if (other[index] != customAttributes[index]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @override
@@ -68,5 +87,6 @@ class Role {
     occupation,
     desc,
     coverImg,
+    Object.hashAll(customAttributes),
   );
 }

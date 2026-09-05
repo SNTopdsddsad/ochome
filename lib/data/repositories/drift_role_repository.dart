@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../database/app_database.dart' as db;
 import '../models/role.dart';
+import '../models/role_custom_attribute.dart';
 import '../models/role_desc_revision.dart';
 import 'role_repository.dart';
 
@@ -37,7 +40,9 @@ class DriftRoleRepository implements RoleRepository {
     required String occupation,
     required String desc,
     required String coverImg,
+    List<RoleCustomAttribute> customAttributes = const [],
   }) async {
+    final encodedAttributes = _encodeAttributes(customAttributes);
     return _db.transaction(() async {
       // insertReturning 可拿到自增 id 及写入后的完整行。
       final row = await _db
@@ -52,19 +57,17 @@ class DriftRoleRepository implements RoleRepository {
               occupation: occupation,
               desc: desc,
               coverImg: coverImg,
+              customAttributes: Value(encodedAttributes),
             ),
           );
-      await _appendDescRevision(
-        roleId: row.id,
-        previous: null,
-        next: desc,
-      );
+      await _appendDescRevision(roleId: row.id, previous: null, next: desc);
       return _toDomain(row);
     });
   }
 
   @override
   Future<Role> update(Role role) async {
+    final encodedAttributes = _encodeAttributes(role.customAttributes);
     return _db.transaction(() async {
       final existing = await getById(role.id);
       if (existing == null) {
@@ -83,6 +86,7 @@ class DriftRoleRepository implements RoleRepository {
               occupation: Value(role.occupation),
               desc: Value(role.desc),
               coverImg: Value(role.coverImg),
+              customAttributes: Value(encodedAttributes),
             ),
           );
       await _appendDescRevision(
@@ -114,9 +118,9 @@ class DriftRoleRepository implements RoleRepository {
 
   @override
   Stream<List<RoleDescRevision>> watchDescRevisions(int roleId) {
-    return _descRevisionQuery(
-      roleId,
-    ).watch().map((rows) => rows.map(_toDescRevision).toList());
+    return _descRevisionQuery(roleId)
+        .watch()
+        .map((rows) => rows.map(_toDescRevision).toList());
   }
 
   @override
@@ -135,10 +139,9 @@ class DriftRoleRepository implements RoleRepository {
       if (role == null) {
         throw StateError('Role $roleId not found');
       }
-      final row =
-          await (_db.select(_db.roleDescRevisions)
-                ..where((t) => t.id.equals(revisionId)))
-              .getSingleOrNull();
+      final row = await (_db.select(
+        _db.roleDescRevisions,
+      )..where((t) => t.id.equals(revisionId))).getSingleOrNull();
       if (row == null || row.roleId != roleId) {
         throw StateError('Desc revision $revisionId not found');
       }
@@ -156,6 +159,7 @@ class DriftRoleRepository implements RoleRepository {
           occupation: role.occupation,
           desc: row.content,
           coverImg: role.coverImg,
+          customAttributes: role.customAttributes,
         ),
       );
     });
@@ -204,6 +208,44 @@ class DriftRoleRepository implements RoleRepository {
       occupation: row.occupation,
       desc: row.desc,
       coverImg: row.coverImg,
+      customAttributes: _decodeAttributes(row.customAttributes),
+    );
+  }
+
+  String _encodeAttributes(List<RoleCustomAttribute> attributes) {
+    return jsonEncode(
+      attributes.map((attribute) {
+        final name = attribute.name.trim();
+        if (name.isEmpty) {
+          throw ArgumentError.value(attribute.name, 'name', '属性名称不能为空');
+        }
+        return {'name': name, 'content': attribute.content.trim()};
+      }).toList(),
+    );
+  }
+
+  List<RoleCustomAttribute> _decodeAttributes(String encoded) {
+    final decoded = jsonDecode(encoded);
+    if (decoded is! List) {
+      throw const FormatException('自定义属性必须是数组');
+    }
+    return List<RoleCustomAttribute>.unmodifiable(
+      decoded.map((item) {
+        if (item is! Map<String, dynamic> ||
+            item.length != 2 ||
+            item['name'] is! String ||
+            item['content'] is! String) {
+          throw const FormatException('自定义属性必须包含文本名称和内容');
+        }
+        final name = item['name'] as String;
+        if (name.trim().isEmpty) {
+          throw const FormatException('自定义属性名称不能为空');
+        }
+        return RoleCustomAttribute(
+          name: name,
+          content: item['content'] as String,
+        );
+      }),
     );
   }
 

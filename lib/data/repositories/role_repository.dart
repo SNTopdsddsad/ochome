@@ -1,4 +1,5 @@
 import '../models/role.dart';
+import '../models/role_custom_attribute.dart';
 import '../models/role_desc_revision.dart';
 
 /// 角色仓储接口。
@@ -22,6 +23,7 @@ abstract interface class RoleRepository {
     required String occupation,
     required String desc,
     required String coverImg,
+    List<RoleCustomAttribute> customAttributes = const [],
   });
 
   /// 按 [Role.id] 全量更新。

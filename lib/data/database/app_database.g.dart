@@ -99,6 +99,18 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _customAttributesMeta = const VerificationMeta(
+    'customAttributes',
+  );
+  @override
+  late final GeneratedColumn<String> customAttributes = GeneratedColumn<String>(
+    'custom_attributes',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -110,6 +122,7 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
     occupation,
     desc,
     coverImg,
+    customAttributes,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -190,6 +203,15 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
     } else if (isInserting) {
       context.missing(_coverImgMeta);
     }
+    if (data.containsKey('custom_attributes')) {
+      context.handle(
+        _customAttributesMeta,
+        customAttributes.isAcceptableOrUnknown(
+          data['custom_attributes']!,
+          _customAttributesMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -235,6 +257,10 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
         DriftSqlType.string,
         data['${effectivePrefix}coverimg'],
       )!,
+      customAttributes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}custom_attributes'],
+      )!,
     );
   }
 
@@ -262,6 +288,9 @@ class Role extends DataClass implements Insertable<Role> {
 
   /// 封面图路径或 URL，列名与需求一致为 coverimg。
   final String coverImg;
+
+  /// 按展示顺序存储名称和内容，由仓库负责 JSON 编解码。
+  final String customAttributes;
   const Role({
     required this.id,
     required this.name,
@@ -272,6 +301,7 @@ class Role extends DataClass implements Insertable<Role> {
     required this.occupation,
     required this.desc,
     required this.coverImg,
+    required this.customAttributes,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -285,6 +315,7 @@ class Role extends DataClass implements Insertable<Role> {
     map['occupation'] = Variable<String>(occupation);
     map['desc'] = Variable<String>(desc);
     map['coverimg'] = Variable<String>(coverImg);
+    map['custom_attributes'] = Variable<String>(customAttributes);
     return map;
   }
 
@@ -299,6 +330,7 @@ class Role extends DataClass implements Insertable<Role> {
       occupation: Value(occupation),
       desc: Value(desc),
       coverImg: Value(coverImg),
+      customAttributes: Value(customAttributes),
     );
   }
 
@@ -317,6 +349,7 @@ class Role extends DataClass implements Insertable<Role> {
       occupation: serializer.fromJson<String>(json['occupation']),
       desc: serializer.fromJson<String>(json['desc']),
       coverImg: serializer.fromJson<String>(json['coverImg']),
+      customAttributes: serializer.fromJson<String>(json['customAttributes']),
     );
   }
   @override
@@ -332,6 +365,7 @@ class Role extends DataClass implements Insertable<Role> {
       'occupation': serializer.toJson<String>(occupation),
       'desc': serializer.toJson<String>(desc),
       'coverImg': serializer.toJson<String>(coverImg),
+      'customAttributes': serializer.toJson<String>(customAttributes),
     };
   }
 
@@ -345,6 +379,7 @@ class Role extends DataClass implements Insertable<Role> {
     String? occupation,
     String? desc,
     String? coverImg,
+    String? customAttributes,
   }) => Role(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -355,6 +390,7 @@ class Role extends DataClass implements Insertable<Role> {
     occupation: occupation ?? this.occupation,
     desc: desc ?? this.desc,
     coverImg: coverImg ?? this.coverImg,
+    customAttributes: customAttributes ?? this.customAttributes,
   );
   Role copyWithCompanion(RolesCompanion data) {
     return Role(
@@ -369,6 +405,9 @@ class Role extends DataClass implements Insertable<Role> {
           : this.occupation,
       desc: data.desc.present ? data.desc.value : this.desc,
       coverImg: data.coverImg.present ? data.coverImg.value : this.coverImg,
+      customAttributes: data.customAttributes.present
+          ? data.customAttributes.value
+          : this.customAttributes,
     );
   }
 
@@ -383,7 +422,8 @@ class Role extends DataClass implements Insertable<Role> {
           ..write('race: $race, ')
           ..write('occupation: $occupation, ')
           ..write('desc: $desc, ')
-          ..write('coverImg: $coverImg')
+          ..write('coverImg: $coverImg, ')
+          ..write('customAttributes: $customAttributes')
           ..write(')'))
         .toString();
   }
@@ -399,6 +439,7 @@ class Role extends DataClass implements Insertable<Role> {
     occupation,
     desc,
     coverImg,
+    customAttributes,
   );
   @override
   bool operator ==(Object other) =>
@@ -412,7 +453,8 @@ class Role extends DataClass implements Insertable<Role> {
           other.race == this.race &&
           other.occupation == this.occupation &&
           other.desc == this.desc &&
-          other.coverImg == this.coverImg);
+          other.coverImg == this.coverImg &&
+          other.customAttributes == this.customAttributes);
 }
 
 class RolesCompanion extends UpdateCompanion<Role> {
@@ -425,6 +467,7 @@ class RolesCompanion extends UpdateCompanion<Role> {
   final Value<String> occupation;
   final Value<String> desc;
   final Value<String> coverImg;
+  final Value<String> customAttributes;
   const RolesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -435,6 +478,7 @@ class RolesCompanion extends UpdateCompanion<Role> {
     this.occupation = const Value.absent(),
     this.desc = const Value.absent(),
     this.coverImg = const Value.absent(),
+    this.customAttributes = const Value.absent(),
   });
   RolesCompanion.insert({
     this.id = const Value.absent(),
@@ -446,6 +490,7 @@ class RolesCompanion extends UpdateCompanion<Role> {
     required String occupation,
     required String desc,
     required String coverImg,
+    this.customAttributes = const Value.absent(),
   }) : name = Value(name),
        sex = Value(sex),
        age = Value(age),
@@ -464,6 +509,7 @@ class RolesCompanion extends UpdateCompanion<Role> {
     Expression<String>? occupation,
     Expression<String>? desc,
     Expression<String>? coverImg,
+    Expression<String>? customAttributes,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -475,6 +521,7 @@ class RolesCompanion extends UpdateCompanion<Role> {
       if (occupation != null) 'occupation': occupation,
       if (desc != null) 'desc': desc,
       if (coverImg != null) 'coverimg': coverImg,
+      if (customAttributes != null) 'custom_attributes': customAttributes,
     });
   }
 
@@ -488,6 +535,7 @@ class RolesCompanion extends UpdateCompanion<Role> {
     Value<String>? occupation,
     Value<String>? desc,
     Value<String>? coverImg,
+    Value<String>? customAttributes,
   }) {
     return RolesCompanion(
       id: id ?? this.id,
@@ -499,6 +547,7 @@ class RolesCompanion extends UpdateCompanion<Role> {
       occupation: occupation ?? this.occupation,
       desc: desc ?? this.desc,
       coverImg: coverImg ?? this.coverImg,
+      customAttributes: customAttributes ?? this.customAttributes,
     );
   }
 
@@ -532,6 +581,9 @@ class RolesCompanion extends UpdateCompanion<Role> {
     if (coverImg.present) {
       map['coverimg'] = Variable<String>(coverImg.value);
     }
+    if (customAttributes.present) {
+      map['custom_attributes'] = Variable<String>(customAttributes.value);
+    }
     return map;
   }
 
@@ -546,7 +598,8 @@ class RolesCompanion extends UpdateCompanion<Role> {
           ..write('race: $race, ')
           ..write('occupation: $occupation, ')
           ..write('desc: $desc, ')
-          ..write('coverImg: $coverImg')
+          ..write('coverImg: $coverImg, ')
+          ..write('customAttributes: $customAttributes')
           ..write(')'))
         .toString();
   }
@@ -890,6 +943,7 @@ typedef $$RolesTableCreateCompanionBuilder = RolesCompanion Function({
   required String occupation,
   required String desc,
   required String coverImg,
+  Value<String> customAttributes,
 });
 typedef $$RolesTableUpdateCompanionBuilder = RolesCompanion Function({
   Value<int> id,
@@ -901,6 +955,7 @@ typedef $$RolesTableUpdateCompanionBuilder = RolesCompanion Function({
   Value<String> occupation,
   Value<String> desc,
   Value<String> coverImg,
+  Value<String> customAttributes,
 });
 
 final class $$RolesTableReferences
@@ -979,6 +1034,11 @@ class $$RolesTableFilterComposer extends Composer<_$AppDatabase, $RolesTable> {
 
   ColumnFilters<String> get coverImg => $composableBuilder(
     column: $table.coverImg,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customAttributes => $composableBuilder(
+    column: $table.customAttributes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1061,6 +1121,11 @@ class $$RolesTableOrderingComposer
     column: $table.coverImg,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get customAttributes => $composableBuilder(
+    column: $table.customAttributes,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$RolesTableAnnotationComposer
@@ -1100,6 +1165,11 @@ class $$RolesTableAnnotationComposer
 
   GeneratedColumn<String> get coverImg =>
       $composableBuilder(column: $table.coverImg, builder: (column) => column);
+
+  GeneratedColumn<String> get customAttributes => $composableBuilder(
+    column: $table.customAttributes,
+    builder: (column) => column,
+  );
 
   Expression<T> roleDescRevisionsRefs<T extends Object>(
     Expression<T> Function($$RoleDescRevisionsTableAnnotationComposer a) f,
@@ -1165,6 +1235,7 @@ class $$RolesTableTableManager
                 Value<String> occupation = const Value.absent(),
                 Value<String> desc = const Value.absent(),
                 Value<String> coverImg = const Value.absent(),
+                Value<String> customAttributes = const Value.absent(),
               }) => RolesCompanion(
                 id: id,
                 name: name,
@@ -1175,6 +1246,7 @@ class $$RolesTableTableManager
                 occupation: occupation,
                 desc: desc,
                 coverImg: coverImg,
+                customAttributes: customAttributes,
               ),
           createCompanionCallback:
               ({
@@ -1187,6 +1259,7 @@ class $$RolesTableTableManager
                 required String occupation,
                 required String desc,
                 required String coverImg,
+                Value<String> customAttributes = const Value.absent(),
               }) => RolesCompanion.insert(
                 id: id,
                 name: name,
@@ -1197,6 +1270,7 @@ class $$RolesTableTableManager
                 occupation: occupation,
                 desc: desc,
                 coverImg: coverImg,
+                customAttributes: customAttributes,
               ),
           withReferenceMapper: (p0) => p0
               .map(

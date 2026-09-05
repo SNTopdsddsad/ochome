@@ -24,4 +24,7 @@ class Roles extends Table {
 
   /// 封面图路径或 URL，列名与需求一致为 coverimg。
   TextColumn get coverImg => text().named('coverimg')();
+
+  /// 按展示顺序存储名称和内容，由仓库负责 JSON 编解码。
+  TextColumn get customAttributes => text().withDefault(const Constant('[]'))();
 }

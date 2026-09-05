@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/models/role.dart';
+import '../data/models/role_custom_attribute.dart';
 import '../data/providers/role_repository_provider.dart';
 import '../data/services/cover_image_picker.dart';
 import '../theme/zaidang_tokens.dart';
@@ -63,6 +64,11 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
   late final TextEditingController _occupationController;
   late final TextEditingController _descController;
 
+  final _scrollController = ScrollController();
+  final _attributesKey = GlobalKey<SliverReorderableListState>();
+  final _attributes = <_CustomAttributeDraft>[];
+  bool _validateAttributes = false;
+
   late String _coverImg;
   bool _saving = false;
 
@@ -83,6 +89,9 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
     _occupationController = TextEditingController(text: role?.occupation ?? '');
     _descController = TextEditingController(text: role?.desc ?? '');
     _coverImg = role?.coverImg ?? '';
+    _attributes.addAll(
+      (role?.customAttributes ?? []).map(_CustomAttributeDraft.fromAttribute),
+    );
     _nameController.addListener(_onCallingCardChanged);
     _raceController.addListener(_onCallingCardChanged);
     _occupationController.addListener(_onCallingCardChanged);
@@ -107,6 +116,10 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
     _raceController.dispose();
     _occupationController.dispose();
     _descController.dispose();
+    _scrollController.dispose();
+    for (final attribute in _attributes) {
+      attribute.dispose();
+    }
     super.dispose();
   }
 
@@ -149,9 +162,26 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate() || _saving) {
+    if (_saving) {
       return;
     }
+    setState(() => _validateAttributes = true);
+    // Sliver rows can be offscreen and unmounted, so validate the entire draft.
+    final fieldsValid =
+        _formKey.currentState!.validate() &&
+        _nameController.text.trim().isNotEmpty;
+    final attributesValid = _attributes.every(
+      (attribute) => attribute.name.text.trim().isNotEmpty,
+    );
+    if (!fieldsValid || !attributesValid) {
+      if (!attributesValid) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('请填写每条自定义属性的名称')));
+      }
+      return;
+    }
+    _attributesKey.currentState?.cancelReorder();
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
       _saving = true;
     });
@@ -164,6 +194,14 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
       final race = _raceController.text.trim();
       final occupation = _occupationController.text.trim();
       final desc = _descController.text.trim();
+      final customAttributes = List<RoleCustomAttribute>.unmodifiable(
+        _attributes.map(
+          (attribute) => RoleCustomAttribute(
+            name: attribute.name.text.trim(),
+            content: attribute.content.text.trim(),
+          ),
+        ),
+      );
       if (_isEditing) {
         await repository.update(
           Role(
@@ -176,6 +214,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
             occupation: occupation,
             desc: desc,
             coverImg: _coverImg,
+            customAttributes: customAttributes,
           ),
         );
       } else {
@@ -188,6 +227,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
           occupation: occupation,
           desc: desc,
           coverImg: _coverImg,
+          customAttributes: customAttributes,
         );
       }
       if (mounted) {
@@ -209,7 +249,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
 
   Future<void> _openDescHistory() async {
     final role = widget.role;
-    if (role == null) {
+    if (role == null || _saving) {
       return;
     }
     final restored = await Navigator.of(context).push<String>(
@@ -255,6 +295,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
                 removeLeft: true,
                 removeRight: true,
                 child: CustomScrollView(
+                  controller: _scrollController,
                   physics: const BouncingScrollPhysics(
                     parent: AlwaysScrollableScrollPhysics(),
                   ),
@@ -270,121 +311,49 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
                       onPick: _pickCover,
                       onPreview: _saving ? null : _openCoverPreview,
                     ),
-                    SliverToBoxAdapter(
-                      child: ColoredBox(
-                        color: tokens.bg,
-                        child: Padding(
-                          padding: EdgeInsets.only(bottom: 32 + bottomInset),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                maxWidth: _contentMaxWidth,
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  _cardInset,
-                                  8,
-                                  _cardInset,
-                                  0,
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        _cardInset +
+                            ((MediaQuery.sizeOf(context).width -
+                                        _contentMaxWidth)
+                                    .clamp(0, double.infinity) /
+                                2),
+                        8,
+                        _cardInset +
+                            ((MediaQuery.sizeOf(context).width -
+                                        _contentMaxWidth)
+                                    .clamp(0, double.infinity) /
+                                2),
+                        32 + bottomInset,
+                      ),
+                      sliver: SliverMainAxisGroup(
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  _isEditing ? '编辑角色' : '新建角色',
+                                  style: TextStyle(
+                                    color: tokens.ink,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Text(
-                                      _isEditing ? '编辑角色' : '新建角色',
-                                      style: TextStyle(
-                                        color: tokens.ink,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _ArchiveCard(
-                                      key: const Key('role-create-basic-card'),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          const _SectionLabel('基本信息'),
-                                          _field(
-                                            controller: _nameController,
-                                            label: '名字',
-                                            hint: '角色怎么称呼',
-                                            validator: (value) {
-                                              if (value == null ||
-                                                  value.trim().isEmpty) {
-                                                return '请填写名字';
-                                              }
-                                              return null;
-                                            },
-                                          ),
-                                          const SizedBox(height: 12),
-                                          _FieldRow(
-                                            left: _field(
-                                              controller: _sexController,
-                                              label: '性别',
-                                              hint: '女 / 非二元 / 不明',
-                                            ),
-                                            right: _field(
-                                              controller: _ageController,
-                                              label: '年龄',
-                                              hint: '十七、外表 20、不详',
-                                            ),
-                                          ),
-                                          const SizedBox(height: 12),
-                                          _field(
-                                            controller: _birthdayController,
-                                            label: '生日',
-                                            hint: '三月三日、第三历春、未知',
-                                          ),
-                                          const SizedBox(height: 12),
-                                          _FieldRow(
-                                            left: _field(
-                                              controller: _raceController,
-                                              label: '种族',
-                                              hint: '人类、兽人、吸血鬼',
-                                            ),
-                                            right: _field(
-                                              controller: _occupationController,
-                                              label: '身份',
-                                              hint: '学生、骑士、无所属',
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _ArchiveCard(
-                                      key: const Key('role-create-desc-card'),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          _DescSectionHeader(
-                                            showHistory: _isEditing,
-                                            onHistoryTap: _openDescHistory,
-                                          ),
-                                          _field(
-                                            controller: _descController,
-                                            hint: '性格、外貌、背景都可以写在这里',
-                                            minLines: 5,
-                                            maxLines: 10,
-                                            textInputAction:
-                                                TextInputAction.newline,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                                const SizedBox(height: 16),
+                                _buildBasicCard(),
+                                const SizedBox(height: 16),
+                              ],
                             ),
                           ),
-                        ),
+                          _buildCustomAttributes(tokens),
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 16),
+                              child: _buildDescCard(),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -414,6 +383,316 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBasicCard() => _ArchiveCard(
+    key: const Key('role-create-basic-card'),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _SectionLabel('基本信息'),
+        _field(
+          controller: _nameController,
+          label: '名字',
+          hint: '角色怎么称呼',
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return '请填写名字';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 12),
+        _FieldRow(
+          left: _field(
+            controller: _sexController,
+            label: '性别',
+            hint: '女 / 非二元 / 不明',
+          ),
+          right: _field(
+            controller: _ageController,
+            label: '年龄',
+            hint: '十七、外表 20、不详',
+          ),
+        ),
+        const SizedBox(height: 12),
+        _field(
+          controller: _birthdayController,
+          label: '生日',
+          hint: '三月三日、第三历春、未知',
+        ),
+        const SizedBox(height: 12),
+        _FieldRow(
+          left: _field(
+            controller: _raceController,
+            label: '种族',
+            hint: '人类、兽人、吸血鬼',
+          ),
+          right: _field(
+            controller: _occupationController,
+            label: '身份',
+            hint: '学生、骑士、无所属',
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _buildDescCard() => _ArchiveCard(
+    key: const Key('role-create-desc-card'),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _DescSectionHeader(
+          showHistory: _isEditing,
+          onHistoryTap: _saving ? null : _openDescHistory,
+        ),
+        _field(
+          controller: _descController,
+          hint: '性格、外貌、背景都可以写在这里',
+          minLines: 5,
+          maxLines: 10,
+          textInputAction: TextInputAction.newline,
+        ),
+      ],
+    ),
+  );
+
+  void _addAttribute() {
+    if (_saving) return;
+    final attribute = _CustomAttributeDraft();
+    setState(() => _attributes.add(attribute));
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || _saving || !_attributes.contains(attribute)) return;
+      // Build the newly appended sliver row before asking its field for focus.
+      await _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+      if (!mounted || _saving || !_attributes.contains(attribute)) return;
+      attribute.nameFocus.requestFocus();
+    });
+  }
+
+  void _moveAttribute(_CustomAttributeDraft attribute, int offset) {
+    if (_saving) return;
+    final index = _attributes.indexOf(attribute);
+    final destination = index + offset;
+    if (index < 0 || destination < 0 || destination >= _attributes.length) {
+      return;
+    }
+    _attributesKey.currentState?.cancelReorder();
+    setState(() {
+      _attributes.removeAt(index);
+      _attributes.insert(destination, attribute);
+    });
+  }
+
+  Future<void> _removeAttribute(_CustomAttributeDraft attribute) async {
+    if (_saving || !_attributes.contains(attribute)) return;
+    final tokens = ZaidangTokens.of(context);
+    final name = attribute.name.text.trim();
+    final remove = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除自定义属性'),
+        content: Text(
+          name.isEmpty ? '删除这条未命名属性？保存角色后生效。' : '删除“$name”？保存角色后生效。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: tokens.ink),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (remove != true ||
+        !mounted ||
+        _saving ||
+        !_attributes.contains(attribute)) {
+      return;
+    }
+    _attributesKey.currentState?.cancelReorder();
+    setState(() => _attributes.remove(attribute));
+    // The old TextFields must unmount before their controllers are disposed.
+    WidgetsBinding.instance.addPostFrameCallback((_) => attribute.dispose());
+  }
+
+  Widget _addAttributeButton() => TextButton.icon(
+    key: const Key('role-custom-attribute-add'),
+    onPressed: _saving ? null : _addAttribute,
+    icon: const Icon(Icons.add, size: 20),
+    label: const Text('添加自定义属性'),
+  );
+
+  Widget _buildCustomAttributes(ZaidangTokens tokens) {
+    if (_attributes.isEmpty) {
+      return SliverToBoxAdapter(child: _addAttributeButton());
+    }
+    return DecoratedSliver(
+      key: const Key('role-create-custom-attributes-card'),
+      decoration: _archiveCardDecoration(tokens),
+      sliver: SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        sliver: SliverMainAxisGroup(
+          slivers: [
+            const SliverToBoxAdapter(child: _SectionLabel('自定义属性')),
+            SliverReorderableList(
+              key: _attributesKey,
+              itemCount: _attributes.length,
+              findChildIndexCallback: (key) {
+                final draftKey = key is GlobalObjectKey ? key.value : key;
+                final index = _attributes.indexWhere(
+                  (attribute) => attribute.key == draftKey,
+                );
+                return index < 0 ? null : index;
+              },
+              onReorderItem: (oldIndex, newIndex) {
+                if (_saving) return;
+                setState(
+                  () => _attributes.insert(
+                    newIndex,
+                    _attributes.removeAt(oldIndex),
+                  ),
+                );
+              },
+              onReorderStart: (_) =>
+                  FocusManager.instance.primaryFocus?.unfocus(),
+              proxyDecorator: (child, index, animation) => Material(
+                color: tokens.surface,
+                elevation: 4,
+                borderRadius: BorderRadius.circular(8),
+                child: child,
+              ),
+              itemBuilder: (context, index) {
+                final attribute = _attributes[index];
+                final number = index + 1;
+                return Padding(
+                  key: attribute.key,
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '属性 $number',
+                              style: TextStyle(
+                                color: tokens.inkSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          ReorderableDragStartListener(
+                            index: index,
+                            enabled: !_saving,
+                            child: Semantics(
+                              label: '拖动第 $number 条属性排序',
+                              enabled: !_saving,
+                              child: Tooltip(
+                                message: '拖动排序',
+                                excludeFromSemantics: true,
+                                child: SizedBox.square(
+                                  dimension: 48,
+                                  child: Icon(
+                                    Icons.drag_handle,
+                                    color: _saving
+                                        ? tokens.inkSecondary
+                                        : tokens.ink,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: '上移第 $number 条属性',
+                            onPressed: _saving || index == 0
+                                ? null
+                                : () => _moveAttribute(attribute, -1),
+                            icon: Icon(
+                              Icons.arrow_upward,
+                              size: 20,
+                              semanticLabel: '上移第 $number 条属性',
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: '下移第 $number 条属性',
+                            onPressed:
+                                _saving || index == _attributes.length - 1
+                                ? null
+                                : () => _moveAttribute(attribute, 1),
+                            icon: Icon(
+                              Icons.arrow_downward,
+                              size: 20,
+                              semanticLabel: '下移第 $number 条属性',
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: '删除第 $number 条属性',
+                            onPressed: _saving
+                                ? null
+                                : () => _removeAttribute(attribute),
+                            color: tokens.ink,
+                            icon: Icon(
+                              Icons.delete_outline,
+                              size: 20,
+                              semanticLabel: '删除第 $number 条属性',
+                            ),
+                          ),
+                        ],
+                      ),
+                      TextFormField(
+                        controller: attribute.name,
+                        focusNode: attribute.nameFocus,
+                        enabled: !_saving,
+                        decoration: const InputDecoration(
+                          labelText: '属性名称',
+                          hintText: '例如：魔法属性',
+                        ),
+                        textInputAction: TextInputAction.next,
+                        scrollPadding: const EdgeInsets.all(80),
+                        autovalidateMode: _validateAttributes
+                            ? AutovalidateMode.always
+                            : AutovalidateMode.disabled,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? '请填写属性名称'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: attribute.content,
+                        enabled: !_saving,
+                        decoration: const InputDecoration(
+                          labelText: '属性内容',
+                          hintText: '可以分行填写，也可以暂时留空',
+                        ),
+                        minLines: 2,
+                        maxLines: 6,
+                        keyboardType: TextInputType.multiline,
+                        textInputAction: TextInputAction.newline,
+                        scrollPadding: const EdgeInsets.all(80),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            SliverToBoxAdapter(child: _addAttributeButton()),
+          ],
         ),
       ),
     );
@@ -876,11 +1155,7 @@ class _ArchiveCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = ZaidangTokens.of(context);
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: tokens.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: tokens.border),
-      ),
+      decoration: _archiveCardDecoration(tokens),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
         child: child,
@@ -896,7 +1171,7 @@ class _DescSectionHeader extends StatelessWidget {
   });
 
   final bool showHistory;
-  final VoidCallback onHistoryTap;
+  final VoidCallback? onHistoryTap;
 
   @override
   Widget build(BuildContext context) {
@@ -968,5 +1243,31 @@ class _FieldRow extends StatelessWidget {
         Expanded(child: right),
       ],
     );
+  }
+}
+
+BoxDecoration _archiveCardDecoration(ZaidangTokens tokens) => BoxDecoration(
+  color: tokens.surface,
+  borderRadius: BorderRadius.circular(8),
+  border: Border.all(color: tokens.border),
+);
+
+class _CustomAttributeDraft {
+  _CustomAttributeDraft({String name = '', String content = ''})
+    : name = TextEditingController(text: name),
+      content = TextEditingController(text: content);
+
+  factory _CustomAttributeDraft.fromAttribute(RoleCustomAttribute attribute) =>
+      _CustomAttributeDraft(name: attribute.name, content: attribute.content);
+
+  final key = UniqueKey();
+  final nameFocus = FocusNode();
+  final TextEditingController name;
+  final TextEditingController content;
+
+  void dispose() {
+    nameFocus.dispose();
+    name.dispose();
+    content.dispose();
   }
 }
