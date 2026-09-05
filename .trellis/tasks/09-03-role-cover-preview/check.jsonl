@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend quality-check entry and checklist for RoleCreatePage UI changes."}
+{"file": ".trellis/spec/frontend/theming.md", "reason": "Verify preview chrome and 更换 control stay on tokens; no seed palette or accent-filled viewer."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend quality bar, forbidden theme patterns, and test expectations."}
+{"file": ".trellis/spec/frontend/git-commit.md", "reason": "Commit message and split rules if the check pass reviews the change set."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Verify photo_view owns gallery gestures and the cover picker/path contract is reused without duplicate storage logic."}
+{"file": ".trellis/tasks/09-03-role-cover-preview/research/photo-view-gallery.md", "reason": "Verify gallery callback forwarding and actual image/gesture validation against the published package."}

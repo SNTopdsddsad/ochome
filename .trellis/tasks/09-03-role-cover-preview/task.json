@@ -1,0 +1,28 @@
+{
+  "id": "role-cover-preview",
+  "name": "role-cover-preview",
+  "title": "角色编辑页可预览立绘大图",
+  "description": "",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "xuwudi",
+  "assignee": "xuwudi",
+  "createdAt": "2026-09-03",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "notes": "编辑页点立绘看大图，更换改为独立按钮"
+  }
+}
