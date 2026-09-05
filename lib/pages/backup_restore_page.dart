@@ -10,6 +10,7 @@ import '../data/services/icloud_backup_service.dart';
 import '../data/services/icloud_container.dart';
 import '../data/services/restore_progress.dart';
 import '../theme/zaidang_tokens.dart';
+import '../widgets/zaidang_confirm_dialog.dart';
 
 /// 手动备份 / 恢复。非 Apple 平台只展示不可用说明。
 class BackupRestorePage extends ConsumerStatefulWidget {
@@ -152,9 +153,8 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
           )
           .timeout(
             const Duration(minutes: 20),
-            onTimeout: () => throw const RestoreFailedException(
-              '恢复超时。请检查网络后重试',
-            ),
+            onTimeout: () =>
+                throw const RestoreFailedException('恢复超时。请检查网络后重试'),
           );
       inspection = null;
       if (mounted) {
@@ -209,28 +209,16 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
     }
   }
 
-  Future<bool?> _confirmRestore() {
-    final tokens = ZaidangTokens.of(context);
-    return showDialog<bool>(
+  Future<bool> _confirmRestore() {
+    return showZaidangConfirmDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('覆盖本机数据？'),
-          content: const Text('将用 iCloud 备份替换本机的角色、设定历史和立绘，此操作无法撤销。'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              style: TextButton.styleFrom(foregroundColor: tokens.ink),
-              child: const Text('取消'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: TextButton.styleFrom(foregroundColor: tokens.ink),
-              child: const Text('覆盖恢复'),
-            ),
-          ],
-        );
-      },
+      title: '用云端备份替换本机内容？',
+      body: '本机的角色资料、设定历史和立绘都会被 iCloud 备份替换。',
+      consequence: '这次替换无法撤销。',
+      cancelLabel: '先不恢复',
+      cancelSemanticLabel: '先不恢复，保留本机内容',
+      confirmLabel: '覆盖恢复',
+      showSparkle: false,
     );
   }
 

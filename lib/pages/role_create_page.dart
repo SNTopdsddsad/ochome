@@ -11,6 +11,7 @@ import '../data/providers/role_repository_provider.dart';
 import '../data/services/cover_image_picker.dart';
 import '../theme/zaidang_tokens.dart';
 import '../widgets/cover_file_view.dart';
+import '../widgets/zaidang_confirm_dialog.dart';
 import 'cover_preview_page.dart';
 import 'role_desc_history_page.dart';
 
@@ -496,27 +497,15 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
 
   Future<void> _removeAttribute(_CustomAttributeDraft attribute) async {
     if (_saving || !_attributes.contains(attribute)) return;
-    final tokens = ZaidangTokens.of(context);
     final name = attribute.name.text.trim();
-    final remove = await showDialog<bool>(
+    final remove = await showZaidangConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('删除自定义属性'),
-        content: Text(
-          name.isEmpty ? '删除这条未命名属性？保存角色后生效。' : '删除“$name”？保存角色后生效。',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: tokens.ink),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
+      title: '要删掉这条属性吗？',
+      body: name.isEmpty ? '这条未命名属性和里面的内容会一起移除。' : '「$name」和里面的内容会一起移除。',
+      consequence: '保存角色后生效。',
+      cancelLabel: '先留着',
+      cancelSemanticLabel: '先留着，保留这条属性',
+      confirmLabel: '删除属性',
     );
     if (remove != true ||
         !mounted ||

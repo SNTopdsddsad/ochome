@@ -5,6 +5,7 @@ import '../data/models/role_desc_revision.dart';
 import '../data/providers/role_desc_revisions_provider.dart';
 import '../data/providers/role_repository_provider.dart';
 import '../theme/zaidang_tokens.dart';
+import '../widgets/zaidang_confirm_dialog.dart';
 
 /// 单个角色的设定修订列表。点某一版可回看全文并恢复。
 class RoleDescHistoryPage extends ConsumerWidget {
@@ -36,7 +37,8 @@ class RoleDescHistoryPage extends ConsumerWidget {
               return _RevisionTile(
                 revision: items[index],
                 isCurrent: index == 0,
-                onOpen: () => _openRevision(context, ref, items[index], index == 0),
+                onOpen: () =>
+                    _openRevision(context, ref, items[index], index == 0),
               );
             },
           );
@@ -96,27 +98,14 @@ class RoleDescHistoryPage extends ConsumerWidget {
     WidgetRef ref,
     RoleDescRevision revision,
   ) async {
-    final tokens = ZaidangTokens.of(context);
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showZaidangConfirmDialog(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: tokens.surface,
-          title: const Text('恢复这一版设定？'),
-          content: const Text('会立刻替换当前设定。现在的内容会留在修改历史里。'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('取消'),
-            ),
-            TextButton(
-              style: TextButton.styleFrom(foregroundColor: tokens.ink),
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('恢复'),
-            ),
-          ],
-        );
-      },
+      title: '换回这一版设定吗？',
+      body: '将立即换回 ${_formatTime(revision.createdAt)} 的设定。还没保存的设定修改会丢失。',
+      consequence: '已经存下的修改历史会保留。',
+      cancelLabel: '先不换',
+      cancelSemanticLabel: '先不换，取消恢复设定',
+      confirmLabel: '恢复此版',
     );
     if (confirmed != true || !context.mounted) {
       return;
@@ -130,9 +119,8 @@ class RoleDescHistoryPage extends ConsumerWidget {
       }
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('恢复失败：$error')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('恢复失败：$error')));
       }
     }
   }

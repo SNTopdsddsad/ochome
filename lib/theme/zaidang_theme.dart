@@ -41,6 +41,16 @@ ThemeData zaidangTheme(ZaidangTokens tokens, {required Brightness brightness}) {
       space: 1,
       thickness: 1,
     ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: tokens.surface,
+      surfaceTintColor: Colors.transparent,
+      elevation: 4,
+      shadowColor: scheme.shadow.withValues(alpha: 0.12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(26),
+        side: BorderSide(color: tokens.border),
+      ),
+    ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: tokens.accent,
       foregroundColor: tokens.onAccent,
