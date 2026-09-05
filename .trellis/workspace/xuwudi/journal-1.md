@@ -143,3 +143,39 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 5: 可复用创作便笺确认弹窗
+
+**Date**: 2026-09-05
+**Task**: 可复用创作便笺确认弹窗
+**Branch**: `main`
+
+### Summary
+
+依据思源主题 token 与用户反馈确定 OC 创作便笺设计，封装独立确认 Widget，接入三处弹窗并完成验证、提交与归档。
+
+### Main Changes
+
+- 新增 ZaidangConfirmDialog 与统一打开方法，保留页面业务职责，支持深浅色、字号适配、键盘焦点及重复点击保护。
+- 属性删除、设定历史恢复、iCloud 覆盖恢复统一接入，明确保存时机、未保存设定丢失及不可撤销后果。
+- 更新组件和主题规范，记录两版设计、代码审计与验证，完成任务归档。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6550af6` | (see git log) |
+| `0dbf03a` | (see git log) |
+| `45c54e1` | (see git log) |
+| `7b47191` | (see git log) |
+
+### Testing
+
+- [OK] 完整 flutter test：124 项通过；审查新增 3 项后共享组件 16 项通过。
+- [OK] flutter analyze、8 个 Dart 文件格式检查、git diff --check 及归档任务 context validation 通过。
+- [OK] 检查真实 Flutter 深浅色、云端覆盖与 2 倍字号截图；无真实 iCloud 写入。
+
+### Status
+
+[OK] **Completed**
