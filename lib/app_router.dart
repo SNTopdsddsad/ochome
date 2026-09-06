@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'data/models/role.dart';
+import 'pages/archive_page.dart';
 import 'pages/backup_restore_page.dart';
 import 'pages/home_shell.dart';
 import 'pages/mine_page.dart';
 import 'pages/role_create_page.dart';
-import 'pages/role_list_page.dart';
 
 /// 应用路由表。每个 [MyApp] 实例调用一次，避免测试之间共用 location。
 GoRouter createAppRouter({
@@ -27,7 +27,7 @@ GoRouter createAppRouter({
             routes: [
               GoRoute(
                 path: '/archive',
-                builder: (context, state) => const RoleListPage(),
+                builder: (context, state) => const ArchivePage(),
               ),
             ],
           ),

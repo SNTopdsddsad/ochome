@@ -7,28 +7,26 @@ import '../data/providers/roles_provider.dart';
 import '../theme/zaidang_tokens.dart';
 import '../widgets/cover_file_view.dart';
 
-/// 档案页：纸面上的角色档案列表。立绘是主体，火漆红只给添加按钮。
-class RoleListPage extends ConsumerWidget {
+/// OC 页：纸面上的角色档案列表。立绘是主体，火漆红只给添加按钮。
+class RoleListPage extends ConsumerStatefulWidget {
   const RoleListPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RoleListPage> createState() => _RoleListPageState();
+}
+
+class _RoleListPageState extends ConsumerState<RoleListPage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
     final roles = ref.watch(rolesProvider);
     final tokens = ZaidangTokens.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('角色'),
-        actions: [
-          IconButton(
-            tooltip: '备份与恢复',
-            icon: const Icon(Icons.cloud_outlined),
-            onPressed: () {
-              context.push('/backup');
-            },
-          ),
-        ],
-      ),
       body: roles.when(
         data: (items) {
           if (items.isEmpty) {
