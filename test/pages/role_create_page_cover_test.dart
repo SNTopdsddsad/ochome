@@ -3,12 +3,14 @@ import 'dart:io';
 import 'dart:ui' show SemanticsAction;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ochome/data/models/role.dart';
 import 'package:ochome/data/models/role_custom_attribute.dart';
 import 'package:ochome/data/providers/role_repository_provider.dart';
 import 'package:ochome/pages/cover_preview_page.dart';
+import 'package:ochome/theme/zaidang_theme.dart';
 import 'package:ochome/pages/role_create_page.dart';
 import 'package:path/path.dart' as p;
 
@@ -42,6 +44,62 @@ void main() {
       await tempDir.delete(recursive: true);
     }
   });
+
+  for (final dark in [false, true]) {
+    testWidgets(
+      '${dark ? 'dark' : 'light'} status bar follows photo and pinned paper backgrounds',
+      (tester) async {
+        _usePhoneView(tester);
+        tester.view.padding = const FakeViewPadding(top: 47, bottom: 34);
+        tester.view.viewPadding = const FakeViewPadding(top: 47, bottom: 34);
+        addTearDown(tester.view.resetPadding);
+        addTearDown(tester.view.resetViewPadding);
+        await tester.pumpWidget(
+          _wrap(
+            _role(coverImg: 'covers/ada.png'),
+            FakeCoverImagePicker(),
+            tempDir,
+            theme: dark ? zaidangDarkTheme() : zaidangLightTheme(),
+          ),
+        );
+        await _pump(tester);
+        expect(
+          SystemChrome.latestStyle!.statusBarIconBrightness,
+          Brightness.light,
+        );
+        expect(SystemChrome.latestStyle!.statusBarBrightness, Brightness.dark);
+
+        final nested = tester.state<NestedScrollViewState>(
+          find.byKey(const Key('role-detail-nested-scroll')),
+        );
+        nested.outerController.jumpTo(
+          nested.outerController.position.maxScrollExtent,
+        );
+        await _pump(tester);
+        expect(
+          SystemChrome.latestStyle!.statusBarIconBrightness,
+          dark ? Brightness.light : Brightness.dark,
+        );
+        expect(
+          SystemChrome.latestStyle!.statusBarBrightness,
+          dark ? Brightness.dark : Brightness.light,
+        );
+        expect(SystemChrome.latestStyle!.statusBarColor, Colors.transparent);
+
+        nested.outerController.jumpTo(0);
+        await _pump(tester);
+        expect(
+          SystemChrome.latestStyle!.statusBarIconBrightness,
+          Brightness.light,
+        );
+        expect(SystemChrome.latestStyle!.statusBarBrightness, Brightness.dark);
+      },
+      variant: const TargetPlatformVariant({
+        TargetPlatform.android,
+        TargetPlatform.iOS,
+      }),
+    );
+  }
 
   testWidgets(
     'tapping portrait with a readable cover opens full-screen preview',
@@ -291,12 +349,18 @@ Future<void> _pump(WidgetTester tester) async {
   await tester.pump();
 }
 
-Widget _wrap(Role role, FakeCoverImagePicker picker, Directory tempDir) {
+Widget _wrap(
+  Role role,
+  FakeCoverImagePicker picker,
+  Directory tempDir, {
+  ThemeData? theme,
+}) {
   return ProviderScope(
     overrides: [
       roleRepositoryProvider.overrideWithValue(FakeRoleRepository([role])),
     ],
     child: MaterialApp(
+      theme: theme,
       home: RoleCreatePage(
         role: role,
         picker: picker,

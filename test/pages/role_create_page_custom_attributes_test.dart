@@ -198,12 +198,7 @@ void main() {
     await tester.tap(find.text('保存'));
     await tester.pumpAndSettle();
     expect(find.byType(RoleCreatePage), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('请填写属性名称'),
-      500,
-      scrollable: find.byType(Scrollable).first,
-      maxScrolls: 30,
-    );
+    await _reveal(tester, find.text('请填写属性名称'));
     expect(find.text('请填写属性名称'), findsOneWidget);
   });
 
@@ -405,16 +400,14 @@ Future<void> _open(
 }
 
 Future<void> _reveal(WidgetTester tester, Finder finder) async {
-  if (finder.evaluate().isEmpty) {
-    await tester.scrollUntilVisible(
-      finder,
-      250,
-      scrollable: find.byType(Scrollable).first,
-      maxScrolls: 25,
-    );
-  } else {
-    await tester.ensureVisible(finder.first);
+  for (var attempt = 0; finder.evaluate().isEmpty && attempt < 30; attempt++) {
+    // Swipe inside the visible content rather than the overlapping header or a text field.
+    final height =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    await tester.dragFrom(Offset(20, height - 120), const Offset(0, -250));
+    await tester.pumpAndSettle();
   }
+  await Scrollable.ensureVisible(tester.element(finder.first), alignment: 0.2);
   await tester.pumpAndSettle();
 }
 

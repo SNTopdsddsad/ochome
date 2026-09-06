@@ -1,0 +1,536 @@
+import 'dart:async';
+import 'dart:ui' as ui;
+import 'dart:io';
+
+import 'package:file_selector/file_selector.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ochome/data/models/role.dart';
+import 'package:ochome/data/models/role_asset.dart';
+import 'package:ochome/data/providers/role_assets_provider.dart';
+import 'package:ochome/data/providers/role_repository_provider.dart';
+import 'package:ochome/data/services/role_asset_picker.dart';
+import 'package:ochome/data/services/role_asset_opener.dart';
+import 'package:ochome/data/services/video_thumbnail_service.dart';
+import 'package:ochome/pages/role_create_page.dart';
+import 'package:ochome/pages/cover_preview_page.dart';
+import 'package:ochome/theme/zaidang_theme.dart';
+
+import '../fakes/fake_role_asset_repository.dart';
+import '../fakes/fake_role_repository.dart';
+
+void main() {
+  for (final dark in [false, true]) {
+    testWidgets(
+      '${dark ? 'dark' : 'light'} pinned header hides content scrolling under either tab',
+      (tester) async {
+        final assets = FakeRoleAssetRepository(
+          List.generate(
+            20,
+            (index) =>
+                _asset(index + 1, '文档 $index.pdf', RoleAssetKind.document),
+          ),
+        );
+        addTearDown(assets.dispose);
+        await _open(tester, assets, dark: dark);
+        final nested = tester.state<NestedScrollViewState>(
+          find.byKey(const Key('role-detail-nested-scroll')),
+        );
+        nested.outerController.jumpTo(
+          nested.outerController.position.maxScrollExtent,
+        );
+        await tester.pumpAndSettle();
+
+        for (final key in ['role-details-scroll', 'role-assets-scroll']) {
+          if (key == 'role-assets-scroll') await _assets(tester);
+          final scroll = tester.state<ScrollableState>(
+            find
+                .descendant(
+                  of: find.byKey(PageStorageKey(key)),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          );
+          expect(scroll.position.maxScrollExtent, greaterThan(0));
+          scroll.position.jumpTo(scroll.position.maxScrollExtent * 0.2);
+          await tester.pumpAndSettle();
+          final before = await _headerPixels(tester);
+          final identity = tester.getRect(
+            find.byKey(const Key('role-pinned-identity')),
+          );
+          scroll.position.jumpTo(scroll.position.maxScrollExtent * 0.8);
+          await tester.pumpAndSettle();
+          final after = await _headerPixels(tester);
+          expect(
+            listEquals(before, after),
+            isTrue,
+            reason: 'Scrolling $key must not change the pinned header pixels',
+          );
+          expect(
+            tester.getRect(find.byKey(const Key('role-pinned-identity'))),
+            identity,
+          );
+          expect(tester.takeException(), isNull);
+        }
+      },
+    );
+
+    testWidgets(
+      '${dark ? 'dark' : 'light'} tabs pin below controls and preserve form, header and scroll position',
+      (tester) async {
+        final assets = FakeRoleAssetRepository();
+        addTearDown(assets.dispose);
+        final roles = FakeRoleRepository([_role]);
+        await _open(tester, assets, roles: roles, dark: dark);
+        expect(find.widgetWithText(Tab, '详情'), findsOneWidget);
+        expect(find.widgetWithText(Tab, '资产'), findsOneWidget);
+        final identity = find.byKey(const Key('role-pinned-identity'));
+        double identityOpacity() => identity.evaluate().isEmpty
+            ? 0
+            : tester
+                  .widget<Opacity>(
+                    find
+                        .ancestor(of: identity, matching: find.byType(Opacity))
+                        .first,
+                  )
+                  .opacity;
+        expect(identityOpacity(), 0);
+        final name = find.widgetWithText(TextFormField, '白鸦');
+        await tester.ensureVisible(name);
+        await tester.enterText(name, '未保存的白鸦');
+        await tester.pumpAndSettle();
+        final details = find.byKey(const PageStorageKey('role-details-scroll'));
+        await tester.dragFrom(const Offset(20, 700), const Offset(0, -550));
+        await tester.pumpAndSettle();
+        final scroll = tester.state<ScrollableState>(
+          find.descendant(of: details, matching: find.byType(Scrollable)).first,
+        );
+        final detailOffset = scroll.position.pixels;
+        expect(detailOffset, greaterThan(0));
+        final tabRect = tester.getRect(
+          find.byKey(const Key('role-detail-tabs')),
+        );
+        final back = tester.getRect(find.byTooltip('返回'));
+        expect(tabRect.top, greaterThanOrEqualTo(back.bottom));
+        expect(tabRect.bottom, lessThan(180));
+        expect(identityOpacity(), 1);
+        expect(
+          find.descendant(of: identity, matching: find.text('未保存的白鸦')),
+          findsOneWidget,
+        );
+        final portrait = tester.getRect(
+          find.byKey(const Key('role-pinned-portrait')),
+        );
+        expect(portrait.size, const Size(32, 32));
+        expect(
+          find.ancestor(
+            of: find.byKey(const Key('role-pinned-portrait')),
+            matching: find.byType(ClipOval),
+          ),
+          findsOneWidget,
+        );
+        expect(tester.getRect(identity).center.dx, closeTo(195, 0.1));
+        expect(tester.getRect(identity).left, greaterThan(back.right));
+        expect(
+          tester.getRect(identity).right,
+          lessThan(tester.getRect(find.widgetWithText(TextButton, '保存')).left),
+        );
+        await _assets(tester);
+        expect(find.text('还没有资产'), findsOneWidget);
+        expect(identityOpacity(), 1);
+        expect(
+          tester.getRect(find.byKey(const Key('role-detail-tabs'))),
+          tabRect,
+        );
+        await tester.drag(find.byType(TabBarView), const Offset(350, 0));
+        await tester.pumpAndSettle();
+        expect(scroll.position.pixels, closeTo(detailOffset, 1));
+        final nested = tester.state<NestedScrollViewState>(
+          find.byKey(const Key('role-detail-nested-scroll')),
+        );
+        scroll.position.jumpTo(0);
+        nested.outerController.jumpTo(0);
+        await tester.pumpAndSettle();
+        expect(identityOpacity(), 0);
+        nested.outerController.jumpTo(
+          nested.outerController.position.maxScrollExtent,
+        );
+        tester.view.physicalSize = const Size(320, 844);
+        await tester.pumpAndSettle();
+        expect(identityOpacity(), 1);
+        expect(tester.getRect(identity).center.dx, closeTo(160, 0.1));
+        expect(
+          tester.getRect(identity).right,
+          lessThan(tester.getRect(find.widgetWithText(TextButton, '保存')).left),
+        );
+        await _assets(tester);
+        await tester.tap(find.widgetWithText(TextButton, '保存'));
+        await tester.pumpAndSettle();
+        expect(find.byType(RoleCreatePage), findsNothing);
+        expect((await roles.list()).single.name, '未保存的白鸦');
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'imports files, filters four types and opens video/audio/document through system service',
+    (tester) async {
+      final assets = FakeRoleAssetRepository();
+      addTearDown(assets.dispose);
+      final picker = _Picker()
+        ..files = [
+          for (final name in ['立绘.png', '动作.mp4', '配音.mp3', '设定.pdf'])
+            _file(name),
+        ];
+      final opener = _Opener();
+      await _open(tester, assets, picker: picker, opener: opener);
+      await _assets(tester);
+      await _addFiles(tester);
+      expect(assets.importCalls, 1);
+      expect(find.text('4 份资产'), findsOneWidget);
+      for (final (label, name) in [
+        ('视频', '动作.mp4'),
+        ('音频', '配音.mp3'),
+        ('文档', '设定.pdf'),
+      ]) {
+        await tester.tap(find.widgetWithText(ChoiceChip, label));
+        await tester.pumpAndSettle();
+        expect(find.widgetWithText(ListTile, name), findsOneWidget);
+        expect(find.byType(ListTile), findsOneWidget);
+        await tester.tap(find.widgetWithText(ListTile, name));
+        await tester.pumpAndSettle();
+        expect(opener.opened.last.path, endsWith(name));
+      }
+      await tester.tap(find.widgetWithText(ChoiceChip, '图片'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ListTile, '立绘.png'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'video row shows its generated cover and still opens the original video',
+    (tester) async {
+      final assets = FakeRoleAssetRepository([
+        _asset(1, '动作.mp4', RoleAssetKind.video),
+      ]);
+      addTearDown(assets.dispose);
+      late Directory root;
+      late File cover;
+      await tester.runAsync(() async {
+        root = await Directory.systemTemp.createTemp('video-cover-ui');
+        cover = File('${root.path}/cover.png');
+        final recorder = ui.PictureRecorder();
+        Canvas(recorder).drawColor(Colors.blue, BlendMode.src);
+        final picture = recorder.endRecording();
+        final image = await picture.toImage(80, 120);
+        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+        await cover.writeAsBytes(bytes!.buffer.asUint8List());
+        image.dispose();
+        picture.dispose();
+      });
+      addTearDown(() => root.delete(recursive: true));
+      final video = File('${root.path}/original.mp4');
+      assets.files[1] = video;
+      final thumbnails = _VideoThumbnails(cover);
+      final opener = _Opener();
+      await _open(tester, assets, opener: opener, videoThumbnails: thumbnails);
+      await tester.runAsync(
+        () => precacheImage(
+          FileImage(cover),
+          tester.element(find.byType(RoleCreatePage)),
+        ),
+      );
+      await _assets(tester);
+      final row = find.widgetWithText(ListTile, '动作.mp4');
+      final image = tester.widget<Image>(
+        find.descendant(of: row, matching: find.byType(Image)),
+      );
+      final provider = image.image is ResizeImage
+          ? (image.image as ResizeImage).imageProvider
+          : image.image;
+      expect((provider as FileImage).file.path, cover.path);
+      expect(
+        find.descendant(of: row, matching: find.byIcon(Icons.play_arrow)),
+        findsOneWidget,
+      );
+      expect(thumbnails.sources.single.path, video.path);
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(opener.opened.single.path, video.path);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'gallery cancel and import failure leave assets intact; pending import blocks save and back',
+    (tester) async {
+      final assets = FakeRoleAssetRepository();
+      addTearDown(assets.dispose);
+      final picker = _Picker();
+      await _open(tester, assets, picker: picker);
+      await _assets(tester);
+      await tester.tap(find.byKey(const Key('role-asset-add')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('从相册添加'));
+      await tester.pumpAndSettle();
+      expect(picker.galleryCalls, 1);
+      expect(assets.importCalls, 0);
+      picker.files = [_file('设定.pdf')];
+      assets.failImport = true;
+      await _addFiles(tester);
+      expect(find.textContaining('添加失败'), findsOneWidget);
+      expect(assets.items, isEmpty);
+      assets.failImport = false;
+      assets.pendingImport = Completer<void>();
+      await tester.tap(find.byKey(const Key('role-asset-add')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('从文件添加'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      final save = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, '保存'),
+      );
+      expect(save.onPressed, isNull);
+      expect(find.text('正在保存文件…'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(find.byType(RoleCreatePage), findsOneWidget);
+      assets.pendingImport!.complete();
+      await tester.pumpAndSettle();
+      expect(assets.items.single.name, '设定.pdf');
+      expect(
+        tester
+            .widget<TextButton>(find.widgetWithText(TextButton, '保存'))
+            .onPressed,
+        isNotNull,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('open failures are visible and deletion requires confirmation', (
+    tester,
+  ) async {
+    final assets = FakeRoleAssetRepository([
+      _asset(1, 'notes.pdf', RoleAssetKind.document),
+    ]);
+    addTearDown(assets.dispose);
+    final opener = _Opener()..fail = true;
+    await _open(tester, assets, opener: opener);
+    await _assets(tester);
+    await tester.tap(find.widgetWithText(ListTile, 'notes.pdf'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('没有可打开此文件的应用'), findsOneWidget);
+    await tester.tap(find.byTooltip('删除notes.pdf'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('zaidang-confirm-cancel')));
+    await tester.pumpAndSettle();
+    expect(assets.items, hasLength(1));
+    await tester.tap(find.byTooltip('删除notes.pdf'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('zaidang-confirm-action')));
+    await tester.pumpAndSettle();
+    expect(assets.items, isEmpty);
+    expect(find.text('还没有资产'), findsOneWidget);
+  });
+
+  testWidgets(
+    'images open the existing gallery and return to assets without losing the role',
+    (tester) async {
+      final assets = FakeRoleAssetRepository([
+        _asset(1, 'portrait.png', RoleAssetKind.image),
+      ]);
+      addTearDown(assets.dispose);
+      late Directory root;
+      late File file;
+      await tester.runAsync(() async {
+        root = await Directory.systemTemp.createTemp('role-asset-preview');
+        file = File('${root.path}/role_assets/1-portrait.png');
+        await file.parent.create();
+        final recorder = ui.PictureRecorder();
+        Canvas(recorder).drawColor(Colors.teal, BlendMode.src);
+        final picture = recorder.endRecording();
+        final image = await picture.toImage(80, 120);
+        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+        await file.writeAsBytes(bytes!.buffer.asUint8List());
+        image.dispose();
+        picture.dispose();
+      });
+      addTearDown(() async => root.delete(recursive: true));
+      assets.files[1] = file;
+      await _open(tester, assets);
+      await tester.runAsync(
+        () => precacheImage(
+          FileImage(file),
+          tester.element(find.byType(RoleCreatePage)),
+        ),
+      );
+      await _assets(tester);
+      await tester.tap(find.widgetWithText(ListTile, 'portrait.png'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CoverPreviewPage), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byType(CoverPreviewPage), findsNothing);
+      expect(find.byType(RoleCreatePage), findsOneWidget);
+      expect(find.widgetWithText(ListTile, 'portrait.png'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextButton>(find.widgetWithText(TextButton, '保存'))
+            .onPressed,
+        isNotNull,
+      );
+    },
+  );
+}
+
+Future<Uint8List> _headerPixels(WidgetTester tester) async {
+  final boundaryFinder = find
+      .ancestor(
+        of: find.byType(RoleCreatePage),
+        matching: find.byType(RepaintBoundary),
+      )
+      .first;
+  final boundary = tester.renderObject<RenderRepaintBoundary>(boundaryFinder);
+  final height =
+      (tester.getRect(find.byKey(const Key('role-detail-tabs'))).bottom -
+              tester.getTopLeft(boundaryFinder).dy)
+          .floor();
+  return (await tester.runAsync(() async {
+    final image = await boundary.toImage();
+    try {
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      return Uint8List.fromList(
+        bytes!.buffer.asUint8List(0, image.width * height * 4),
+      );
+    } finally {
+      image.dispose();
+    }
+  }))!;
+}
+
+Future<void> _open(
+  WidgetTester tester,
+  FakeRoleAssetRepository assets, {
+  FakeRoleRepository? roles,
+  _Picker? picker,
+  _Opener? opener,
+  VideoThumbnailService? videoThumbnails,
+  bool dark = false,
+}) async {
+  tester.view.physicalSize = const Size(390, 844);
+  tester.view.devicePixelRatio = 1;
+  tester.view.padding = const FakeViewPadding(top: 47, bottom: 34);
+  tester.view.viewPadding = const FakeViewPadding(top: 47, bottom: 34);
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  addTearDown(tester.view.resetPadding);
+  addTearDown(tester.view.resetViewPadding);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        roleRepositoryProvider.overrideWithValue(
+          roles ?? FakeRoleRepository([_role]),
+        ),
+        roleAssetRepositoryProvider.overrideWithValue(assets),
+        roleAssetPickerProvider.overrideWithValue(picker ?? _Picker()),
+        roleAssetOpenerProvider.overrideWithValue(opener ?? _Opener()),
+        if (videoThumbnails != null)
+          videoThumbnailServiceProvider.overrideWithValue(videoThumbnails),
+      ],
+      child: MaterialApp(
+        theme: dark ? zaidangDarkTheme() : zaidangLightTheme(),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (_) => const RoleCreatePage(role: _role),
+                ),
+              ),
+              child: const Text('打开角色'),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.tap(find.text('打开角色'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _assets(WidgetTester tester) async {
+  await tester.tap(find.widgetWithText(Tab, '资产'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _addFiles(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('role-asset-add')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('从文件添加'));
+  await tester.pumpAndSettle();
+}
+
+const _role = Role(
+  id: 1,
+  name: '白鸦',
+  sex: '',
+  age: '',
+  birthday: '',
+  race: '',
+  occupation: '',
+  desc: '角色设定',
+  coverImg: '',
+);
+
+RoleAsset _asset(int id, String name, RoleAssetKind kind) => RoleAsset(
+  id: id,
+  roleId: 1,
+  name: name,
+  kind: kind,
+  relativePath: 'role_assets/$id-$name',
+  bytes: 42,
+  createdAt: DateTime(2026, 9, 6),
+);
+
+XFile _file(String name) =>
+    XFile.fromData(Uint8List.fromList([1, 2, 3]), path: name);
+
+class _Picker extends RoleAssetPicker {
+  List<XFile> files = [];
+  int galleryCalls = 0;
+  @override
+  Future<List<XFile>> pickFiles() async => files;
+  @override
+  Future<List<XFile>> pickMedia() async {
+    galleryCalls++;
+    return files;
+  }
+}
+
+class _Opener extends RoleAssetOpener {
+  final opened = <File>[];
+  bool fail = false;
+  @override
+  Future<void> open(File file) async {
+    if (fail) throw const AssetOpenException('没有可打开此文件的应用');
+    opened.add(file);
+  }
+}
+
+class _VideoThumbnails extends VideoThumbnailService {
+  _VideoThumbnails(this.cover);
+  final File cover;
+  final sources = <File>[];
+
+  @override
+  Future<File?> thumbnailFor(File video) async {
+    sources.add(video);
+    return cover;
+  }
+}

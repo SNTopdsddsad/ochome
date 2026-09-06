@@ -1,12 +1,16 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:ochome/data/database/app_database.dart' hide Role;
 import 'package:ochome/data/models/role.dart';
 import 'package:ochome/data/models/role_custom_attribute.dart';
 import 'package:ochome/data/repositories/drift_role_repository.dart';
+import 'package:ochome/data/repositories/drift_role_asset_repository.dart';
+import 'package:ochome/data/services/role_asset_store.dart';
 import 'package:ochome/data/services/backup_exceptions.dart';
 import 'package:ochome/data/services/backup_manifest.dart';
 import 'package:ochome/data/services/icloud_backup_service.dart';
@@ -438,6 +442,143 @@ void main() {
     expect(
       () => service.backup(database: live),
       throwsA(isA<ICloudUnavailableException>()),
+    );
+  });
+
+  test('assets restore from snapshot references even without a manifest or directory listing', () async {
+    final database = await openLive();
+    await seedRole(database, coverImg: '');
+    final assets = DriftRoleAssetRepository(
+      database,
+      supportDirectory: () async => support,
+    );
+    await assets.importFiles(1, [
+      XFile.fromData(Uint8List.fromList([1, 2, 3]), path: 'clip.mp4'),
+      XFile.fromData(Uint8List.fromList([4, 5]), path: 'voice.mp3'),
+      XFile.fromData(Uint8List(0), path: 'empty.txt'),
+    ]);
+    final before = await assets.listForRole(1);
+    final manifest = await service.backup(database: database);
+    expect(manifest.assets, hasLength(3));
+    final uploadCount = cloud.uploadCount;
+    await service.backup(database: database);
+    expect(cloud.uploadCount, uploadCount + 2);
+    await database.close();
+    await RoleAssetStore(support).directory.delete(recursive: true);
+    cloud.files.remove('manifest.json');
+    cloud.hideFromList = true;
+    final plan = await service.prepareRestore();
+    await service.commitRestore(plan);
+    final restored = await openLive();
+    addTearDown(restored.close);
+    final restoredAssets = DriftRoleAssetRepository(
+      restored,
+      supportDirectory: () async => support,
+    );
+    final rows = await restoredAssets.listForRole(1);
+    expect(rows.map((asset) => asset.name), before.map((asset) => asset.name));
+    for (final asset in rows) {
+      expect(
+        await (await restoredAssets.fileFor(asset)).readAsBytes(),
+        cloud.files[asset.relativePath],
+      );
+    }
+  });
+
+  test(
+    'truncated asset downloads are rejected before changing live files',
+    () async {
+      final database = await openLive();
+      await seedRole(database, coverImg: '');
+      final assets = DriftRoleAssetRepository(
+        database,
+        supportDirectory: () async => support,
+      );
+      await assets.importFiles(1, [
+        XFile.fromData(Uint8List.fromList([1, 2, 3]), path: 'clip.mp4'),
+      ]);
+      final asset = (await assets.listForRole(1)).single;
+      await service.backup(database: database);
+      await database.close();
+      cloud.files[asset.relativePath] = [1];
+      await expectLater(
+        service.prepareRestore(),
+        throwsA(isA<RestoreFailedException>()),
+      );
+      expect(
+        await RoleAssetStore(support).resolve(asset.relativePath).readAsBytes(),
+        [1, 2, 3],
+      );
+    },
+  );
+
+  test(
+    'database replacement failure rolls back both covers and assets',
+    () async {
+      final database = await openLive();
+      await seedRole(database);
+      await writeCover('ada.png', [1]);
+      final assets = DriftRoleAssetRepository(
+        database,
+        supportDirectory: () async => support,
+      );
+      await assets.importFiles(1, [
+        XFile.fromData(Uint8List.fromList([2, 3]), path: 'notes.pdf'),
+      ]);
+      final asset = (await assets.listForRole(1)).single;
+      await service.backup(database: database);
+      await database.close();
+      await writeCover('ada.png', [8]);
+      await RoleAssetStore(support)
+          .resolve(asset.relativePath)
+          .writeAsBytes([9]);
+      final plan = await service.prepareRestore();
+      final failing = ICloudBackupService(
+        container: cloud,
+        supportDirectory: () async => support,
+        snapshotter: _FailingReplaceSnapshotter(),
+      );
+      await expectLater(
+        failing.commitRestore(plan),
+        throwsA(isA<RestoreFailedException>()),
+      );
+      expect(await File(p.join(support.path, 'covers/ada.png')).readAsBytes(), [
+        8,
+      ]);
+      expect(
+        await RoleAssetStore(support).resolve(asset.relativePath).readAsBytes(),
+        [9],
+      );
+    },
+  );
+
+  test('restoring a pre-asset backup clears newer local assets and migrates to the new table', () async {
+    final database = await openLive();
+    await seedRole(database, coverImg: '');
+    final assets = DriftRoleAssetRepository(
+      database,
+      supportDirectory: () async => support,
+    );
+    await assets.importFiles(1, [
+      XFile.fromData(Uint8List.fromList([1]), path: 'new.pdf'),
+    ]);
+    await database.close();
+    cloud.files[AppDatabase.sqliteFileName] = _schemaSqlite(
+      version: 4,
+      name: 'Old',
+    );
+    final plan = await service.prepareRestore();
+    await service.commitRestore(plan);
+    expect(await RoleAssetStore(support).listLocal(), isEmpty);
+    final restored = await openLive();
+    addTearDown(restored.close);
+    expect((await DriftRoleRepository(restored).list()).single.name, 'Old');
+    expect(
+      await DriftRoleAssetRepository(
+        restored,
+        supportDirectory: () async => support,
+      ).listForRole(1),
+      isEmpty,
     );
   });
 }
