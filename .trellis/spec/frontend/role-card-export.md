@@ -86,9 +86,9 @@ Surrounding controls remain responsive and accessible.
   `SourceHanSerifCN-Bold`, with `RoleCardSans` fallback; body uses bundled
   `SourceHanSansSC-Regular`. Binaries/licenses/provenance are in
   `assets/fonts/role_card/` and remain unmodified.
-- Font licenses are included in assets, registered with `LicenseRegistry` and
-  viewable through the export page's `开源许可` action. Notices must be available
-  even when the selected content is empty.
+- Font licenses remain in `assets/fonts/role_card/` and are registered with
+  `LicenseRegistry` when `RoleCardFonts.ensureLoaded()` runs. Do not add an
+  export-page license button or other in-flow license chrome.
 - Common CJK metrics use the bundled fonts. Emoji/unsupported rare glyphs can
   use named system fallbacks (Apple Color Emoji, Noto Color Emoji, Segoe UI
   Emoji); do not promise byte-identical output for arbitrary Unicode across
