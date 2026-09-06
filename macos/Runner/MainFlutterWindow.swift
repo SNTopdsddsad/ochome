@@ -10,6 +10,7 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
     ICloudChannelHandler.shared.register(with: flutterViewController.engine.binaryMessenger)
+    VideoThumbnailHandler.shared.register(with: flutterViewController.engine.binaryMessenger)
     RoleCardExportHandler.shared.register(
       with: flutterViewController.engine.binaryMessenger, window: self
     )
