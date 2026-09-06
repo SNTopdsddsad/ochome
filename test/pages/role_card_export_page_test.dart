@@ -159,6 +159,8 @@ void main() {
         ],
       );
       await _openPreview(tester, snapshot, renderer: renderer);
+      expect(find.byTooltip('开源许可'), findsNothing);
+      expect(find.byIcon(Icons.info_outline), findsNothing);
       expect(renderer.inputs.single.sections, isEmpty);
       expect(find.text('1 / 1'), findsOneWidget);
       expect(_canSave(tester), isTrue);
