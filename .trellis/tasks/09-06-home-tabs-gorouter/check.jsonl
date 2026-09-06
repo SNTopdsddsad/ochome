@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend guideline index"}
+{"file": ".trellis/spec/frontend/theming.md", "reason": "Tab chrome must stay paper with accent only on selected icon/label"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Forbidden ColorScheme.fromSeed and quality bar"}
+{"file": ".trellis/spec/frontend/git-commit.md", "reason": "Commit split rules if the check pass reviews commit readiness"}
+{"file": ".trellis/tasks/09-06-home-tabs-gorouter/prd.md", "reason": "Acceptance criteria AC1–AC8"}
+{"file": ".trellis/tasks/09-06-home-tabs-gorouter/design.md", "reason": "Route parentNavigatorKey, extra Role, PopScope back from 我的"}

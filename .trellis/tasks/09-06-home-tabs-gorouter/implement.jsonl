@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend guideline index and which specs are active"}
+{"file": ".trellis/spec/frontend/theming.md", "reason": "Paper canvas, accent-only selected tab, no ColorScheme.fromSeed, AppBar contract"}
+{"file": ".trellis/spec/guides/index.md", "reason": "Theming and reuse thinking triggers before chrome changes"}
+{"file": ".trellis/tasks/09-06-home-tabs-gorouter/design.md", "reason": "Router table, shell, extra Role, nested Scaffold FAB, NavigationBar tokens"}
+{"file": ".trellis/tasks/09-06-home-tabs-gorouter/prd.md", "reason": "Locked copy: AppBar 角色, tab 档案, blank 我的, go_router"}
