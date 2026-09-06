@@ -8,7 +8,6 @@ import '../features/role_card/role_card_content.dart';
 import '../features/role_card/role_card_delivery.dart';
 import '../features/role_card/role_card_export_service.dart';
 import '../features/role_card/role_card_field_picker.dart';
-import '../features/role_card/role_card_fonts.dart';
 import '../features/role_card/role_card_renderer.dart';
 import '../theme/zaidang_tokens.dart';
 import '../widgets/zaidang_snack_bar.dart';
@@ -256,21 +255,7 @@ class _RoleCardExportPageState extends State<RoleCardExportPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('导出角色卡'),
-        actions: [
-          IconButton(
-            tooltip: '开源许可',
-            icon: const Icon(Icons.info_outline),
-            onPressed: _busy
-                ? null
-                : () {
-                    RoleCardFonts.registerLicenses();
-                    showLicensePage(context: context, applicationName: '崽档');
-                  },
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('导出角色卡')),
       body: SafeArea(
         top: false,
         child: LayoutBuilder(

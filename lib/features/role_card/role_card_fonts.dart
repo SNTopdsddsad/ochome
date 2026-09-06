@@ -23,11 +23,10 @@ abstract final class RoleCardFonts {
     final sans = FontLoader(sansFamily)
       ..addFont(rootBundle.load('$_assetRoot/SourceHanSansSC-Regular.otf'));
     await Future.wait([serif.load(), sans.load()]);
-    registerLicenses();
+    _registerLicenses();
   }
 
-  /// Notices stay viewable even when no fields are selected for a preview.
-  static void registerLicenses() {
+  static void _registerLicenses() {
     if (!_licensesRegistered) {
       LicenseRegistry.addLicense(() async* {
         yield LicenseEntryWithLineBreaks(
