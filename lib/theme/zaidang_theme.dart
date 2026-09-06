@@ -74,6 +74,18 @@ ThemeData zaidangTheme(ZaidangTokens tokens, {required Brightness brightness}) {
       backgroundColor: tokens.accent,
       foregroundColor: tokens.onAccent,
     ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: tokens.bg,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      indicatorColor: Colors.transparent,
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        return IconThemeData(color: _navigationColor(tokens, states));
+      }),
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        return TextStyle(color: _navigationColor(tokens, states));
+      }),
+    ),
     listTileTheme: ListTileThemeData(
       iconColor: tokens.inkSecondary,
       titleTextStyle: TextStyle(
@@ -126,6 +138,12 @@ ThemeData zaidangTheme(ZaidangTokens tokens, {required Brightness brightness}) {
       ),
     ),
   );
+}
+
+Color _navigationColor(ZaidangTokens tokens, Set<WidgetState> states) {
+  return states.contains(WidgetState.selected)
+      ? tokens.accent
+      : tokens.inkSecondary;
 }
 
 ThemeData zaidangLightTheme() =>

@@ -1,21 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import 'pages/role_list_page.dart';
+import 'app_router.dart';
 import 'theme/zaidang_theme.dart';
 
-/// 应用根组件：主题、路由、第一屏。
+/// 应用根组件：主题和路由。
 ///
-/// 不写具体业务；首页换成真实页面时，只改 [home] 或后续的路由表。
-class MyApp extends StatelessWidget {
+/// 每个实例持有一份 [GoRouter]，测试里多次 [pumpWidget] 不会共用 location。
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final GoRouter _router = createAppRouter();
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: '崽档',
       theme: zaidangLightTheme(),
       darkTheme: zaidangDarkTheme(),
-      home: const RoleListPage(),
+      routerConfig: _router,
     );
   }
 }

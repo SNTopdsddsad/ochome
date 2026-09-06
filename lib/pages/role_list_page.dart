@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../data/models/role.dart';
 import '../data/providers/roles_provider.dart';
 import '../theme/zaidang_tokens.dart';
 import '../widgets/cover_file_view.dart';
-import 'backup_restore_page.dart';
-import 'role_create_page.dart';
 
-/// 首页：纸面上的角色档案列表。立绘是主体，火漆红只给添加按钮。
+/// 档案页：纸面上的角色档案列表。立绘是主体，火漆红只给添加按钮。
 class RoleListPage extends ConsumerWidget {
   const RoleListPage({super.key});
 
@@ -25,11 +24,7 @@ class RoleListPage extends ConsumerWidget {
             tooltip: '备份与恢复',
             icon: const Icon(Icons.cloud_outlined),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const BackupRestorePage(),
-                ),
-              );
+              context.push('/backup');
             },
           ),
         ],
@@ -60,9 +55,7 @@ class RoleListPage extends ConsumerWidget {
       floatingActionButton: FloatingActionButton(
         tooltip: '添加角色',
         onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => const RoleCreatePage()),
-          );
+          context.push('/roles/new');
         },
         child: const Icon(Icons.add),
       ),
@@ -89,9 +82,7 @@ class _RoleTile extends StatelessWidget {
       title: Text(role.name),
       subtitle: subtitle.isEmpty ? null : Text(subtitle),
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => RoleCreatePage(role: role)),
-        );
+        context.push('/roles/${role.id}', extra: role);
       },
     );
   }
