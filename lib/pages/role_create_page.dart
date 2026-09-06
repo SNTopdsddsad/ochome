@@ -17,6 +17,7 @@ import '../features/role_card/role_card_content.dart';
 import 'cover_preview_page.dart';
 import 'role_card_export_page.dart';
 import 'role_desc_history_page.dart';
+import 'role_assets_tab.dart';
 
 /// 新建 / 编辑 OC 人设。传入 [role] 即为编辑，字段按原文回填。
 class RoleCreatePage extends ConsumerStatefulWidget {
@@ -56,7 +57,8 @@ const double _glassButtonSize = 44;
 const double _portraitWidth = 90;
 const double _portraitHeight = 120;
 
-class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
+class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   late final CoverImagePicker _picker = widget.picker ?? CoverImagePicker();
 
@@ -69,6 +71,9 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
   late final TextEditingController _descController;
 
   final _scrollController = ScrollController();
+  late final TabController _detailTabs;
+  ScrollPosition? _detailsScrollPosition;
+  bool _assetBusy = false;
   final _attributesKey = GlobalKey<SliverReorderableListState>();
   final _attributes = <_CustomAttributeDraft>[];
   bool _validateAttributes = false;
@@ -81,6 +86,13 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
   bool _coverReadable = false;
 
   bool get _isEditing => widget.role != null;
+
+  EdgeInsets get _fieldScrollPadding => EdgeInsets.fromLTRB(
+    80,
+    _isEditing ? MediaQuery.viewPaddingOf(context).top + 128 : 80,
+    80,
+    80,
+  );
 
   Future<void> _openRoleCardExport() async {
     if (_saving || _exportOpen) return;
@@ -121,6 +133,8 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
   @override
   void initState() {
     super.initState();
+    _detailTabs = TabController(length: 2, vsync: this)
+      ..addListener(_onDetailTabChanged);
     final role = widget.role;
     _nameController = TextEditingController(text: role?.name ?? '');
     _sexController = TextEditingController(text: role?.sex ?? '');
@@ -137,6 +151,11 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
     _raceController.addListener(_onCallingCardChanged);
     _occupationController.addListener(_onCallingCardChanged);
     _refreshCoverReadable();
+  }
+
+  void _onDetailTabChanged() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    _attributesKey.currentState?.cancelReorder();
   }
 
   void _onCallingCardChanged() {
@@ -157,6 +176,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
     _raceController.dispose();
     _occupationController.dispose();
     _descController.dispose();
+    _detailTabs.dispose();
     _scrollController.dispose();
     for (final attribute in _attributes) {
       attribute.dispose();
@@ -203,7 +223,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
   }
 
   Future<void> _submit() async {
-    if (_saving) {
+    if (_saving || _assetBusy) {
       return;
     }
     setState(() => _validateAttributes = true);
@@ -311,140 +331,281 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
     final tokens = ZaidangTokens.of(context);
     final mediaPadding = MediaQuery.paddingOf(context);
     final topInset = mediaPadding.top;
-    final bottomInset = mediaPadding.bottom;
     final overlayStyle =
         (_coverImg.isNotEmpty ||
             Theme.of(context).brightness == Brightness.dark)
         ? SystemUiOverlayStyle.light.copyWith(
             statusBarColor: Colors.transparent,
             systemNavigationBarColor: tokens.bg,
+            systemNavigationBarIconBrightness:
+                Theme.of(context).brightness == Brightness.dark
+                ? Brightness.light
+                : Brightness.dark,
           )
         : SystemUiOverlayStyle.dark.copyWith(
             statusBarColor: Colors.transparent,
             systemNavigationBarColor: tokens.bg,
+            systemNavigationBarIconBrightness:
+                Theme.of(context).brightness == Brightness.dark
+                ? Brightness.light
+                : Brightness.dark,
           );
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: overlayStyle,
-      child: Scaffold(
-        backgroundColor: tokens.bg,
-        body: Form(
-          key: _formKey,
-          child: Stack(
-            children: [
-              MediaQuery.removePadding(
-                context: context,
-                removeTop: true,
-                removeLeft: true,
-                removeRight: true,
-                child: CustomScrollView(
-                  controller: _scrollController,
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
+      child: PopScope(
+        canPop: !_saving && !_assetBusy,
+        child: Scaffold(
+          backgroundColor: tokens.bg,
+          body: Form(
+            key: _formKey,
+            child: Stack(
+              children: [
+                MediaQuery.removePadding(
+                  context: context,
+                  removeTop: true,
+                  removeLeft: true,
+                  removeRight: true,
+                  child: AbsorbPointer(
+                    absorbing: _saving || _assetBusy,
+                    child: _buildRoleScroll(context, overlayStyle, topInset),
                   ),
-                  slivers: [
-                    _ImmersiveCover(
-                      path: _coverImg,
-                      name: _nameController.text.trim(),
-                      race: _raceController.text.trim(),
-                      occupation: _occupationController.text.trim(),
-                      overlayStyle: overlayStyle,
-                      hasCover: _coverReadable,
-                      supportDirectory: widget.supportDirectory,
-                      onPick: _pickCover,
-                      onPreview: _saving ? null : _openCoverPreview,
-                    ),
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        _cardInset +
-                            ((MediaQuery.sizeOf(context).width -
-                                        _contentMaxWidth)
-                                    .clamp(0, double.infinity) /
-                                2),
-                        8,
-                        _cardInset +
-                            ((MediaQuery.sizeOf(context).width -
-                                        _contentMaxWidth)
-                                    .clamp(0, double.infinity) /
-                                2),
-                        32 + bottomInset,
+                ),
+                Positioned(
+                  top: topInset + 8,
+                  left: 16,
+                  right: 16,
+                  child: SizedBox(
+                    height: _glassButtonSize,
+                    child: NavigationToolbar(
+                      centerMiddle: true,
+                      middleSpacing: 12,
+                      leading: _GlassIconButton(
+                        icon: Icons.arrow_back_ios_new,
+                        iconSize: 16,
+                        tooltip: '返回',
+                        onPhoto: _coverImg.isNotEmpty,
+                        onTap: () => Navigator.of(context).maybePop(),
                       ),
-                      sliver: SliverMainAxisGroup(
-                        slivers: [
-                          SliverToBoxAdapter(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Wrap(
-                                  alignment: WrapAlignment.spaceBetween,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  spacing: 16,
-                                  children: [
-                                    Text(
-                                      _isEditing ? '编辑角色' : '新建角色',
-                                      style: TextStyle(
-                                        color: tokens.ink,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    TextButton.icon(
-                                      key: const Key('role-card-export'),
-                                      onPressed: _saving || _exportOpen
-                                          ? null
-                                          : _openRoleCardExport,
-                                      icon: const Icon(
-                                        Icons.style_outlined,
-                                        size: 18,
-                                      ),
-                                      label: const Text('导出角色卡'),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                _buildBasicCard(),
-                                const SizedBox(height: 16),
-                              ],
-                            ),
-                          ),
-                          _buildCustomAttributes(tokens),
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 16),
-                              child: _buildDescCard(),
-                            ),
-                          ),
-                        ],
+                      middle: _isEditing
+                          ? AnimatedBuilder(
+                              animation: _scrollController,
+                              builder: (context, child) {
+                                final collapseOffset =
+                                    _heroHeight - topInset - 60;
+                                final offset = _scrollController.hasClients
+                                    ? _scrollController.offset
+                                    : 0.0;
+                                final opacity =
+                                    ((offset - collapseOffset + 24) / 24).clamp(
+                                      0.0,
+                                      1.0,
+                                    );
+                                if (opacity == 0) {
+                                  return const SizedBox.shrink();
+                                }
+                                return IgnorePointer(
+                                  child: Opacity(
+                                    opacity: opacity,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: _PinnedRoleIdentity(
+                                name: _nameController.text.trim(),
+                                coverImg: _coverImg,
+                                supportDirectory: widget.supportDirectory,
+                              ),
+                            )
+                          : null,
+                      trailing: _GlassSaveButton(
+                        saving: _saving,
+                        onPhoto: _coverImg.isNotEmpty,
+                        onPressed: _assetBusy ? null : _submit,
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-              Positioned(
-                top: topInset + 8,
-                left: 16,
-                right: 16,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _GlassIconButton(
-                      icon: Icons.arrow_back_ios_new,
-                      iconSize: 16,
-                      tooltip: '返回',
-                      onPhoto: _coverImg.isNotEmpty,
-                      onTap: () => Navigator.of(context).maybePop(),
-                    ),
-                    _GlassSaveButton(
-                      saving: _saving,
-                      onPhoto: _coverImg.isNotEmpty,
-                      onPressed: _submit,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDetailsSliver(BuildContext context) {
+    final tokens = ZaidangTokens.of(context);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    return SliverPadding(
+      padding: EdgeInsets.fromLTRB(
+        _cardInset +
+            ((MediaQuery.sizeOf(context).width - _contentMaxWidth).clamp(
+                  0,
+                  double.infinity,
+                ) /
+                2),
+        8,
+        _cardInset +
+            ((MediaQuery.sizeOf(context).width - _contentMaxWidth).clamp(
+                  0,
+                  double.infinity,
+                ) /
+                2),
+        32 + bottomInset,
+      ),
+      sliver: SliverMainAxisGroup(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 16,
+                  children: [
+                    Text(
+                      _isEditing ? '编辑角色' : '新建角色',
+                      style: TextStyle(
+                        color: tokens.ink,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    TextButton.icon(
+                      key: const Key('role-card-export'),
+                      onPressed: _saving || _exportOpen
+                          ? null
+                          : _openRoleCardExport,
+                      icon: const Icon(Icons.style_outlined, size: 18),
+                      label: const Text('导出角色卡'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildBasicCard(),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+          _buildCustomAttributes(tokens),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: _buildDescCard(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoleScroll(
+    BuildContext context,
+    SystemUiOverlayStyle overlayStyle,
+    double topInset,
+  ) {
+    Widget cover({PreferredSizeWidget? tabs}) => _ImmersiveCover(
+      path: _coverImg,
+      name: _nameController.text.trim(),
+      race: _raceController.text.trim(),
+      occupation: _occupationController.text.trim(),
+      overlayStyle: overlayStyle,
+      hasCover: _coverReadable,
+      supportDirectory: widget.supportDirectory,
+      onPick: _pickCover,
+      onPreview: _saving ? null : _openCoverPreview,
+      bottom: tabs,
+      toolbarHeight: topInset + 60,
+    );
+    if (!_isEditing) {
+      return CustomScrollView(
+        controller: _scrollController,
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        slivers: [cover(), _buildDetailsSliver(context)],
+      );
+    }
+    final tokens = ZaidangTokens.of(context);
+    return NestedScrollView(
+      key: const Key('role-detail-nested-scroll'),
+      controller: _scrollController,
+      headerSliverBuilder: (context, innerBoxIsScrolled) => [
+        SliverOverlapAbsorber(
+          handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+          sliver: cover(
+            tabs: PreferredSize(
+              preferredSize: const Size.fromHeight(48),
+              child: ColoredBox(
+                color: tokens.bg,
+                child: TabBar(
+                  key: const Key('role-detail-tabs'),
+                  controller: _detailTabs,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  labelColor: tokens.accent,
+                  unselectedLabelColor: tokens.inkSecondary,
+                  indicatorColor: tokens.accent,
+                  dividerColor: tokens.border,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  tabs: const [
+                    Tab(text: '详情'),
+                    Tab(text: '资产'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+      body: Builder(
+        builder: (context) {
+          final handle = NestedScrollView.sliverOverlapAbsorberHandleFor(
+            context,
+          );
+          return NotificationListener<ScrollStartNotification>(
+            onNotification: (notification) {
+              if (notification.depth == 0 &&
+                  notification.dragDetails != null &&
+                  notification.metrics.axis == Axis.horizontal) {
+                _onDetailTabChanged();
+              }
+              return false;
+            },
+            child: TabBarView(
+              controller: _detailTabs,
+              children: [
+                _KeepAliveDetails(
+                  child: CustomScrollView(
+                    key: const PageStorageKey('role-details-scroll'),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    slivers: [
+                      SliverOverlapInjector(handle: handle),
+                      SliverLayoutBuilder(
+                        builder: (context, constraints) {
+                          _detailsScrollPosition = Scrollable.of(context)
+                              .position;
+                          return _buildDetailsSliver(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                RoleAssetsTab(
+                  roleId: widget.role!.id,
+                  overlapHandle: handle,
+                  enabled: !_saving,
+                  onBusyChanged: (busy) {
+                    if (mounted) setState(() => _assetBusy = busy);
+                  },
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -536,6 +697,14 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
       );
+      if (!mounted || _saving || !_attributes.contains(attribute)) return;
+      if (_isEditing && _detailsScrollPosition != null) {
+        await _detailsScrollPosition!.animateTo(
+          _detailsScrollPosition!.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
       if (!mounted || _saving || !_attributes.contains(attribute)) return;
       attribute.nameFocus.requestFocus();
     });
@@ -712,7 +881,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
                           hintText: '例如：魔法属性',
                         ),
                         textInputAction: TextInputAction.next,
-                        scrollPadding: const EdgeInsets.all(80),
+                        scrollPadding: _fieldScrollPadding,
                         autovalidateMode: _validateAttributes
                             ? AutovalidateMode.always
                             : AutovalidateMode.disabled,
@@ -733,7 +902,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
                         maxLines: 6,
                         keyboardType: TextInputType.multiline,
                         textInputAction: TextInputAction.newline,
-                        scrollPadding: const EdgeInsets.all(80),
+                        scrollPadding: _fieldScrollPadding,
                       ),
                     ],
                   ),
@@ -763,7 +932,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage> {
       maxLines: maxLines,
       textInputAction: textInputAction,
       keyboardType: maxLines > 1 ? TextInputType.multiline : TextInputType.text,
-      scrollPadding: const EdgeInsets.all(80),
+      scrollPadding: _fieldScrollPadding,
       validator: validator,
     );
   }
@@ -829,6 +998,73 @@ class _HeroBackdrop extends StatelessWidget {
   }
 }
 
+/// 吸顶时保留角色识别信息，长名字截断，不挤占两侧操作按钮。
+class _PinnedRoleIdentity extends StatelessWidget {
+  const _PinnedRoleIdentity({
+    required this.name,
+    required this.coverImg,
+    this.supportDirectory,
+  });
+
+  final String name;
+  final String coverImg;
+  final Future<Directory> Function()? supportDirectory;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = ZaidangTokens.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 280),
+      child: DecoratedBox(
+        key: const Key('role-pinned-identity'),
+        decoration: BoxDecoration(
+          color: tokens.bg.withValues(alpha: 0.94),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ClipOval(
+                child: SizedBox.square(
+                  dimension: 32,
+                  child: CoverFileView(
+                    key: const Key('role-pinned-portrait'),
+                    coverImg: coverImg,
+                    supportDirectory: supportDirectory,
+                    placeholder: ColoredBox(
+                      color: tokens.surface,
+                      child: Icon(
+                        Icons.person_outline,
+                        size: 20,
+                        color: tokens.inkSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  name.isEmpty ? '未命名角色' : name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: tokens.ink,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// 沉浸式头图：高斯模糊背景 + 左下角立绘名片。
 class _ImmersiveCover extends StatelessWidget {
   const _ImmersiveCover({
@@ -841,6 +1077,8 @@ class _ImmersiveCover extends StatelessWidget {
     required this.onPick,
     required this.onPreview,
     this.supportDirectory,
+    this.bottom,
+    this.toolbarHeight = 60,
   });
 
   final String path;
@@ -852,6 +1090,8 @@ class _ImmersiveCover extends StatelessWidget {
   final VoidCallback onPick;
   final VoidCallback? onPreview;
   final Future<Directory> Function()? supportDirectory;
+  final PreferredSizeWidget? bottom;
+  final double toolbarHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -859,71 +1099,125 @@ class _ImmersiveCover extends StatelessWidget {
 
     return SliverAppBar(
       primary: false,
-      pinned: false,
+      pinned: bottom != null,
       floating: false,
       stretch: true,
       automaticallyImplyLeading: false,
-      toolbarHeight: 0,
-      collapsedHeight: _heroHeight,
-      expandedHeight: _heroHeight,
+      toolbarHeight: bottom == null ? 0 : toolbarHeight,
+      collapsedHeight: bottom == null ? _heroHeight : toolbarHeight,
+      expandedHeight: _heroHeight + (bottom?.preferredSize.height ?? 0),
+      bottom: bottom,
       systemOverlayStyle: overlayStyle,
-      backgroundColor: Colors.transparent,
+      // 吸顶后 FlexibleSpaceBar 会淡出头图，必须由 Material 遮住下方滚动内容。
+      backgroundColor: bottom == null ? Colors.transparent : tokens.bg,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
-      forceMaterialTransparency: true,
+      forceMaterialTransparency: bottom == null,
       clipBehavior: Clip.hardEdge,
-      flexibleSpace: Stack(
-        key: const Key('role-create-cover-hero'),
-        fit: StackFit.expand,
-        children: [
-          Positioned.fill(
-            child: FlexibleSpaceBar(
-              collapseMode: CollapseMode.none,
-              stretchModes: const [StretchMode.zoomBackground],
-              background: _HeroBackdrop(
-                path: path,
-                supportDirectory: supportDirectory,
-              ),
-            ),
-          ),
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: _heroCapHeight + 12,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: _CallingCard(
-                path: path,
-                name: name,
-                race: race,
-                occupation: occupation,
-                hasCover: hasCover,
-                supportDirectory: supportDirectory,
-                onPick: onPick,
-                onPreview: onPreview,
-              ),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: -1,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: tokens.bg,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20),
+      flexibleSpace: Padding(
+        padding: EdgeInsets.only(bottom: bottom?.preferredSize.height ?? 0),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final visible = bottom == null
+                ? 1.0
+                : ((constraints.maxHeight - toolbarHeight - 60) / 100).clamp(
+                    0.0,
+                    1.0,
+                  );
+            final onPaper =
+                bottom != null && constraints.maxHeight <= toolbarHeight + 24;
+            final paperStyle = Theme.of(context).brightness == Brightness.dark
+                ? SystemUiOverlayStyle.light
+                : SystemUiOverlayStyle.dark;
+            return AnnotatedRegion<SystemUiOverlayStyle>(
+              value: onPaper
+                  ? paperStyle.copyWith(
+                      statusBarColor: Colors.transparent,
+                      systemNavigationBarColor: tokens.bg,
+                    )
+                  : overlayStyle,
+              child: Stack(
+                key: const Key('role-create-cover-hero'),
+                fit: StackFit.expand,
+                children: [
+                  Positioned.fill(
+                    child: FlexibleSpaceBar(
+                      collapseMode: CollapseMode.none,
+                      stretchModes: const [StretchMode.zoomBackground],
+                      background: _HeroBackdrop(
+                        path: path,
+                        supportDirectory: supportDirectory,
+                      ),
+                    ),
                   ),
-                ),
-                child: const SizedBox(height: _heroCapHeight),
+                  Positioned(
+                    left: 16,
+                    right: 16,
+                    bottom: _heroCapHeight + 12,
+                    child: IgnorePointer(
+                      ignoring: visible < 1,
+                      child: Opacity(
+                        opacity: visible,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: _CallingCard(
+                            path: path,
+                            name: name,
+                            race: race,
+                            occupation: occupation,
+                            hasCover: hasCover,
+                            supportDirectory: supportDirectory,
+                            onPick: onPick,
+                            onPreview: onPreview,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: -1,
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: tokens.bg,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(20),
+                          ),
+                        ),
+                        child: const SizedBox(height: _heroCapHeight),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
     );
+  }
+}
+
+class _KeepAliveDetails extends StatefulWidget {
+  const _KeepAliveDetails({required this.child});
+  final Widget child;
+
+  @override
+  State<_KeepAliveDetails> createState() => _KeepAliveDetailsState();
+}
+
+class _KeepAliveDetailsState extends State<_KeepAliveDetails>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
 
@@ -1147,7 +1441,7 @@ class _GlassSaveButton extends StatelessWidget {
 
   final bool saving;
   final bool onPhoto;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {

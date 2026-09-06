@@ -36,6 +36,22 @@ class SqliteSnapshotter {
     }
   }
 
+  /// 以快照中的引用为准，避免云端目录枚举遗漏时静默丢失资产文件。
+  Map<String, int> readAssetFiles(File sqliteFile) {
+    final database = sqlite3.open(sqliteFile.path, mode: OpenMode.readOnly);
+    try {
+      if (database.userVersion < 8) return {};
+      return {
+        for (final row in database.select(
+          'SELECT relative_path, bytes FROM role_asset',
+        ))
+          row['relative_path'] as String: row['bytes'] as int,
+      };
+    } finally {
+      database.close();
+    }
+  }
+
   void writeUserVersion(File sqliteFile, int version) {
     final db = sqlite3.open(sqliteFile.path);
     try {

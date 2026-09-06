@@ -11,6 +11,7 @@ import 'cover_path.dart';
 import 'cover_store.dart';
 import 'icloud_container.dart';
 import 'restore_progress.dart';
+import 'role_asset_store.dart';
 import 'restore_version_gate.dart';
 import 'sqlite_snapshotter.dart';
 
@@ -28,6 +29,9 @@ class RestorePlan {
   final Directory coversDir;
   final int schemaVersion;
   final BackupManifest? manifest;
+
+  Directory get assetsDir =>
+      Directory(p.join(workDir.path, RoleAssetStore.folderName));
 
   Future<void> dispose() async {
     if (await workDir.exists()) {
@@ -124,6 +128,20 @@ class ICloudBackupService {
         }
       }
 
+      onProgress?.call('正在上传角色资产…');
+      final assetFiles = snapshotter.readAssetFiles(snapshot);
+      final assetStore = RoleAssetStore(support);
+      final remoteAssets = await _remoteAssetSizes();
+      for (final entry in assetFiles.entries) {
+        final file = assetStore.resolve(entry.key);
+        if (!await file.exists() || await file.length() != entry.value) {
+          throw BackupFailedException('资产文件缺失或不完整：${entry.key}');
+        }
+        if (remoteAssets[entry.key] != entry.value) {
+          await container.upload(localPath: file.path, relativePath: entry.key);
+        }
+      }
+
       onProgress?.call('正在上传数据库…');
       await container.upload(
         localPath: snapshot.path,
@@ -142,6 +160,10 @@ class ICloudBackupService {
               bytes: await cover.bytes,
             ),
         ],
+        assets: [
+          for (final entry in assetFiles.entries)
+            BackupFileEntry(file: entry.key, bytes: entry.value),
+        ],
       );
       final manifestFile = File(p.join(workDir.path, 'manifest.json'));
       await manifestFile.writeAsString(
@@ -152,6 +174,9 @@ class ICloudBackupService {
         localPath: manifestFile.path,
         relativePath: 'manifest.json',
       );
+      for (final path in remoteAssets.keys) {
+        if (!assetFiles.containsKey(path)) await container.delete(path);
+      }
       return manifest;
     } on BackupException {
       rethrow;
@@ -229,33 +254,53 @@ class ICloudBackupService {
     final plan = inspection ?? await inspectBackup(onProgress: onProgress);
     try {
       final coverPaths = await _coverPathsToDownload(plan.manifest);
-      if (coverPaths.isEmpty) {
-        return plan;
-      }
+      final assets = snapshotter.readAssetFiles(plan.sqliteSnapshot);
+      await plan.assetsDir.create(recursive: true);
+      final total = coverPaths.length + assets.length;
       final expectedBytes = {
-        for (final cover in plan.manifest?.covers ?? const <CoverManifestEntry>[])
+        for (final cover
+            in plan.manifest?.covers ?? const <CoverManifestEntry>[])
           cover.file: cover.bytes,
       };
       final watch = Stopwatch()..start();
       for (var i = 0; i < coverPaths.length; i++) {
         final relativePath = coverPaths[i];
         onProgress?.call(
-          RestoreProgress(
-            total: coverPaths.length,
-            current: i + 1,
-            elapsed: watch.elapsed,
-          ),
+          RestoreProgress(total: total, current: i + 1, elapsed: watch.elapsed),
         );
-        final localPath = p.join(
-          plan.coversDir.path,
-          p.basename(relativePath),
-        );
+        final localPath = p.join(plan.coversDir.path, p.basename(relativePath));
         await container.download(
           relativePath: relativePath,
           localPath: localPath,
         );
         final minBytes = expectedBytes[relativePath] ?? 1;
-        await _rejectEmptyFile(File(localPath), relativePath, minBytes: minBytes);
+        await _rejectEmptyFile(
+          File(localPath),
+          relativePath,
+          minBytes: minBytes,
+        );
+      }
+      var current = coverPaths.length;
+      for (final asset in assets.entries) {
+        if (!RoleAssetStore.isValidPath(asset.key) || asset.value < 0) {
+          throw const RestoreFailedException('备份中的资产信息无效');
+        }
+        onProgress?.call(
+          RestoreProgress(
+            total: total,
+            current: ++current,
+            elapsed: watch.elapsed,
+          ),
+        );
+        final localPath = p.join(
+          plan.assetsDir.path,
+          p.posix.basename(asset.key),
+        );
+        await container.download(relativePath: asset.key, localPath: localPath);
+        final file = File(localPath);
+        if (!await file.exists() || await file.length() != asset.value) {
+          throw RestoreFailedException('下载 ${asset.key} 失败：文件不完整');
+        }
       }
       return plan;
     } catch (error) {
@@ -269,26 +314,36 @@ class ICloudBackupService {
     }
   }
 
-  /// 调用前必须已经关闭活库连接。失败时回滚 covers，不留下半替换的 sqlite。
+  /// 调用前必须已经关闭活库连接。数据库替换失败时回滚立绘和资产目录。
   Future<void> commitRestore(RestorePlan plan) async {
     final support = await supportDirectory();
     final liveSqlite = File(p.join(support.path, AppDatabase.sqliteFileName));
     final covers = CoverStore(support);
+    final assets = RoleAssetStore(support);
     Directory? coversBak;
+    Directory? assetsBak;
+    var assetsReplaced = false;
     try {
       coversBak = await covers.replaceKeepingBackup(plan.coversDir);
       try {
+        assetsBak = await assets.replaceKeepingBackup(plan.assetsDir);
+        assetsReplaced = true;
         await snapshotter.replaceLive(
           snapshot: plan.sqliteSnapshot,
           liveSqlite: liveSqlite,
         );
       } catch (error) {
-        await covers.rollback(coversBak);
+        try {
+          if (assetsReplaced) await assets.rollback(assetsBak);
+        } finally {
+          await covers.rollback(coversBak);
+        }
         coversBak = null;
         throw RestoreFailedException('恢复失败：$error');
       }
       try {
         await covers.discardBackup(coversBak);
+        await assets.discardBackup(assetsBak);
       } catch (_) {
         // 覆盖已经成功；旧 covers 备份删不掉不影响本机数据。
       }
@@ -362,6 +417,18 @@ class ICloudBackupService {
       return {
         for (final entry in entries)
           if (entry.relativePath.startsWith('${CoverPath.directoryName}/'))
+            entry.relativePath: entry.bytes,
+      };
+    } on BackupException {
+      return {};
+    }
+  }
+
+  Future<Map<String, int>> _remoteAssetSizes() async {
+    try {
+      return {
+        for (final entry in await container.list(RoleAssetStore.folderName))
+          if (RoleAssetStore.isValidPath(entry.relativePath))
             entry.relativePath: entry.bytes,
       };
     } on BackupException {

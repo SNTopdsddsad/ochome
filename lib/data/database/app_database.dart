@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../services/cover_path.dart';
 import 'tables/role.dart';
+import 'tables/role_asset.dart';
 import 'tables/role_desc_revision.dart';
 
 part 'app_database.g.dart';
@@ -14,12 +15,12 @@ part 'app_database.g.dart';
 /// 应用本地数据库入口，只负责打开连接和挂表，不写业务 CRUD。
 ///
 /// 可选 [executor] 供测试注入内存库；正式运行走 [_openConnection]。
-@DriftDatabase(tables: [Roles, RoleDescRevisions])
+@DriftDatabase(tables: [Roles, RoleDescRevisions, RoleAssets])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   /// 表结构版本。增删列后必须递增并补 migration。
-  static const int currentSchemaVersion = 7;
+  static const int currentSchemaVersion = 8;
 
   static const String sqliteFileName = 'ochome.sqlite';
 
@@ -65,6 +66,10 @@ class AppDatabase extends _$AppDatabase {
       // 更早的重建分支已经使用最新表定义，不能重复添加这一列。
       if (from >= 3 && from < 7) {
         await migrator.addColumn(roles, roles.customAttributes);
+      }
+      if (from < 8) {
+        await migrator.createTable(roleAssets);
+        await migrator.createIndex(roleAssetRoleId);
       }
     },
     beforeOpen: (details) async {

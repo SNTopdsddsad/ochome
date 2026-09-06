@@ -907,12 +907,465 @@ class RoleDescRevisionsCompanion extends UpdateCompanion<RoleDescRevision> {
   }
 }
 
+class $RoleAssetsTable extends RoleAssets
+    with TableInfo<$RoleAssetsTable, RoleAsset> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RoleAssetsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _roleIdMeta = const VerificationMeta('roleId');
+  @override
+  late final GeneratedColumn<int> roleId = GeneratedColumn<int>(
+    'role_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES role (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _relativePathMeta = const VerificationMeta(
+    'relativePath',
+  );
+  @override
+  late final GeneratedColumn<String> relativePath = GeneratedColumn<String>(
+    'relative_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _bytesMeta = const VerificationMeta('bytes');
+  @override
+  late final GeneratedColumn<int> bytes = GeneratedColumn<int>(
+    'bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    roleId,
+    name,
+    kind,
+    relativePath,
+    bytes,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'role_asset';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RoleAsset> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('role_id')) {
+      context.handle(
+        _roleIdMeta,
+        roleId.isAcceptableOrUnknown(data['role_id']!, _roleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_roleIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('relative_path')) {
+      context.handle(
+        _relativePathMeta,
+        relativePath.isAcceptableOrUnknown(
+          data['relative_path']!,
+          _relativePathMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_relativePathMeta);
+    }
+    if (data.containsKey('bytes')) {
+      context.handle(
+        _bytesMeta,
+        bytes.isAcceptableOrUnknown(data['bytes']!, _bytesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bytesMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RoleAsset map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RoleAsset(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      roleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}role_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      relativePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}relative_path'],
+      )!,
+      bytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}bytes'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $RoleAssetsTable createAlias(String alias) {
+    return $RoleAssetsTable(attachedDatabase, alias);
+  }
+}
+
+class RoleAsset extends DataClass implements Insertable<RoleAsset> {
+  final int id;
+  final int roleId;
+  final String name;
+  final String kind;
+  final String relativePath;
+  final int bytes;
+  final DateTime createdAt;
+  const RoleAsset({
+    required this.id,
+    required this.roleId,
+    required this.name,
+    required this.kind,
+    required this.relativePath,
+    required this.bytes,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['role_id'] = Variable<int>(roleId);
+    map['name'] = Variable<String>(name);
+    map['kind'] = Variable<String>(kind);
+    map['relative_path'] = Variable<String>(relativePath);
+    map['bytes'] = Variable<int>(bytes);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  RoleAssetsCompanion toCompanion(bool nullToAbsent) {
+    return RoleAssetsCompanion(
+      id: Value(id),
+      roleId: Value(roleId),
+      name: Value(name),
+      kind: Value(kind),
+      relativePath: Value(relativePath),
+      bytes: Value(bytes),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory RoleAsset.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RoleAsset(
+      id: serializer.fromJson<int>(json['id']),
+      roleId: serializer.fromJson<int>(json['roleId']),
+      name: serializer.fromJson<String>(json['name']),
+      kind: serializer.fromJson<String>(json['kind']),
+      relativePath: serializer.fromJson<String>(json['relativePath']),
+      bytes: serializer.fromJson<int>(json['bytes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'roleId': serializer.toJson<int>(roleId),
+      'name': serializer.toJson<String>(name),
+      'kind': serializer.toJson<String>(kind),
+      'relativePath': serializer.toJson<String>(relativePath),
+      'bytes': serializer.toJson<int>(bytes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  RoleAsset copyWith({
+    int? id,
+    int? roleId,
+    String? name,
+    String? kind,
+    String? relativePath,
+    int? bytes,
+    DateTime? createdAt,
+  }) => RoleAsset(
+    id: id ?? this.id,
+    roleId: roleId ?? this.roleId,
+    name: name ?? this.name,
+    kind: kind ?? this.kind,
+    relativePath: relativePath ?? this.relativePath,
+    bytes: bytes ?? this.bytes,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  RoleAsset copyWithCompanion(RoleAssetsCompanion data) {
+    return RoleAsset(
+      id: data.id.present ? data.id.value : this.id,
+      roleId: data.roleId.present ? data.roleId.value : this.roleId,
+      name: data.name.present ? data.name.value : this.name,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      relativePath: data.relativePath.present
+          ? data.relativePath.value
+          : this.relativePath,
+      bytes: data.bytes.present ? data.bytes.value : this.bytes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoleAsset(')
+          ..write('id: $id, ')
+          ..write('roleId: $roleId, ')
+          ..write('name: $name, ')
+          ..write('kind: $kind, ')
+          ..write('relativePath: $relativePath, ')
+          ..write('bytes: $bytes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, roleId, name, kind, relativePath, bytes, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RoleAsset &&
+          other.id == this.id &&
+          other.roleId == this.roleId &&
+          other.name == this.name &&
+          other.kind == this.kind &&
+          other.relativePath == this.relativePath &&
+          other.bytes == this.bytes &&
+          other.createdAt == this.createdAt);
+}
+
+class RoleAssetsCompanion extends UpdateCompanion<RoleAsset> {
+  final Value<int> id;
+  final Value<int> roleId;
+  final Value<String> name;
+  final Value<String> kind;
+  final Value<String> relativePath;
+  final Value<int> bytes;
+  final Value<DateTime> createdAt;
+  const RoleAssetsCompanion({
+    this.id = const Value.absent(),
+    this.roleId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.relativePath = const Value.absent(),
+    this.bytes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  RoleAssetsCompanion.insert({
+    this.id = const Value.absent(),
+    required int roleId,
+    required String name,
+    required String kind,
+    required String relativePath,
+    required int bytes,
+    required DateTime createdAt,
+  }) : roleId = Value(roleId),
+       name = Value(name),
+       kind = Value(kind),
+       relativePath = Value(relativePath),
+       bytes = Value(bytes),
+       createdAt = Value(createdAt);
+  static Insertable<RoleAsset> custom({
+    Expression<int>? id,
+    Expression<int>? roleId,
+    Expression<String>? name,
+    Expression<String>? kind,
+    Expression<String>? relativePath,
+    Expression<int>? bytes,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (roleId != null) 'role_id': roleId,
+      if (name != null) 'name': name,
+      if (kind != null) 'kind': kind,
+      if (relativePath != null) 'relative_path': relativePath,
+      if (bytes != null) 'bytes': bytes,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  RoleAssetsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? roleId,
+    Value<String>? name,
+    Value<String>? kind,
+    Value<String>? relativePath,
+    Value<int>? bytes,
+    Value<DateTime>? createdAt,
+  }) {
+    return RoleAssetsCompanion(
+      id: id ?? this.id,
+      roleId: roleId ?? this.roleId,
+      name: name ?? this.name,
+      kind: kind ?? this.kind,
+      relativePath: relativePath ?? this.relativePath,
+      bytes: bytes ?? this.bytes,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (roleId.present) {
+      map['role_id'] = Variable<int>(roleId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (relativePath.present) {
+      map['relative_path'] = Variable<String>(relativePath.value);
+    }
+    if (bytes.present) {
+      map['bytes'] = Variable<int>(bytes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoleAssetsCompanion(')
+          ..write('id: $id, ')
+          ..write('roleId: $roleId, ')
+          ..write('name: $name, ')
+          ..write('kind: $kind, ')
+          ..write('relativePath: $relativePath, ')
+          ..write('bytes: $bytes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $RolesTable roles = $RolesTable(this);
   late final $RoleDescRevisionsTable roleDescRevisions =
       $RoleDescRevisionsTable(this);
+  late final $RoleAssetsTable roleAssets = $RoleAssetsTable(this);
+  late final Index roleAssetRoleId = Index(
+    'role_asset_role_id',
+    'CREATE INDEX role_asset_role_id ON role_asset (role_id)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -920,6 +1373,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     roles,
     roleDescRevisions,
+    roleAssets,
+    roleAssetRoleId,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -929,6 +1384,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('role_desc_revision', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'role',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('role_asset', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -978,6 +1440,24 @@ final class $$RolesTableReferences
     final cache = $_typedResult.readTableOrNull(
       _roleDescRevisionsRefsTable($_db),
     );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$RoleAssetsTable, List<RoleAsset>>
+  _roleAssetsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.roleAssets,
+    aliasName: 'role__id__role_asset__role_id',
+  );
+
+  $$RoleAssetsTableProcessedTableManager get roleAssetsRefs {
+    final manager = $$RoleAssetsTableTableManager(
+      $_db,
+      $_db.roleAssets,
+    ).filter((f) => f.roleId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_roleAssetsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -1058,6 +1538,31 @@ class $$RolesTableFilterComposer extends Composer<_$AppDatabase, $RolesTable> {
           }) => $$RoleDescRevisionsTableFilterComposer(
             $db: $db,
             $table: $db.roleDescRevisions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> roleAssetsRefs(
+    Expression<bool> Function($$RoleAssetsTableFilterComposer f) f,
+  ) {
+    final $$RoleAssetsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.roleAssets,
+      getReferencedColumn: (t) => t.roleId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RoleAssetsTableFilterComposer(
+            $db: $db,
+            $table: $db.roleAssets,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -1196,6 +1701,31 @@ class $$RolesTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> roleAssetsRefs<T extends Object>(
+    Expression<T> Function($$RoleAssetsTableAnnotationComposer a) f,
+  ) {
+    final $$RoleAssetsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.roleAssets,
+      getReferencedColumn: (t) => t.roleId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RoleAssetsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.roleAssets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$RolesTableTableManager
@@ -1211,7 +1741,10 @@ class $$RolesTableTableManager
           $$RolesTableUpdateCompanionBuilder,
           (Role, $$RolesTableReferences),
           Role,
-          PrefetchHooks Function({bool roleDescRevisionsRefs})
+          PrefetchHooks Function({
+            bool roleDescRevisionsRefs,
+            bool roleAssetsRefs,
+          })
         > {
   $$RolesTableTableManager(_$AppDatabase db, $RolesTable table)
     : super(
@@ -1278,37 +1811,59 @@ class $$RolesTableTableManager
                     (e.readTable(table), $$RolesTableReferences(db, table, e)),
               )
               .toList(),
-          prefetchHooksCallback: ({roleDescRevisionsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (roleDescRevisionsRefs) db.roleDescRevisions,
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (roleDescRevisionsRefs)
-                    await $_getPrefetchedData<
-                      Role,
-                      $RolesTable,
-                      RoleDescRevision
-                    >(
-                      currentTable: table,
-                      referencedTable: $$RolesTableReferences
-                          ._roleDescRevisionsRefsTable(db),
-                      managerFromTypedResult: (p0) => $$RolesTableReferences(
-                        db,
-                        table,
-                        p0,
-                      ).roleDescRevisionsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.roleId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({roleDescRevisionsRefs = false, roleAssetsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (roleDescRevisionsRefs) db.roleDescRevisions,
+                    if (roleAssetsRefs) db.roleAssets,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (roleDescRevisionsRefs)
+                        await $_getPrefetchedData<
+                          Role,
+                          $RolesTable,
+                          RoleDescRevision
+                        >(
+                          currentTable: table,
+                          referencedTable: $$RolesTableReferences
+                              ._roleDescRevisionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$RolesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).roleDescRevisionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.roleId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (roleAssetsRefs)
+                        await $_getPrefetchedData<Role, $RolesTable, RoleAsset>(
+                          currentTable: table,
+                          referencedTable: $$RolesTableReferences
+                              ._roleAssetsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$RolesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).roleAssetsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.roleId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -1325,7 +1880,7 @@ typedef $$RolesTableProcessedTableManager =
       $$RolesTableUpdateCompanionBuilder,
       (Role, $$RolesTableReferences),
       Role,
-      PrefetchHooks Function({bool roleDescRevisionsRefs})
+      PrefetchHooks Function({bool roleDescRevisionsRefs, bool roleAssetsRefs})
     >;
 typedef $$RoleDescRevisionsTableCreateCompanionBuilder =
     RoleDescRevisionsCompanion Function({
@@ -1631,6 +2186,353 @@ typedef $$RoleDescRevisionsTableProcessedTableManager =
       RoleDescRevision,
       PrefetchHooks Function({bool roleId})
     >;
+typedef $$RoleAssetsTableCreateCompanionBuilder = RoleAssetsCompanion Function({
+  Value<int> id,
+  required int roleId,
+  required String name,
+  required String kind,
+  required String relativePath,
+  required int bytes,
+  required DateTime createdAt,
+});
+typedef $$RoleAssetsTableUpdateCompanionBuilder = RoleAssetsCompanion Function({
+  Value<int> id,
+  Value<int> roleId,
+  Value<String> name,
+  Value<String> kind,
+  Value<String> relativePath,
+  Value<int> bytes,
+  Value<DateTime> createdAt,
+});
+
+final class $$RoleAssetsTableReferences
+    extends BaseReferences<_$AppDatabase, $RoleAssetsTable, RoleAsset> {
+  $$RoleAssetsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $RolesTable _roleIdTable(_$AppDatabase db) =>
+      db.roles.createAlias('role_asset__role_id__role__id');
+
+  $$RolesTableProcessedTableManager get roleId {
+    final $_column = $_itemColumn<int>('role_id')!;
+
+    final manager = $$RolesTableTableManager(
+      $_db,
+      $_db.roles,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_roleIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$RoleAssetsTableFilterComposer
+    extends Composer<_$AppDatabase, $RoleAssetsTable> {
+  $$RoleAssetsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get relativePath => $composableBuilder(
+    column: $table.relativePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$RolesTableFilterComposer get roleId {
+    final $$RolesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.roleId,
+      referencedTable: $db.roles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RolesTableFilterComposer(
+            $db: $db,
+            $table: $db.roles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RoleAssetsTableOrderingComposer
+    extends Composer<_$AppDatabase, $RoleAssetsTable> {
+  $$RoleAssetsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get relativePath => $composableBuilder(
+    column: $table.relativePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$RolesTableOrderingComposer get roleId {
+    final $$RolesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.roleId,
+      referencedTable: $db.roles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RolesTableOrderingComposer(
+            $db: $db,
+            $table: $db.roles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RoleAssetsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RoleAssetsTable> {
+  $$RoleAssetsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get relativePath => $composableBuilder(
+    column: $table.relativePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get bytes =>
+      $composableBuilder(column: $table.bytes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$RolesTableAnnotationComposer get roleId {
+    final $$RolesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.roleId,
+      referencedTable: $db.roles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RolesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.roles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RoleAssetsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RoleAssetsTable,
+          RoleAsset,
+          $$RoleAssetsTableFilterComposer,
+          $$RoleAssetsTableOrderingComposer,
+          $$RoleAssetsTableAnnotationComposer,
+          $$RoleAssetsTableCreateCompanionBuilder,
+          $$RoleAssetsTableUpdateCompanionBuilder,
+          (RoleAsset, $$RoleAssetsTableReferences),
+          RoleAsset,
+          PrefetchHooks Function({bool roleId})
+        > {
+  $$RoleAssetsTableTableManager(_$AppDatabase db, $RoleAssetsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RoleAssetsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RoleAssetsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RoleAssetsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> roleId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> relativePath = const Value.absent(),
+                Value<int> bytes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => RoleAssetsCompanion(
+                id: id,
+                roleId: roleId,
+                name: name,
+                kind: kind,
+                relativePath: relativePath,
+                bytes: bytes,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int roleId,
+                required String name,
+                required String kind,
+                required String relativePath,
+                required int bytes,
+                required DateTime createdAt,
+              }) => RoleAssetsCompanion.insert(
+                id: id,
+                roleId: roleId,
+                name: name,
+                kind: kind,
+                relativePath: relativePath,
+                bytes: bytes,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$RoleAssetsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({roleId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (roleId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.roleId,
+                        referencedTable: $$RoleAssetsTableReferences
+                            ._roleIdTable(db),
+                        referencedColumn: $$RoleAssetsTableReferences
+                            ._roleIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$RoleAssetsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $RoleAssetsTable,
+      RoleAsset,
+      $$RoleAssetsTableFilterComposer,
+      $$RoleAssetsTableOrderingComposer,
+      $$RoleAssetsTableAnnotationComposer,
+      $$RoleAssetsTableCreateCompanionBuilder,
+      $$RoleAssetsTableUpdateCompanionBuilder,
+      (RoleAsset, $$RoleAssetsTableReferences),
+      RoleAsset,
+      PrefetchHooks Function({bool roleId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1639,4 +2541,6 @@ class $AppDatabaseManager {
       $$RolesTableTableManager(_db, _db.roles);
   $$RoleDescRevisionsTableTableManager get roleDescRevisions =>
       $$RoleDescRevisionsTableTableManager(_db, _db.roleDescRevisions);
+  $$RoleAssetsTableTableManager get roleAssets =>
+      $$RoleAssetsTableTableManager(_db, _db.roleAssets);
 }

@@ -217,7 +217,7 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
     return showZaidangConfirmDialog(
       context: context,
       title: '用云端备份替换本机内容？',
-      body: '本机的角色资料、设定历史和立绘都会被 iCloud 备份替换。',
+      body: '本机的角色资料、设定历史、立绘和资产都会被 iCloud 备份替换。',
       consequence: '这次替换无法撤销。',
       cancelLabel: '先不恢复',
       cancelSemanticLabel: '先不恢复，保留本机内容',
