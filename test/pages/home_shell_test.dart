@@ -172,14 +172,34 @@ void main() {
     expect(find.byType(NavigationBar), findsOneWidget);
   });
 
-  testWidgets('FAB sits above the tab bar on a phone frame', (tester) async {
-    _useView(tester, const Size(390, 844));
-    await _pumpApp(tester);
+  testWidgets(
+    'compact tab bar preserves the phone safe area and FAB clearance',
+    (tester) async {
+      _useView(tester, const Size(390, 844));
+      addTearDown(tester.view.resetPadding);
+      addTearDown(tester.view.resetViewPadding);
+      await _pumpApp(tester);
 
-    final fab = tester.getRect(find.byType(FloatingActionButton));
-    final tabBar = tester.getRect(find.byType(NavigationBar));
-    expect(fab.bottom, lessThan(tabBar.top));
-  });
+      for (final bottomInset in [0.0, 34.0]) {
+        tester.view.padding = FakeViewPadding(bottom: bottomInset);
+        tester.view.viewPadding = FakeViewPadding(bottom: bottomInset);
+        await tester.pumpAndSettle();
+
+        final fab = tester.getRect(find.byType(FloatingActionButton));
+        final tabBar = tester.getRect(find.byType(NavigationBar));
+        expect(tabBar.height, 56 + bottomInset);
+        expect(tabBar.bottom, 844);
+        expect(fab.bottom, lessThan(tabBar.top));
+        for (final label in ['档案', '我的']) {
+          expect(
+            tester.getRect(_tab(label)).bottom,
+            lessThanOrEqualTo(844 - bottomInset),
+          );
+        }
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
 
   testWidgets('system back from 我的 returns to 档案', (tester) async {
     await _pumpApp(tester);
