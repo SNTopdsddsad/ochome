@@ -22,8 +22,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('角色'), findsOneWidget);
+    expect(find.text('档案'), findsOneWidget);
+    expect(find.text('我的'), findsOneWidget);
     expect(find.text('还没有角色'), findsOneWidget);
     expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
 
     final theme = Theme.of(tester.element(find.byType(RoleListPage)));
     expect(theme.scaffoldBackgroundColor, ZaidangTokens.light.bg);

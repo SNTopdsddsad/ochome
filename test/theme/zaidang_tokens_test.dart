@@ -27,11 +27,13 @@ void main() {
     expect(light.scaffoldBackgroundColor, const Color(0xFFFAF6F0));
     expect(light.appBarTheme.backgroundColor, const Color(0xFFFAF6F0));
     expect(light.colorScheme.error, isNot(const Color(0xFFC2402A)));
+    _expectPaperNavigationBar(light, ZaidangTokens.light);
 
     expect(dark.colorScheme.primary, const Color(0xFFD96C5A));
     expect(dark.scaffoldBackgroundColor, const Color(0xFF171412));
     expect(dark.appBarTheme.backgroundColor, const Color(0xFF171412));
     expect(dark.colorScheme.error, isNot(const Color(0xFFD96C5A)));
+    _expectPaperNavigationBar(dark, ZaidangTokens.dark);
   });
 
   test('input fields fill with surface and outline with border', () {
@@ -48,4 +50,22 @@ void main() {
     final focused = theme.focusedBorder as OutlineInputBorder;
     expect(focused.borderSide.color, ZaidangTokens.light.accent);
   });
+}
+
+void _expectPaperNavigationBar(ThemeData theme, ZaidangTokens tokens) {
+  final navigation = theme.navigationBarTheme;
+  expect(navigation.backgroundColor, tokens.bg);
+  expect(navigation.indicatorColor, Colors.transparent);
+  expect(navigation.surfaceTintColor, Colors.transparent);
+  expect(navigation.elevation, 0);
+  expect(
+    navigation.iconTheme!.resolve({WidgetState.selected})!.color,
+    tokens.accent,
+  );
+  expect(navigation.iconTheme!.resolve({})!.color, tokens.inkSecondary);
+  expect(
+    navigation.labelTextStyle!.resolve({WidgetState.selected})!.color,
+    tokens.accent,
+  );
+  expect(navigation.labelTextStyle!.resolve({})!.color, tokens.inkSecondary);
 }
