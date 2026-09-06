@@ -75,15 +75,22 @@ ThemeData zaidangTheme(ZaidangTokens tokens, {required Brightness brightness}) {
       foregroundColor: tokens.onAccent,
     ),
     navigationBarTheme: NavigationBarThemeData(
+      // 主体高度不含手机底部安全区，由 NavigationBar 内部统一处理。
+      height: 56,
       backgroundColor: tokens.bg,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       indicatorColor: Colors.transparent,
+      labelPadding: const EdgeInsets.only(top: 2),
       iconTheme: WidgetStateProperty.resolveWith((states) {
-        return IconThemeData(color: _navigationColor(tokens, states));
+        return IconThemeData(size: 24, color: _navigationColor(tokens, states));
       }),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
-        return TextStyle(color: _navigationColor(tokens, states));
+        return TextStyle(
+          fontSize: 12,
+          height: 1.2,
+          color: _navigationColor(tokens, states),
+        );
       }),
     ),
     listTileTheme: ListTileThemeData(
