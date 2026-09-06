@@ -226,3 +226,45 @@
 ### Next Steps
 
 - 发布前在签名Apple设备上验收相册授权、完整批量保存、沙盒文件夹和真实系统分享；不以无签名构建替代实机结论。
+
+
+## Session 7: 首页底栏与导出页许可入口
+
+**Date**: 2026-09-06
+**Task**: 首页底栏与导出页许可入口
+**Branch**: `main`
+
+### Summary
+
+去掉导出角色卡右上角开源许可入口；首页改为档案/我的底栏并用 go_router 管理导航，新建编辑备份仍盖住底栏。
+
+### Main Changes
+
+- 移除导出页开源许可按钮，字体许可仍随字体加载注册
+- 引入 go_router，根页面改为档案/我的 StatefulShell，顶栏仍为角色
+- 底栏上方加 1px border 分隔线
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0aabfd9` | (see git log) |
+| `39755da` | (see git log) |
+| `5a00832` | (see git log) |
+| `38a3158` | (see git log) |
+| `5e2eecd` | (see git log) |
+| `68c3d4b` | (see git log) |
+| `a22b191` | (see git log) |
+| `7c7a0f7` | (see git log) |
+
+### Testing
+
+- [OK] flutter analyze 通过；flutter test 180 项通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 「我的」仍是空白占位，后续再放设置或备份
