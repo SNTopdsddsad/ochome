@@ -125,6 +125,7 @@ Brand extras that ship with A (do not invent a second accent):
 | Empty state | `inkSecondary` |
 | FAB / filled primary | `accent` + `onAccent` |
 | Selected chip / tab | `accent` at 5–10% area, not a red page |
+| Bottom `NavigationBar` | Paper `bg`, 1px top `border` hairline, transparent indicator, selected icon+label `accent`, unselected `inkSecondary`. No red bar fill, no cool gray. |
 | Buyout / member badge | `accentGold` |
 | Body / heading text | `ink` only — never accent paragraphs |
 | Delete / dangerous | ink button + second confirm; no red fill |
