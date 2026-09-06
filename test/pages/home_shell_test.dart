@@ -13,8 +13,10 @@ void main() {
   testWidgets('cold start shows 档案 with both tabs', (tester) async {
     await _pumpApp(tester);
 
-    expect(find.widgetWithText(AppBar, '角色'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, 'OC'), findsOneWidget);
     expect(find.byType(RoleListPage), findsOneWidget);
+    expect(find.widgetWithText(Tab, 'OC'), findsOneWidget);
+    expect(find.widgetWithText(Tab, '世界观'), findsOneWidget);
     expect(find.text('还没有角色'), findsOneWidget);
     expect(find.byType(FloatingActionButton), findsOneWidget);
     expect(_tab('档案'), findsOneWidget);
@@ -48,7 +50,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(AppBar, '我的'), findsOneWidget);
-    expect(find.widgetWithText(AppBar, '角色'), findsNothing);
+    expect(find.widgetWithText(AppBar, 'OC'), findsNothing);
     expect(find.text('Ada'), findsNothing);
     expect(find.text('还没有角色'), findsNothing);
     expect(find.byType(FloatingActionButton), findsNothing);
@@ -60,10 +62,54 @@ void main() {
     await tester.tap(_tab('档案'));
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(AppBar, '角色'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, 'OC'), findsOneWidget);
     expect(find.text('Ada'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(tester.element(find.byType(RoleListPage)), same(listElement));
+  });
+
+  testWidgets('archive tabs preserve the OC list and selected inner tab', (
+    tester,
+  ) async {
+    _useView(tester, const Size(390, 844));
+    await _pumpApp(
+      tester,
+      roles: List.generate(
+        30,
+        (index) => _sampleRole(id: index + 1, name: 'OC $index'),
+      ),
+    );
+
+    final listElement = tester.element(find.byType(RoleListPage));
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    final scrollable = tester.state<ScrollableState>(
+      find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    final offset = scrollable.position.pixels;
+    expect(offset, greaterThan(0));
+
+    await tester.tap(find.widgetWithText(Tab, '世界观'));
+    await tester.pumpAndSettle();
+    expect(find.text('暂无世界观'), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.byTooltip('备份与恢复'), findsOneWidget);
+
+    await tester.tap(_tab('我的'));
+    await tester.pumpAndSettle();
+    await tester.tap(_tab('档案'));
+    await tester.pumpAndSettle();
+    expect(find.text('暂无世界观'), findsOneWidget);
+
+    await tester.drag(find.byType(TabBarView), const Offset(350, 0));
+    await tester.pumpAndSettle();
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(tester.element(find.byType(RoleListPage)), same(listElement));
+    expect(scrollable.position.pixels, offset);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('create covers the tab bar and pops back to 档案', (tester) async {
@@ -81,7 +127,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('新建角色'), findsNothing);
-    expect(find.widgetWithText(AppBar, '角色'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, 'OC'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('Nana'), findsOneWidget);
   });
@@ -105,7 +151,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('编辑角色'), findsNothing);
-    expect(find.widgetWithText(AppBar, '角色'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, 'OC'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('Ada L'), findsOneWidget);
   });
@@ -122,7 +168,7 @@ void main() {
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(AppBar, '角色'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, 'OC'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
   });
 
@@ -147,7 +193,7 @@ void main() {
 
     expect(handled, isTrue);
     expect(find.byType(MyApp), findsOneWidget);
-    expect(find.widgetWithText(AppBar, '角色'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, 'OC'), findsOneWidget);
     expect(find.text('还没有角色'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
   });
@@ -186,10 +232,10 @@ void _useView(WidgetTester tester, Size size) {
   addTearDown(tester.view.resetDevicePixelRatio);
 }
 
-Role _sampleRole() {
-  return const Role(
-    id: 1,
-    name: 'Ada',
+Role _sampleRole({int id = 1, String name = 'Ada'}) {
+  return Role(
+    id: id,
+    name: name,
     sex: 'female',
     age: '17',
     birthday: '三月三日',

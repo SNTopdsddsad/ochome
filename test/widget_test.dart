@@ -21,8 +21,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('角色'), findsOneWidget);
-    expect(find.text('档案'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, 'OC'), findsOneWidget);
+    expect(find.widgetWithText(Tab, 'OC'), findsOneWidget);
+    expect(find.widgetWithText(Tab, '世界观'), findsOneWidget);
     expect(find.text('我的'), findsOneWidget);
     expect(find.text('还没有角色'), findsOneWidget);
     expect(find.byType(FloatingActionButton), findsOneWidget);
