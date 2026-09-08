@@ -46,7 +46,8 @@ the top Save action still saves the role form and returns to the preceding page.
 ## Asset interactions
 
 - **添加资产** offers the system photo/media picker or file picker. **全部 / 图片 /
-  视频 / 音频 / 文档** filter the role-owned list. Display original names and sizes.
+  视频 / 音频 / 文档** filter the role-owned list. Display saved names and sizes;
+  names initially come from the imported files.
 - Standard raster images reuse `CoverPreviewPage`, including swipe and zoom.
   Other image formats, video, audio and documents use `RoleAssetOpener` and the
   platform's file-opening UI. Surface missing files or missing apps visibly.
@@ -62,6 +63,41 @@ the top Save action still saves the role form and returns to the preceding page.
   metadata immediately, without modifying the source selected by the user.
 - Keep picker/opener/repository injectable through providers. Tests must not
   invoke native pickers or depend on the user's real database.
+
+## Asset rename interaction
+
+- Each row has an accessible overflow menu with **重命名 / 删除**. Tapping the
+  row still opens the file; deletion retains its existing confirmation.
+- Prefill and select the editable basename. Show the stored extension separately
+  as read-only text, preserving matching display suffix case. Files whose stored
+  paths have no extension keep their entire names editable across repeat renames.
+  Follow the [repository rename contract](../backend/role-assets.md#rename-contract)
+  and share its name validation instead of defining another UI-only policy.
+- Use a stock themed, scrollable dialog that accommodates the keyboard and large
+  text. Show validation next to the input. Keep entered text when a write fails,
+  allowing retry or cancellation. Success closes only the rename dialog.
+- Treat the menu, editor and pending write as asset work in the parent's busy
+  contract. Block duplicate submissions and parent save/navigation races. The
+  idle editor can be cancelled; a pending write must not be dismissed in a way
+  that allows its completion to pop another route.
+- `RoleAssetsTab.isEnabled` supplies a live check of the parent's save state
+  (`() => !_saving`) in addition to the rendered `enabled` flag. Consult it in
+  operation callbacks so a stale callback cannot open a dialog between a parent
+  save starting and the next rebuild.
+- Rename persists immediately through `RoleAssetRepository.rename`; it never
+  submits the role form. Unchanged input or cancellation leaves stored data
+  untouched, and stream updates refresh the row while retaining filter/scroll.
+- UI regression coverage includes both themes, protected extension, invalid
+  input, cancellation, failed-write retry, pending navigation/action guards,
+  unchanged name, preservation of unsaved role fields and menu-based deletion.
+- Preview format checks use immutable `relativePath`, not the editable display
+  name. A renamed title must never change whether a file uses the image gallery
+  or the platform opener.
+- Pass the current `asset.name` separately as `displayName` when invoking
+  `RoleAssetOpener.open`. A correct list label alone does not complete rename:
+  the iOS system preview header must receive the same current name. Keep the
+  original file path as the data source and wait for preview dismissal before
+  releasing the parent busy guard.
 
 ## Validation
 

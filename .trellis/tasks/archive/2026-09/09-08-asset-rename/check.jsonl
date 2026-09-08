@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/frontend/role-assets.md", "reason": "Interaction regression review"}
+{"file": ".trellis/spec/backend/role-assets.md", "reason": "Persistence contract review"}
+{"file": ".trellis/tasks/archive/2026-09/09-08-asset-rename/native-preview-fix.md", "reason": "iOS title and lifecycle regression"}

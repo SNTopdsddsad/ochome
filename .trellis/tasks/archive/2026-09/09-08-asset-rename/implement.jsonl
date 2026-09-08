@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/frontend/role-assets.md", "reason": "Asset actions and busy guards"}
+{"file": ".trellis/spec/backend/role-assets.md", "reason": "Ownership and immutable files"}
+{"file": ".trellis/spec/frontend/theming.md", "reason": "Themed stock dialog and menu"}
+{"file": ".trellis/tasks/archive/2026-09/09-08-asset-rename/native-preview-fix.md", "reason": "Follow-up native title contract"}

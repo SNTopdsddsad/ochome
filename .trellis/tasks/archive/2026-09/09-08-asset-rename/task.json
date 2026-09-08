@@ -1,0 +1,30 @@
+{
+  "id": "asset-rename",
+  "name": "asset-rename",
+  "title": "资产重命名与体验改进建议",
+  "description": "资产支持保留扩展名的即时重命名，iOS 系统预览显示最新名称；附混合参考素材的后续建议。",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "丹青",
+  "assignee": "丹青",
+  "createdAt": "2026-09-08",
+  "completedAt": "2026-09-08",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "1701728",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "user_asset_mix": "角色参考图、视频、音频都有；后续优先建议用途标签与快速预览",
+    "verification": "Final analyze passed; 58 Dart + 11 native tests; actual simulator title verified; rebuilt profile installed and running on iPhone via devicectl",
+    "commits": "baa2872,e6f1cd6,1701728"
+  }
+}
