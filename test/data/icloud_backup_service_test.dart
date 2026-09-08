@@ -461,6 +461,9 @@ void main() {
     final manifest = await service.backup(database: database);
     expect(manifest.assets, hasLength(3));
     final uploadCount = cloud.uploadCount;
+    await assets.rename(roleId: 1, assetId: before.first.id, baseName: '重命名资产');
+    final renamed = await assets.listForRole(1);
+    expect(renamed.first.name, '重命名资产.txt');
     await service.backup(database: database);
     expect(cloud.uploadCount, uploadCount + 2);
     await database.close();
@@ -476,7 +479,15 @@ void main() {
       supportDirectory: () async => support,
     );
     final rows = await restoredAssets.listForRole(1);
-    expect(rows.map((asset) => asset.name), before.map((asset) => asset.name));
+    expect(rows.map((asset) => asset.name), renamed.map((asset) => asset.name));
+    expect(
+      rows.map((asset) => asset.relativePath),
+      before.map((asset) => asset.relativePath),
+    );
+    expect(
+      rows.map((asset) => asset.bytes),
+      before.map((asset) => asset.bytes),
+    );
     for (final asset in rows) {
       expect(
         await (await restoredAssets.fileFor(asset)).readAsBytes(),

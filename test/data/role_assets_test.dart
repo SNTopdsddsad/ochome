@@ -81,6 +81,170 @@ void main() {
     expect(await (await assets.fileFor(rows[1])).readAsString(), 'first');
   });
 
+  test('rename persists only the display name and keeps files, ownership and ordering', () async {
+    final source = File(p.join(support.path, '原始立绘.PNG'));
+    await source.writeAsBytes([1, 2, 3]);
+    await assets.importFiles(role.id, [
+      XFile(source.path),
+      _file('notes.txt', [4]),
+    ]);
+    final before = await assets.listForRole(role.id);
+    final original = before.singleWhere((asset) => asset.name == '原始立绘.PNG');
+    final stored = await assets.fileFor(original);
+    await stored.setLastModified(DateTime(2020));
+    final modified = await stored.lastModified();
+    final updated = assets
+        .watchForRole(role.id)
+        .firstWhere(
+          (items) => items.any((asset) => asset.name == '白鸦·冬装.v2.PNG'),
+        );
+
+    await assets.rename(
+      roleId: role.id,
+      assetId: original.id,
+      baseName: '  白鸦·冬装.v2  ',
+    );
+    final rows = await updated;
+    expect(rows.map((asset) => asset.id), before.map((asset) => asset.id));
+    final renamed = rows.singleWhere((asset) => asset.id == original.id);
+    expect(renamed.name, '白鸦·冬装.v2.PNG');
+    expect(renamed.roleId, original.roleId);
+    expect(renamed.kind, original.kind);
+    expect(renamed.relativePath, original.relativePath);
+    expect(renamed.bytes, original.bytes);
+    expect(renamed.createdAt, original.createdAt);
+    expect((await assets.fileFor(renamed)).path, stored.path);
+    expect(await stored.readAsBytes(), [1, 2, 3]);
+    expect(await stored.lastModified(), modified);
+    expect(await source.readAsBytes(), [1, 2, 3]);
+    expect((await roles.getById(role.id))!.name, role.name);
+    final reopened = DriftRoleAssetRepository(database);
+    expect(
+      (await reopened.listForRole(role.id))
+          .singleWhere((asset) => asset.id == original.id)
+          .name,
+      renamed.name,
+    );
+  });
+
+  test(
+    'rename rejects wrong-role and missing ids and leaves other assets intact',
+    () async {
+      final other = await _createRole(roles, '另一个角色');
+      await assets.importFiles(role.id, [
+        _file('notes.pdf', [1]),
+      ]);
+      await assets.importFiles(other.id, [
+        _file('notes.pdf', [2]),
+      ]);
+      final asset = (await assets.listForRole(role.id)).single;
+      for (final (roleId, assetId) in [(other.id, asset.id), (role.id, -1)]) {
+        await expectLater(
+          assets.rename(roleId: roleId, assetId: assetId, baseName: '修改'),
+          throwsA(isA<StateError>()),
+        );
+      }
+      expect((await assets.listForRole(role.id)).single.name, 'notes.pdf');
+      expect((await assets.listForRole(other.id)).single.name, 'notes.pdf');
+    },
+  );
+
+  test(
+    'rename validates basenames and preserves the final extension',
+    () async {
+      await assets.importFiles(role.id, [
+        _file('archive.tar.GZ', [1]),
+      ]);
+      final asset = (await assets.listForRole(role.id)).single;
+      for (final name in [
+        '',
+        '   ',
+        '.',
+        '..',
+        'folder/name',
+        r'folder\name',
+        'a\nb',
+        'a\u0000b',
+        '\tname',
+        '\n\t',
+        'name\u007f',
+      ]) {
+        await expectLater(
+          assets.rename(roleId: role.id, assetId: asset.id, baseName: name),
+          throwsFormatException,
+          reason: name,
+        );
+      }
+      expect((await assets.listForRole(role.id)).single.name, 'archive.tar.GZ');
+      await assets.rename(
+        roleId: role.id,
+        assetId: asset.id,
+        baseName: '说明.final',
+      );
+      expect((await assets.listForRole(role.id)).single.name, '说明.final.GZ');
+      await assets.importFiles(role.id, [
+        _file('README', [2]),
+        _file('.hidden', [3]),
+        _file('说明.非标准后缀', [4]),
+      ]);
+      final extensionless = (await assets.listForRole(role.id))
+          .where((asset) => asset.name != '说明.final.GZ');
+      for (final item in extensionless) {
+        await assets.rename(
+          roleId: role.id,
+          assetId: item.id,
+          baseName: '  无后缀.v2  ',
+        );
+        expect(
+          (await assets.listForRole(role.id))
+              .singleWhere((row) => row.id == item.id)
+              .name,
+          '无后缀.v2',
+        );
+        await assets.rename(
+          roleId: role.id,
+          assetId: item.id,
+          baseName: '最终说明',
+        );
+        expect(
+          (await assets.listForRole(role.id))
+              .singleWhere((row) => row.id == item.id)
+              .name,
+          '最终说明',
+        );
+      }
+    },
+  );
+
+  test('same-name rename performs no write and failed writes leave metadata and file usable', () async {
+    await assets.importFiles(role.id, [
+      _file('notes.pdf', [1]),
+    ]);
+    final asset = (await assets.listForRole(role.id)).single;
+    await database.customStatement('''
+      CREATE TRIGGER reject_asset_rename BEFORE UPDATE ON role_asset
+      BEGIN SELECT RAISE(ABORT, 'simulated rename failure'); END
+    ''');
+    await assets.rename(
+      roleId: role.id,
+      assetId: asset.id,
+      baseName: ' notes ',
+    );
+    await expectLater(
+      assets.rename(roleId: role.id, assetId: asset.id, baseName: 'changed'),
+      throwsA(anything),
+    );
+    expect((await assets.listForRole(role.id)).single.name, 'notes.pdf');
+    expect(await (await assets.fileFor(asset)).readAsBytes(), [1]);
+    await database.customStatement('DROP TRIGGER reject_asset_rename');
+    await assets.rename(
+      roleId: role.id,
+      assetId: asset.id,
+      baseName: 'changed',
+    );
+    expect((await assets.listForRole(role.id)).single.name, 'changed.pdf');
+  });
+
   test(
     'a failed copy rolls back the whole batch without damaging saved assets',
     () async {

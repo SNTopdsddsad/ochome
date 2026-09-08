@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:ochome/data/models/role_asset.dart';
+import 'package:ochome/data/models/role_asset_name.dart';
 import 'package:ochome/data/repositories/role_asset_repository.dart';
 
 class FakeRoleAssetRepository implements RoleAssetRepository {
@@ -13,9 +14,12 @@ class FakeRoleAssetRepository implements RoleAssetRepository {
   final changes = StreamController<void>.broadcast(sync: true);
   final Map<int, File> files = {};
   Completer<void>? pendingImport;
+  Completer<void>? pendingRename;
+  bool failRename = false;
   bool failImport = false;
   bool failOpen = false;
   int importCalls = 0;
+  int renameCalls = 0;
 
   @override
   Future<List<RoleAsset>> listForRole(int roleId) async =>
@@ -50,6 +54,37 @@ class FakeRoleAssetRepository implements RoleAssetRepository {
         ),
       );
     }
+    changes.add(null);
+  }
+
+  @override
+  Future<void> rename({
+    required int roleId,
+    required int assetId,
+    required String baseName,
+  }) async {
+    renameCalls++;
+    if (pendingRename != null) await pendingRename!.future;
+    if (failRename) throw StateError('模拟重命名失败');
+    final index = items.indexWhere(
+      (item) => item.id == assetId && item.roleId == roleId,
+    );
+    if (index == -1) throw StateError('资产不存在或不属于此角色');
+    final asset = items[index];
+    final name = RoleAssetName(
+      name: asset.name,
+      relativePath: asset.relativePath,
+    ).renamed(baseName);
+    if (name == asset.name) return;
+    items[index] = RoleAsset(
+      id: asset.id,
+      roleId: asset.roleId,
+      name: name,
+      kind: asset.kind,
+      relativePath: asset.relativePath,
+      bytes: asset.bytes,
+      createdAt: asset.createdAt,
+    );
     changes.add(null);
   }
 
