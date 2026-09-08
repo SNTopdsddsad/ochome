@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ochome/app.dart';
 import 'package:ochome/data/models/role.dart';
 import 'package:ochome/data/providers/role_repository_provider.dart';
+import 'package:ochome/data/providers/backup_coordinator_provider.dart';
+import 'package:ochome/features/backup/backup_models.dart';
 import 'package:ochome/pages/role_list_page.dart';
 import 'package:ochome/theme/zaidang_tokens.dart';
 
@@ -234,6 +236,10 @@ Future<void> _pumpApp(
     ProviderScope(
       overrides: [
         roleRepositoryProvider.overrideWithValue(FakeRoleRepository(roles)),
+        // This suite tests routing, not disk bootstrap or iCloud availability.
+        backupCoordinatorProvider.overrideWith((ref) async {
+          throw const BackupFailure('test_unavailable', '测试环境未连接备份服务');
+        }),
       ],
       child: const MyApp(),
     ),

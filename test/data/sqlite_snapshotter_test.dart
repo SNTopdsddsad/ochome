@@ -67,6 +67,51 @@ void main() {
     );
   });
 
+  test('online snapshot includes committed WAL pages without checkpointing live connection', () async {
+    final live = File(p.join(tempDir.path, 'wal.sqlite'));
+    final connection = sqlite3.open(live.path);
+    addTearDown(connection.close);
+    connection.execute('PRAGMA journal_mode = WAL');
+    connection.execute('PRAGMA wal_autocheckpoint = 0');
+    connection.execute(
+      'CREATE TABLE marker(id INTEGER PRIMARY KEY, name TEXT)',
+    );
+    connection.execute("INSERT INTO marker VALUES(1, 'committed in WAL')");
+    connection.userVersion = AppDatabase.currentSchemaVersion;
+    expect(await File('${live.path}-wal').length(), greaterThan(0));
+    final snapshot = await snapshotter.createSnapshot(
+      liveSqlite: live,
+      destDir: Directory(p.join(tempDir.path, 'online')),
+    );
+    final check = sqlite3.open(snapshot.path, mode: OpenMode.readOnly);
+    addTearDown(check.close);
+    expect(
+      check.select('SELECT name FROM marker').single['name'],
+      'committed in WAL',
+    );
+    connection.execute("INSERT INTO marker VALUES(2, 'later')");
+    expect(check.select('SELECT * FROM marker'), hasLength(1));
+    expect(check.select('PRAGMA integrity_check').single.columnAt(0), 'ok');
+    expect(await File('${snapshot.path}-wal').exists(), isFalse);
+  });
+
+  test(
+    'online snapshot refuses to create empty database for missing source',
+    () async {
+      final live = File(p.join(tempDir.path, 'missing.sqlite'));
+      final destDir = Directory(p.join(tempDir.path, 'missing-snapshot'));
+      await expectLater(
+        snapshotter.createSnapshot(liveSqlite: live, destDir: destDir),
+        throwsA(isA<FileSystemException>()),
+      );
+      expect(await live.exists(), isFalse);
+      expect(
+        await File(p.join(destDir.path, AppDatabase.sqliteFileName)).exists(),
+        isFalse,
+      );
+    },
+  );
+
   test('replaceLive swaps sqlite and deletes leftover wal/shm', () async {
     final live = await openPopulatedDb('live.sqlite');
     final wal = File('${live.path}-wal');
