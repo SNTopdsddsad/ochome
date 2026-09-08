@@ -1,0 +1,4 @@
+00:00 +0: loading /tmp/ochome-backup-performance_test.dart
+00:00 +0: 1 GiB streamed import, actual-byte verification and cached lookup
+{"bytes":1073741824,"importMs":9383,"cachedLookupMicros":4921,"verifyMs":6977,"baselineRssBytes":176324608,"peakRssBytes":202817536,"maxTimerGapMs":1119,"scope":"macOS Flutter test host, no cloud transfer or device UI frame measurement"}
+00:17 +1: All tests passed!

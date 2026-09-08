@@ -1,0 +1,8 @@
+{"file": ".trellis/tasks/09-08-backup-redesign/execution-contract.md", "reason": "Approved execution ownership and shared storage/core/native wire contracts"}
+{"file": ".trellis/spec/backend/role-assets.md", "reason": "Verify file and metadata lifecycle"}
+{"file": ".trellis/spec/backend/role-custom-attributes.md", "reason": "Verify migration and data round-trip"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Verify provider, paths, native and UI consistency"}
+{"file": ".trellis/tasks/09-08-backup-redesign/implement.md", "reason": "Fault injection matrix and stage exit gates"}
+{"file": ".trellis/tasks/09-08-backup-redesign/visual-experience.md", "reason": "User-required end-to-end visibility, snapshot contents catalog, progress/time truth and V01-V12 tests"}
+{"file": ".trellis/tasks/09-08-backup-redesign/research/digest-caching.md", "reason": "Import-time streaming digest, derived SQLite cache, invalidation, restore verification and H01-H10 performance checks"}
+{"file": ".trellis/tasks/09-08-backup-redesign/research/account-retention.md", "reason": "Confirmed account-wide last 3 snapshots, CAS catalog, publication/restore reservations and G01-G08 cross-device GC tests"}

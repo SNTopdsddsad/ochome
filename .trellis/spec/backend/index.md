@@ -17,6 +17,7 @@ This directory contains guidelines for backend development. Fill in each file wi
 | [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
 | [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | To fill |
 | [Role Custom Attributes](./role-custom-attributes.md) | Ordered attributes, whole-role preservation, migration and backup contracts | Active |
+| [Backup and Restore](./backup-restore.md) | Account-wide snapshots, immutable media, recovery-only data switching and native contracts | Active |
 | [Role Assets](./role-assets.md) | Asset ownership, file import, schema v8 and backup/restore contracts | Active |
 | [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |

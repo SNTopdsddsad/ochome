@@ -23,26 +23,28 @@
   If any copy or registration fails, clean up all new files from that batch.
 - Validate relative paths as a flat file under `role_assets/`; refuse absolute,
   traversal, nested or hidden paths. Missing files must report an error.
-- For deletion, scope the database query by both role id and asset id. Rename
-  the file aside first and roll it back if metadata deletion fails. A hidden
-  cleanup file must never be backed up. Role deletion cascades metadata; backup
-  only includes referenced files, so unreferenced local copies are excluded.
+- For deletion, scope the database query by role and asset id. Commit metadata
+  deletion first, then delete the physical file (or defer while pinned). A failed
+  database delete must leave the original file usable. Production mutations run
+  through the dataset epoch gate; stale repositories cannot write after restore.
+- Imported files use the shared bounded worker to copy and SHA-256 in one source
+  pass, then remember the fingerprint only after successful publication. Hash
+  caching is not a fresh file-health guarantee.
+- Role deletion cascades metadata. Only referenced files enter v3 backups;
+  unreferenced local copies are not made into cloud assets.
 
 ## Backup and restore
 
-- Manifest format **2** adds `assets` alongside `covers`; old manifests without
-  assets remain readable. The SQLite snapshot is authoritative for asset paths
-  and sizes, so restoration does not depend on manifest presence or cloud listing.
-- Backup only uploads files referenced by the snapshot. Reject missing or
-  size-mismatched local assets, and skip re-uploading immutable files of equal
-  remote size. Prune old remote assets only after database/manifest upload.
-- Download referenced assets into the restore staging directory and verify exact
-  byte counts before touching live data. Zero-byte documents are valid.
-- Replace covers, assets, then SQLite; if replacement fails, roll back both file
-  directories. Restoring a pre-v8 backup uses an empty asset directory and the
-  ordinary schema migration, preventing newer local assets attaching to old ids.
-- `LocalFileStore` supplies shared directory replacement/rollback behavior;
-  `CoverStore` and `RoleAssetStore` choose their own directory names.
+The production contract is [Backup and Restore](./backup-restore.md). Format v3
+uses full snapshot references, immutable file objects, exact SHA/length checks,
+account-wide latest3 and dataset activation. The previous v2 single-slot sources
+remain as compatibility fixtures only and must not be called by production UI.
+
+Read-only legacy restoration supports schema 3–8, preserving ordered attributes,
+role descriptions/revisions and assets; old snapshots without asset tables imply
+an empty asset set. Unknown legacy file sizes must remain unknown in contents UI
+until actual download verification. Pins protect preview/renderer/backup reads
+from physical deletion and retired-dataset cleanup.
 
 ## Rename contract
 

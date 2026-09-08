@@ -64,3 +64,12 @@ context.push('/roles/new'); // if /roles/new is nested under the 档案 branch
 #### Correct
 
 Root-level `/roles/new` and `/roles/:id` with `parentNavigatorKey: rootKey`.
+
+
+## Storage recovery routing
+
+Production startup initializes DataStorage before business providers. Recovery-only
+mode starts at `/backup` and redirects business routes there until a validated
+dataset is activated. Every storage change event returns existing UI to `/backup`
+so old editor/preview state cannot continue on a different data root. The backup
+coordinator remains app-scoped across route changes; see [Backup UI](./backup-restore.md).

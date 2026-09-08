@@ -1,0 +1,57 @@
+import 'dart:io';
+import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ochome/data/database/app_database.dart';
+import 'package:ochome/data/repositories/drift_role_repository.dart';
+import 'package:ochome/data/services/backup_exceptions.dart';
+import 'package:ochome/data/services/icloud_backup_service.dart';
+import 'file:///Users/xuwudi/Desktop/code/flutter/ochome/test/fakes/fake_icloud_container.dart';
+
+class FailingUploadCloud extends FakeICloudContainer {
+  bool failSqlite = false;
+  @override
+  Future<void> upload({required String localPath, required String relativePath}) async {
+    if (failSqlite && relativePath == AppDatabase.sqliteFileName) {
+      throw const BackupFailedException('simulated interrupted upload');
+    }
+    await super.upload(localPath: localPath, relativePath: relativePath);
+  }
+}
+
+void main() {
+  late Directory support;
+  late AppDatabase database;
+  late FailingUploadCloud cloud;
+  late ICloudBackupService service;
+  setUp(() async {
+    support = await Directory.systemTemp.createTemp('ochome-audit-fixture');
+    database = AppDatabase(NativeDatabase(File('${support.path}/${AppDatabase.sqliteFileName}')));
+    cloud = FailingUploadCloud();
+    service = ICloudBackupService(container: cloud, supportDirectory: () async => support);
+    await Directory('${support.path}/covers').create();
+    await File('${support.path}/covers/old.png').writeAsBytes([1,2,3,4]);
+    await DriftRoleRepository(database).create(name:'A', sex:'', age:'', birthday:'', race:'', occupation:'', desc:'', coverImg:'covers/old.png');
+    await service.backup(database: database);
+  });
+  tearDown(() async {
+    await database.close();
+    await support.delete(recursive: true);
+  });
+  test('audit: restore rejects nonempty truncated cover', () async {
+    cloud.files['covers/old.png'] = [1];
+    RestorePlan? plan;
+    try {
+      await expectLater(() async { plan = await service.prepareRestore(); }, throwsA(isA<RestoreFailedException>()));
+    } finally { await plan?.dispose(); }
+  });
+  test('audit: failed next backup preserves previous cloud snapshot', () async {
+    // A second device can have a different cover set; the old cloud snapshot
+    // must stay recoverable until a replacement backup has completed.
+    await database.customStatement("UPDATE role SET coverimg = 'covers/new.png'");
+    await File('${support.path}/covers/old.png').delete();
+    await File('${support.path}/covers/new.png').writeAsBytes([5,6,7,8]);
+    cloud.failSqlite = true;
+    await expectLater(service.backup(database: database), throwsA(isA<BackupFailedException>()));
+    expect(cloud.files['covers/old.png'], [1,2,3,4], reason:'Previous SQLite and manifest still refer to this cover');
+  });
+}

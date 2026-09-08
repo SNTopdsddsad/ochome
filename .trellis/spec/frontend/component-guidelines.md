@@ -318,3 +318,12 @@ For visual QA, Flutter widget tests set `debugDisableShadows=true`, which draws
 physical elevation as an opaque outline. Temporarily use false when capturing
 runtime-like shadow appearance, then restore the binding's previous value;
 do not “fix” the production border based on that test-only outline.
+
+
+## Dataset-dependent media
+
+Default cover/gallery/role-card file reads resolve `getActiveDataDirectory()`.
+Never retain a static Application Support data root across a restore epoch.
+Explicit supportDirectory injection remains available for isolated tests.
+Managed original files used by galleries, native previews and renderer decoding
+are pinned until their asynchronous use ends. See [Backup UI](./backup-restore.md).

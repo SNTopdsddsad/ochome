@@ -1,0 +1,56 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:file_selector/file_selector.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ochome/data/services/file_fingerprint_store.dart';
+import 'package:ochome/data/services/managed_file_importer.dart';
+
+void main() {
+  test('1 GiB streamed import, actual-byte verification and cached lookup', () async {
+    final root = await Directory.systemTemp.createTemp('ochome-backup-perf');
+    final cache = FileFingerprintStore(Directory('${root.path}/control'));
+    final source = File('${root.path}/source.bin');
+    const byteCount = 1024 * 1024 * 1024;
+    final chunk = Uint8List(64 * 1024);
+    for (var i = 0; i < chunk.length; i++) { chunk[i] = i % 251; }
+    final out = source.openWrite();
+    await out.addStream(Stream<List<int>>.fromIterable(Iterable.generate(byteCount ~/ chunk.length, (_) => chunk)));
+    await out.flush(); await out.close();
+    final target = File('${root.path}/original.bin');
+    final baseline = ProcessInfo.currentRss;
+    var peak = baseline;
+    final ticks = Stopwatch()..start();
+    var previous = 0, maxGap = 0;
+    final timer = Timer.periodic(const Duration(milliseconds: 20), (_) {
+      final now = ticks.elapsedMilliseconds;
+      final gap = now - previous; if (gap > maxGap) maxGap = gap;
+      previous = now;
+      if (ProcessInfo.currentRss > peak) peak = ProcessInfo.currentRss;
+    });
+    try {
+      final importing = Stopwatch()..start();
+      final saved = await ManagedFileImporter.copy(XFile(source.path), target, fingerprints: cache);
+      importing.stop();
+      final lookup = Stopwatch()..start();
+      final reused = await cache.fingerprint(target);
+      lookup.stop();
+      final verifying = Stopwatch()..start();
+      final checked = await cache.fingerprint(target, force: true);
+      verifying.stop();
+      expect(saved.bytes, byteCount);
+      expect(await target.length(), byteCount);
+      expect(reused.sha256, saved.sha256);
+      expect(checked.sha256, saved.sha256);
+      print(jsonEncode({'bytes':byteCount,'importMs':importing.elapsedMilliseconds,
+        'cachedLookupMicros':lookup.elapsedMicroseconds,'verifyMs':verifying.elapsedMilliseconds,
+        'baselineRssBytes':baseline,'peakRssBytes':peak,'maxTimerGapMs':maxGap,
+        'scope':'macOS Flutter test host, no cloud transfer or device UI frame measurement'}));
+    } finally {
+      timer.cancel();
+      await cache.close();
+      await root.delete(recursive:true);
+    }
+  }, timeout: const Timeout(Duration(minutes:5)));
+}

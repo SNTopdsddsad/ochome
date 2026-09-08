@@ -1,0 +1,27 @@
+00:00 +0: loading /tmp/ochome-audit-backup_test.dart
+00:00 +0: audit: restore rejects nonempty truncated cover
+00:01 +0 -1: audit: restore rejects nonempty truncated cover [E]
+  Expected: throws <Instance of 'RestoreFailedException'>
+    Actual: <Closure: () => Future<Null>>
+     Which: returned a Future that emitted <null>
+
+  package:matcher                                    expectLater
+  package:flutter_test/src/widget_tester.dart 507:8  expectLater
+  /tmp/ochome-audit-backup_test.dart 44:13           main.<fn>
+
+00:01 +0 -1: audit: failed next backup preserves previous cloud snapshot
+00:01 +0 -2: audit: failed next backup preserves previous cloud snapshot [E]
+  Expected: [1, 2, 3, 4]
+    Actual: <null>
+     Which: is not Iterable
+  Previous SQLite and manifest still refer to this cover
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  /tmp/ochome-audit-backup_test.dart 55:5             main.<fn>
+
+00:01 +0 -2: Some tests failed.
+
+Failing tests:
+  /tmp/ochome-audit-backup_test.dart: audit: failed next backup preserves previous cloud snapshot
+  /tmp/ochome-audit-backup_test.dart: audit: restore rejects nonempty truncated cover

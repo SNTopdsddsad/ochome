@@ -1,0 +1,38 @@
+import Foundation
+func isMaterialized(_ url: URL) -> Bool {
+    let fm = FileManager.default
+    let values = try? url.resourceValues(forKeys: [
+      .ubiquitousItemDownloadingStatusKey,
+      .ubiquitousItemIsDownloadingKey,
+      .fileSizeKey,
+    ])
+    if values?.ubiquitousItemIsDownloading == true {
+      return false
+    }
+    let status = values?.ubiquitousItemDownloadingStatus
+    if status == URLUbiquitousItemDownloadingStatus.notDownloaded {
+      return false
+    }
+    let size = values?.fileSize ?? 0
+    if status == nil, fm.isUbiquitousItem(at: url) {
+      return size > 0
+    }
+    if size > 0, status == URLUbiquitousItemDownloadingStatus.current
+      || status == URLUbiquitousItemDownloadingStatus.downloaded {
+      return true
+    }
+    if size > 0, status == nil, !fm.isUbiquitousItem(at: url) {
+      return fm.fileExists(atPath: url.path)
+    }
+    return false
+  }
+
+let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+defer { try? FileManager.default.removeItem(at: root) }
+let empty = root.appendingPathComponent("empty.txt")
+let nonempty = root.appendingPathComponent("nonempty.txt")
+try Data().write(to: empty)
+try Data([1]).write(to: nonempty)
+print("zero-byte local document materialized: \(isMaterialized(empty))")
+print("one-byte local document materialized: \(isMaterialized(nonempty))")

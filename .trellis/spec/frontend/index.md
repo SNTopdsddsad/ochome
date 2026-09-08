@@ -22,6 +22,7 @@ This directory contains guidelines for frontend development. Fill in each file w
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
 | [Theming](./theming.md) | 崽档火漆红 / 纸白 tokens from the SiYuan product note | Active |
 | [Navigation](./navigation.md) | go_router tab shell, root create/edit/backup, archive OC / 世界观 tabs | Active |
+| [Backup and Restore](./backup-restore.md) | App-owned jobs, historical contents, progress truth and dataset lifecycle | Active |
 | [Role Assets](./role-assets.md) | Shared detail header, independent tab scroll state and local asset interactions | Active |
 | [Type Safety](./type-safety.md) | Type patterns, validation | To fill |
 | [Git Commit](./git-commit.md) | Chinese commit messages by module and feature | Active |
