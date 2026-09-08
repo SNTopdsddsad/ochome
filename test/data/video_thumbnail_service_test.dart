@@ -93,7 +93,9 @@ void main() {
   test('native error does not poison subsequent requests', () async {
     messenger.setMockMethodCallHandler(channel, (call) async {
       calls.add(call);
-      if (calls.length == 1) throw PlatformException(code: 'unsupportedVideo');
+      if (call.arguments['videoPath'] == video.absolute.path) {
+        throw PlatformException(code: 'unsupportedVideo');
+      }
       await File(call.arguments['thumbnailPath'] as String).writeAsBytes([9]);
       return true;
     });
