@@ -12,7 +12,7 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    ICloudChannelHandler.shared.register(with: engineBridge.applicationRegistrar.messenger())
+    BackupV3ChannelHandler.shared.register(with: engineBridge.applicationRegistrar.messenger())
     RoleCardExportHandler.shared.register(with: engineBridge.applicationRegistrar.messenger())
     RoleAssetPreviewHandler.shared.register(with: engineBridge.applicationRegistrar.messenger())
     VideoThumbnailHandler.shared.register(with: engineBridge.applicationRegistrar.messenger())

@@ -23,6 +23,10 @@
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		FCCE0A4049BA3D446284B664 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A460F62715695B64BE952FAE /* Pods_Runner.framework */; };
+		A33B00000000000000000000 /* BackupV3Support.swift in Sources */ = {isa = PBXBuildFile; fileRef = A33A00000000000000000000 /* BackupV3Support.swift */; };
+		A33B00000000000000000001 /* BackupV3Catalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A33A00000000000000000001 /* BackupV3Catalog.swift */; };
+		A33B00000000000000000002 /* BackupV3Transport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A33A00000000000000000002 /* BackupV3Transport.swift */; };
+		A33B00000000000000000003 /* BackupV3ChannelHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A33A00000000000000000003 /* BackupV3ChannelHandler.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -80,6 +84,10 @@
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A460F62715695B64BE952FAE /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EEFFEA4F84F3DC29F096150A /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
+		A33A00000000000000000000 /* BackupV3Support.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupV3Support.swift; sourceTree = "<group>"; };
+		A33A00000000000000000001 /* BackupV3Catalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupV3Catalog.swift; sourceTree = "<group>"; };
+		A33A00000000000000000002 /* BackupV3Transport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupV3Transport.swift; sourceTree = "<group>"; };
+		A33A00000000000000000003 /* BackupV3ChannelHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupV3ChannelHandler.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -171,6 +179,10 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				B81C0E121ED2DC5600515821 /* ICloudChannelHandler.swift */,
+				A33A00000000000000000003 /* BackupV3ChannelHandler.swift */,
+				A33A00000000000000000002 /* BackupV3Transport.swift */,
+				A33A00000000000000000001 /* BackupV3Catalog.swift */,
+				A33A00000000000000000000 /* BackupV3Support.swift */,
 				D90C0E121ED2DC5600515841 /* RoleCardExportHandler.swift */,
 				E91C0E121ED2DC5600515841 /* VideoThumbnailHandler.swift */,
 				F92C0E121ED2DC5600515841 /* RoleAssetPreviewHandler.swift */,
@@ -399,6 +411,10 @@
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 				B81C0E131ED2DC5600515822 /* ICloudChannelHandler.swift in Sources */,
+				A33B00000000000000000003 /* BackupV3ChannelHandler.swift in Sources */,
+				A33B00000000000000000002 /* BackupV3Transport.swift in Sources */,
+				A33B00000000000000000001 /* BackupV3Catalog.swift in Sources */,
+				A33B00000000000000000000 /* BackupV3Support.swift in Sources */,
 				D90C0E131ED2DC5600515842 /* RoleCardExportHandler.swift in Sources */,
 				E91C0E131ED2DC5600515842 /* VideoThumbnailHandler.swift in Sources */,
 				F92C0E131ED2DC5600515842 /* RoleAssetPreviewHandler.swift in Sources */,
