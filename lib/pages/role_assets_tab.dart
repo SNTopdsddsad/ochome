@@ -8,6 +8,7 @@ import '../data/models/role_asset.dart';
 import '../data/providers/role_assets_provider.dart';
 import '../data/repositories/role_asset_repository.dart';
 import '../data/services/video_thumbnail_service.dart';
+import '../data/services/data_storage.dart';
 import '../theme/zaidang_tokens.dart';
 import '../widgets/role_asset_rename_dialog.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
@@ -130,9 +131,15 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
   Future<void> _openAsset(RoleAsset asset, List<RoleAsset> all) async {
     if (!_canAct) return;
     _setBusy(true);
+    StoragePin? filePin;
     try {
       final file = await ref.read(roleAssetRepositoryProvider).fileFor(asset);
       if (!mounted || !_enabled) return;
+      final storage = DataStorage.current;
+      if (storage != null &&
+          p.isWithin(storage.supportDirectory.path, file.path)) {
+        filePin = storage.pinFiles([file.path]);
+      }
       if (_previewable(asset)) {
         final images = all.where(_previewable).toList();
         final root = file.parent.parent;
@@ -159,6 +166,7 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
         );
       }
     } finally {
+      await filePin?.release();
       if (mounted) _setBusy(false);
     }
   }

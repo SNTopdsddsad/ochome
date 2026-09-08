@@ -5,9 +5,23 @@ import 'package:file_selector/file_selector.dart';
 import 'package:path/path.dart' as p;
 
 import 'local_file_store.dart';
+import 'file_fingerprint_store.dart';
+import 'managed_file_importer.dart';
+import 'data_storage.dart';
 
 class RoleAssetStore extends LocalFileStore {
   RoleAssetStore(super.supportDir) : super(directoryName: folderName);
+
+  FileFingerprintStore _fingerprints() {
+    final current = DataStorage.current;
+    return FileFingerprintStore(
+      current != null &&
+              (p.equals(current.supportDirectory.path, supportDir.path) ||
+                  p.isWithin(current.supportDirectory.path, supportDir.path))
+          ? current.controlDirectory
+          : Directory(p.join(supportDir.path, 'storage-control')),
+    );
+  }
 
   static const folderName = 'role_assets';
   static final _random = Random.secure();
@@ -37,30 +51,16 @@ class RoleAssetStore extends LocalFileStore {
     ).join();
     final relativePath = '$folderName/$id$extension';
     final target = resolve(relativePath);
-    final pending = File(p.join(directory.path, '.$id.pending'));
+    final fingerprints = _fingerprints();
     try {
-      final expectedLength = await source.length();
-      final output = pending.openWrite();
-      try {
-        await output.addStream(source.openRead());
-        await output.flush();
-      } catch (_) {
-        try {
-          await output.close();
-        } catch (_) {
-          // 读写失败时 sink 可能已关闭；保留最初的复制错误。
-        }
-        rethrow;
-      }
-      await output.close();
-      if (await pending.length() != expectedLength) {
-        throw const FileSystemException('资产文件复制不完整');
-      }
-      await pending.rename(target.path);
+      await ManagedFileImporter.copy(
+        source,
+        target,
+        fingerprints: fingerprints,
+      );
       return LocalStoredFile(file: target, relativePath: relativePath);
-    } catch (_) {
-      if (await pending.exists()) await pending.delete();
-      rethrow;
+    } finally {
+      await fingerprints.close();
     }
   }
 }

@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import '../services/cover_path.dart';
+import '../services/data_storage.dart';
 import 'tables/role.dart';
 import 'tables/role_asset.dart';
 import 'tables/role_desc_revision.dart';
@@ -17,7 +17,23 @@ part 'app_database.g.dart';
 /// 可选 [executor] 供测试注入内存库；正式运行走 [_openConnection]。
 @DriftDatabase(tables: [Roles, RoleDescRevisions, RoleAssets])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
+  AppDatabase([QueryExecutor? executor])
+    : storage = executor == null ? DataStorage.current : null,
+      storageEpoch = executor == null ? DataStorage.current?.epoch : null,
+      super(executor ?? _openConnection(DataStorage.current));
+
+  /// Explicit storage injection for isolated tests and dataset-bound providers.
+  AppDatabase.forStorage(DataStorage storage, {QueryExecutor? executor})
+    : storage = storage,
+      storageEpoch = storage.epoch,
+      super(executor ?? _openConnection(storage));
+
+  final DataStorage? storage;
+  final int? storageEpoch;
+
+  Future<T> mutate<T>(Future<T> Function() action) => storage == null
+      ? action()
+      : storage!.mutate(action, expectedEpoch: storageEpoch);
 
   /// 表结构版本。增删列后必须递增并补 migration。
   static const int currentSchemaVersion = 8;
@@ -31,7 +47,7 @@ class AppDatabase extends _$AppDatabase {
   static Future<File> sqliteFile({
     Future<Directory> Function()? supportDirectory,
   }) async {
-    final dir = await (supportDirectory ?? getApplicationSupportDirectory)();
+    final dir = await (supportDirectory ?? getActiveDataDirectory)();
     return File(p.join(dir.path, sqliteFileName));
   }
 
@@ -94,12 +110,18 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
-  static QueryExecutor _openConnection() {
+  static QueryExecutor _openConnection(DataStorage? storage) {
+    if (storage?.isRecoveryOnly ?? false) {
+      throw StateError('本地资料不可用，请先完成恢复');
+    }
+    final directory = storage?.activeDirectory;
     return driftDatabase(
       name: 'ochome',
-      native: const DriftNativeOptions(
+      native: DriftNativeOptions(
         // 默认是文档目录；改到 support 目录，避免出现在用户可见文件里。
-        databaseDirectory: getApplicationSupportDirectory,
+        databaseDirectory: directory == null
+            ? getActiveDataDirectory
+            : () async => directory,
       ),
     );
   }

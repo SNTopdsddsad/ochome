@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'data/models/role.dart';
+import 'data/services/data_storage.dart';
 import 'pages/archive_page.dart';
 import 'pages/backup_restore_page.dart';
 import 'pages/home_shell.dart';
@@ -17,6 +18,11 @@ GoRouter createAppRouter({
   return GoRouter(
     navigatorKey: rootKey,
     initialLocation: initialLocation,
+    redirect: (context, state) =>
+        DataStorage.current?.isRecoveryOnly == true &&
+            state.uri.path != '/backup'
+        ? '/backup'
+        : null,
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

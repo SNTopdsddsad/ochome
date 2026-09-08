@@ -2,12 +2,12 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../database/app_database.dart' as db;
 import '../models/role_asset.dart';
 import '../models/role_asset_name.dart';
 import '../services/local_file_store.dart';
+import '../services/data_storage.dart';
 import '../services/role_asset_store.dart';
 import 'role_asset_repository.dart';
 
@@ -15,7 +15,12 @@ class DriftRoleAssetRepository implements RoleAssetRepository {
   DriftRoleAssetRepository(
     this._db, {
     Future<Directory> Function()? supportDirectory,
-  }) : _supportDirectory = supportDirectory ?? getApplicationSupportDirectory;
+  }) : _supportDirectory = supportDirectory ?? _boundDirectory(_db);
+
+  static Future<Directory> Function() _boundDirectory(db.AppDatabase database) {
+    final directory = database.storage?.activeDirectory;
+    return directory == null ? getActiveDataDirectory : () async => directory;
+  }
 
   final db.AppDatabase _db;
   final Future<Directory> Function() _supportDirectory;
@@ -51,68 +56,77 @@ class DriftRoleAssetRepository implements RoleAssetRepository {
   );
 
   @override
-  Future<void> importFiles(int roleId, List<XFile> files) async {
-    if (files.isEmpty) return;
-    final role = await (_db.select(
-      _db.roles,
-    )..where((t) => t.id.equals(roleId))).getSingleOrNull();
-    if (role == null) throw StateError('请先保存角色');
-    final store = RoleAssetStore(await _supportDirectory());
-    final imported = <LocalStoredFile>[];
-    try {
-      for (final file in files) {
-        imported.add(await store.importFile(file));
-      }
-      await _db.transaction(() async {
-        final now = DateTime.now();
-        for (var index = 0; index < imported.length; index++) {
-          final source = files[index];
-          final saved = imported[index];
-          await _db
-              .into(_db.roleAssets)
-              .insert(
-                db.RoleAssetsCompanion.insert(
-                  roleId: roleId,
-                  name: source.name.isEmpty ? '未命名文件' : source.name,
-                  kind: RoleAssetKind.fromFile(
-                    source.name,
-                    mimeType: source.mimeType,
-                  ).name,
-                  relativePath: saved.relativePath,
-                  bytes: await saved.bytes,
-                  createdAt: now,
-                ),
-              );
+  Future<void> importFiles(int roleId, List<XFile> files) =>
+      _db.mutate(() async {
+        if (files.isEmpty) return;
+        final role = await (_db.select(
+          _db.roles,
+        )..where((t) => t.id.equals(roleId))).getSingleOrNull();
+        if (role == null) throw StateError('请先保存角色');
+        final store = RoleAssetStore(await _supportDirectory());
+        final imported = <LocalStoredFile>[];
+        try {
+          for (final file in files) {
+            imported.add(await store.importFile(file));
+          }
+          await _db.transaction(() async {
+            final now = DateTime.now();
+            for (var index = 0; index < imported.length; index++) {
+              final source = files[index];
+              final saved = imported[index];
+              await _db
+                  .into(_db.roleAssets)
+                  .insert(
+                    db.RoleAssetsCompanion.insert(
+                      roleId: roleId,
+                      name: source.name.isEmpty ? '未命名文件' : source.name,
+                      kind: RoleAssetKind.fromFile(
+                        source.name,
+                        mimeType: source.mimeType,
+                      ).name,
+                      relativePath: saved.relativePath,
+                      bytes: await saved.bytes,
+                      createdAt: now,
+                    ),
+                  );
+            }
+          });
+        } catch (_) {
+          for (final saved in imported) {
+            if (await saved.file.exists()) {
+              if (_db.storage != null) {
+                await _db.storage!.deleteWhenUnpinned(saved.file);
+              } else {
+                await saved.file.delete();
+              }
+            }
+          }
+          rethrow;
         }
       });
-    } catch (_) {
-      for (final saved in imported) {
-        if (await saved.file.exists()) await saved.file.delete();
-      }
-      rethrow;
-    }
-  }
 
   @override
   Future<void> rename({
     required int roleId,
     required int assetId,
     required String baseName,
-  }) => _db.transaction(() async {
-    final asset =
-        await (_db.select(_db.roleAssets)
-              ..where((t) => t.id.equals(assetId) & t.roleId.equals(roleId)))
-            .getSingleOrNull();
-    if (asset == null) throw StateError('资产不存在或不属于此角色');
-    final name = RoleAssetName(
-      name: asset.name,
-      relativePath: asset.relativePath,
-    ).renamed(baseName);
-    if (name == asset.name) return;
-    await (_db.update(_db.roleAssets)
-          ..where((t) => t.id.equals(assetId) & t.roleId.equals(roleId)))
-        .write(db.RoleAssetsCompanion(name: Value(name)));
-  });
+  }) => _db.mutate(
+    () => _db.transaction(() async {
+      final asset =
+          await (_db.select(_db.roleAssets)
+                ..where((t) => t.id.equals(assetId) & t.roleId.equals(roleId)))
+              .getSingleOrNull();
+      if (asset == null) throw StateError('资产不存在或不属于此角色');
+      final name = RoleAssetName(
+        name: asset.name,
+        relativePath: asset.relativePath,
+      ).renamed(baseName);
+      if (name == asset.name) return;
+      await (_db.update(_db.roleAssets)
+            ..where((t) => t.id.equals(assetId) & t.roleId.equals(roleId)))
+          .write(db.RoleAssetsCompanion(name: Value(name)));
+    }),
+  );
 
   @override
   Future<File> fileFor(RoleAsset asset) async {
@@ -125,33 +139,29 @@ class DriftRoleAssetRepository implements RoleAssetRepository {
   }
 
   @override
-  Future<void> delete({required int roleId, required int assetId}) async {
+  Future<void> delete({
+    required int roleId,
+    required int assetId,
+  }) => _db.mutate(() async {
     final query = _db.select(_db.roleAssets)
       ..where((t) => t.id.equals(assetId) & t.roleId.equals(roleId));
     final asset = await query.getSingleOrNull();
     if (asset == null) return;
     final file = RoleAssetStore(await _supportDirectory())
         .resolve(asset.relativePath);
-    File? pending;
+    // Commit logical deletion first. A failed DB write leaves immutable media
+    // untouched; active snapshot pins defer physical removal until release.
+    await (_db.delete(
+      _db.roleAssets,
+    )..where((t) => t.id.equals(assetId) & t.roleId.equals(roleId))).go();
     try {
-      if (await file.exists()) {
-        pending = await file.rename(
-          '${file.parent.path}/.${file.uri.pathSegments.last}.deleting',
-        );
+      if (_db.storage != null) {
+        await _db.storage!.deleteWhenUnpinned(file);
+      } else if (await file.exists()) {
+        await file.delete();
       }
-      await (_db.delete(
-        _db.roleAssets,
-      )..where((t) => t.id.equals(assetId) & t.roleId.equals(roleId))).go();
-    } catch (_) {
-      if (pending != null && await pending.exists()) {
-        await pending.rename(file.path);
-      }
-      rethrow;
-    }
-    try {
-      if (pending != null) await pending.delete();
     } on FileSystemException {
-      // 元数据已删除，隐藏的暂存文件不会进入备份。
+      // Metadata has committed; unreferenced originals are excluded from backup.
     }
-  }
+  });
 }

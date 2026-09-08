@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+
+import '../data/services/data_storage.dart';
+
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 
@@ -33,6 +36,7 @@ class _CoverPreviewPageState extends State<CoverPreviewPage> {
   late final Future<List<String?>> _resolvedPaths;
   late int _currentIndex;
   bool _closing = false;
+  StoragePin? _filePin;
 
   @override
   void initState() {
@@ -50,13 +54,13 @@ class _CoverPreviewPageState extends State<CoverPreviewPage> {
     if (_coverImages.any((path) => path.isNotEmpty && !p.isAbsolute(path))) {
       try {
         final directory =
-            await (widget.supportDirectory ?? getApplicationSupportDirectory)();
+            await (widget.supportDirectory ?? getActiveDataDirectory)();
         supportPath = directory.path;
       } catch (_) {
         // 目录查询失败仅影响相对路径，绝对路径仍可浏览。
       }
     }
-    return _coverImages
+    final resolved = _coverImages
         .map((path) {
           if (path.isEmpty || (!p.isAbsolute(path) && supportPath == null)) {
             return null;
@@ -64,10 +68,20 @@ class _CoverPreviewPageState extends State<CoverPreviewPage> {
           return CoverPath.resolve(supportPath ?? '', path);
         })
         .toList(growable: false);
+    final storage = DataStorage.current;
+    if (mounted && storage != null) {
+      _filePin = storage.pinFiles(
+        resolved.whereType<String>().where(
+          (file) => p.isWithin(storage.supportDirectory.path, file),
+        ),
+      );
+    }
+    return resolved;
   }
 
   @override
   void dispose() {
+    unawaited(_filePin?.release());
     _pageController.dispose();
     super.dispose();
   }

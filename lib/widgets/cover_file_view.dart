@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+
+import '../data/services/data_storage.dart';
 
 import '../data/services/cover_path.dart';
 
@@ -21,14 +22,12 @@ class CoverFileView extends StatelessWidget {
   final BoxFit fit;
   final Future<Directory> Function()? supportDirectory;
 
-  static Future<Directory>? _cachedSupportDir;
-
   Future<Directory> _supportDir() {
     final lookup = supportDirectory;
     if (lookup != null) {
       return lookup();
     }
-    return _cachedSupportDir ??= getApplicationSupportDirectory();
+    return getActiveDataDirectory();
   }
 
   /// 立绘文件是否可读（路径非空且文件存在）。相对路径需 [supportDirectory]。
@@ -45,9 +44,7 @@ class CoverFileView extends StatelessWidget {
       return File(coverImg).existsSync();
     }
     final lookup = supportDirectory;
-    final dir = await (lookup != null
-        ? lookup()
-        : (_cachedSupportDir ??= getApplicationSupportDirectory()));
+    final dir = await (lookup != null ? lookup() : getActiveDataDirectory());
     return File(CoverPath.resolve(dir.path, coverImg)).existsSync();
   }
 

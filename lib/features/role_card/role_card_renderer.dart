@@ -5,7 +5,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
+
+import '../../data/services/data_storage.dart';
 
 import '../../data/services/cover_path.dart';
 import 'role_card_content.dart';
@@ -74,6 +75,7 @@ class RoleCardRenderer {
     String coverImg,
     Future<Directory> Function()? supportDirectory,
   ) async {
+    StoragePin? filePin;
     ui.ImmutableBuffer? buffer;
     ui.ImageDescriptor? descriptor;
     ui.Codec? codec;
@@ -82,9 +84,13 @@ class RoleCardRenderer {
       if (path.isAbsolute(coverImg)) {
         filePath = coverImg;
       } else {
-        final directory =
-            await (supportDirectory ?? getApplicationSupportDirectory)();
+        final directory = await (supportDirectory ?? getActiveDataDirectory)();
         filePath = CoverPath.resolve(directory.path, coverImg);
+      }
+      final storage = DataStorage.current;
+      if (storage != null &&
+          path.isWithin(storage.supportDirectory.path, filePath)) {
+        filePin = storage.pinFiles([filePath]);
       }
       final file = File(filePath);
       if (await file.length() > 64 * 1024 * 1024) {
@@ -116,6 +122,7 @@ class RoleCardRenderer {
       codec?.dispose();
       descriptor?.dispose();
       buffer?.dispose();
+      await filePin?.release();
     }
   }
 }

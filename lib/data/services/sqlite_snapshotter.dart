@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
@@ -6,9 +7,33 @@ import 'package:sqlite3/sqlite3.dart';
 import '../database/app_database.dart';
 import 'restore_version_gate.dart';
 
-/// 对活库做 WAL checkpoint 后拷贝 sqlite 快照。不上传 `-wal` / `-shm`。
+/// Consistent SQLite Online Backup snapshots, including committed WAL pages.
+/// Legacy checkpoint/copy APIs remain available for older backup callers.
 class SqliteSnapshotter {
   const SqliteSnapshotter();
+
+  /// Uses SQLite's Online Backup API, not checkpoint + file copy. Caller holds
+  /// the storage mutation gate until media references are read and pinned.
+  Future<File> createSnapshot({
+    required File liveSqlite,
+    required Directory destDir,
+  }) async {
+    if (!await liveSqlite.exists()) {
+      throw FileSystemException('数据库不存在', liveSqlite.path);
+    }
+    await destDir.create(recursive: true);
+    final target = File(p.join(destDir.path, AppDatabase.sqliteFileName));
+    if (p.equals(liveSqlite.absolute.path, target.absolute.path)) {
+      throw ArgumentError('快照不能覆盖正在使用的数据库');
+    }
+    if (await target.exists()) {
+      throw FileSystemException('快照目标已存在', target.path);
+    }
+    final sourcePath = liveSqlite.path;
+    final targetPath = target.path;
+    await _createOnlineSnapshot(sourcePath, targetPath);
+    return target;
+  }
 
   Future<void> checkpoint(AppDatabase database) {
     return database.customStatement('PRAGMA wal_checkpoint(FULL)');
@@ -127,3 +152,41 @@ class SqliteSnapshotter {
     }
   }
 }
+
+Future<void> _createOnlineSnapshot(String sourcePath, String targetPath) =>
+    Isolate.run(() async {
+      final pendingPath = '$targetPath.pending';
+      if (await File(pendingPath).exists()) {
+        throw FileSystemException('快照准备文件已存在', pendingPath);
+      }
+      Database? source;
+      Database? target;
+      try {
+        source = sqlite3.open(sourcePath, mode: OpenMode.readOnly);
+        target = sqlite3.open(pendingPath);
+        source.execute('PRAGMA busy_timeout = 5000');
+        target.execute('PRAGMA synchronous = FULL');
+        await source.backup(target, nPage: 128).drain<void>();
+        target.execute('PRAGMA journal_mode = DELETE');
+        if (target
+            .select('PRAGMA quick_check')
+            .any((row) => row.columnAt(0) != 'ok')) {
+          throw const FormatException('数据库快照校验失败');
+        }
+        target.close();
+        target = null;
+        source.close();
+        source = null;
+        final file = await File(pendingPath).open(mode: FileMode.append);
+        await file.flush();
+        await file.close();
+        await File(pendingPath).rename(targetPath);
+      } finally {
+        target?.close();
+        source?.close();
+        for (final suffix in ['', '-wal', '-shm', '-journal']) {
+          final file = File('$pendingPath$suffix');
+          if (await file.exists()) await file.delete();
+        }
+      }
+    });
