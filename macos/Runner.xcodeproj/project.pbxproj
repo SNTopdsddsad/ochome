@@ -33,6 +33,10 @@
 		C81C0E121ED2DC5600515831 /* ICloudChannelHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C81C0E111ED2DC5600515830 /* ICloudChannelHandler.swift */; };
 		D90C0E121ED2DC5600515852 /* RoleCardExportHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D90C0E111ED2DC5600515851 /* RoleCardExportHandler.swift */; };
 		E91C0E121ED2DC5600515852 /* VideoThumbnailHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E91C0E111ED2DC5600515851 /* VideoThumbnailHandler.swift */; };
+		A33B00000000000000000000 /* BackupV3Support.swift in Sources */ = {isa = PBXBuildFile; fileRef = A33A00000000000000000000 /* BackupV3Support.swift */; };
+		A33B00000000000000000001 /* BackupV3Catalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A33A00000000000000000001 /* BackupV3Catalog.swift */; };
+		A33B00000000000000000002 /* BackupV3Transport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A33A00000000000000000002 /* BackupV3Transport.swift */; };
+		A33B00000000000000000003 /* BackupV3ChannelHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A33A00000000000000000003 /* BackupV3ChannelHandler.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -96,6 +100,10 @@
 		D90C0E111ED2DC5600515851 /* RoleCardExportHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleCardExportHandler.swift; sourceTree = "<group>"; };
 		E91C0E111ED2DC5600515851 /* VideoThumbnailHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = VideoThumbnailHandler.swift; path = ../../ios/Runner/VideoThumbnailHandler.swift; sourceTree = "<group>"; };
 		D20D8BD4C39288C82218E488 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
+		A33A00000000000000000000 /* BackupV3Support.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackupV3Support.swift; path = ../../ios/Runner/BackupV3Support.swift; sourceTree = "<group>"; };
+		A33A00000000000000000001 /* BackupV3Catalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackupV3Catalog.swift; path = ../../ios/Runner/BackupV3Catalog.swift; sourceTree = "<group>"; };
+		A33A00000000000000000002 /* BackupV3Transport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackupV3Transport.swift; path = ../../ios/Runner/BackupV3Transport.swift; sourceTree = "<group>"; };
+		A33A00000000000000000003 /* BackupV3ChannelHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackupV3ChannelHandler.swift; path = ../../ios/Runner/BackupV3ChannelHandler.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -188,6 +196,10 @@
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
 				C81C0E111ED2DC5600515830 /* ICloudChannelHandler.swift */,
+				A33A00000000000000000003 /* BackupV3ChannelHandler.swift */,
+				A33A00000000000000000002 /* BackupV3Transport.swift */,
+				A33A00000000000000000001 /* BackupV3Catalog.swift */,
+				A33A00000000000000000000 /* BackupV3Support.swift */,
 				D90C0E111ED2DC5600515851 /* RoleCardExportHandler.swift */,
 				E91C0E111ED2DC5600515851 /* VideoThumbnailHandler.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
@@ -287,6 +299,9 @@
 						LastSwiftMigration = 1100;
 						ProvisioningStyle = Automatic;
 						SystemCapabilities = {
+							com.apple.iCloud = {
+								enabled = 1;
+							};
 							com.apple.Sandbox = {
 								enabled = 1;
 							};
@@ -441,6 +456,10 @@
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				C81C0E121ED2DC5600515831 /* ICloudChannelHandler.swift in Sources */,
+				A33B00000000000000000003 /* BackupV3ChannelHandler.swift in Sources */,
+				A33B00000000000000000002 /* BackupV3Transport.swift in Sources */,
+				A33B00000000000000000001 /* BackupV3Catalog.swift in Sources */,
+				A33B00000000000000000000 /* BackupV3Support.swift in Sources */,
 				D90C0E121ED2DC5600515852 /* RoleCardExportHandler.swift in Sources */,
 				E91C0E121ED2DC5600515852 /* VideoThumbnailHandler.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
