@@ -16,6 +16,8 @@
 		B81C0E131ED2DC5600515822 /* ICloudChannelHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B81C0E121ED2DC5600515821 /* ICloudChannelHandler.swift */; };
 		D90C0E131ED2DC5600515842 /* RoleCardExportHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D90C0E121ED2DC5600515841 /* RoleCardExportHandler.swift */; };
 		E91C0E131ED2DC5600515842 /* VideoThumbnailHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E91C0E121ED2DC5600515841 /* VideoThumbnailHandler.swift */; };
+		F92C0E131ED2DC5600515842 /* RoleAssetPreviewHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92C0E121ED2DC5600515841 /* RoleAssetPreviewHandler.swift */; };
+		F92C0E151ED2DC5600515842 /* RoleAssetPreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92C0E141ED2DC5600515841 /* RoleAssetPreviewTests.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
@@ -63,6 +65,8 @@
 		B81C0E121ED2DC5600515821 /* ICloudChannelHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICloudChannelHandler.swift; sourceTree = "<group>"; };
 		D90C0E121ED2DC5600515841 /* RoleCardExportHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleCardExportHandler.swift; sourceTree = "<group>"; };
 		E91C0E121ED2DC5600515841 /* VideoThumbnailHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoThumbnailHandler.swift; sourceTree = "<group>"; };
+		F92C0E121ED2DC5600515841 /* RoleAssetPreviewHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleAssetPreviewHandler.swift; sourceTree = "<group>"; };
+		F92C0E141ED2DC5600515841 /* RoleAssetPreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleAssetPreviewTests.swift; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		7C618BAA636207E11B140E88 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -117,6 +121,7 @@
 			isa = PBXGroup;
 			children = (
 				331C807B294A618700263BE5 /* RunnerTests.swift */,
+				F92C0E141ED2DC5600515841 /* RoleAssetPreviewTests.swift */,
 			);
 			path = RunnerTests;
 			sourceTree = "<group>";
@@ -168,6 +173,7 @@
 				B81C0E121ED2DC5600515821 /* ICloudChannelHandler.swift */,
 				D90C0E121ED2DC5600515841 /* RoleCardExportHandler.swift */,
 				E91C0E121ED2DC5600515841 /* VideoThumbnailHandler.swift */,
+				F92C0E121ED2DC5600515841 /* RoleAssetPreviewHandler.swift */,
 				B81C0E111ED2DC5600515820 /* Runner.entitlements */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
@@ -381,6 +387,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */,
+				F92C0E151ED2DC5600515842 /* RoleAssetPreviewTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -394,6 +401,7 @@
 				B81C0E131ED2DC5600515822 /* ICloudChannelHandler.swift in Sources */,
 				D90C0E131ED2DC5600515842 /* RoleCardExportHandler.swift in Sources */,
 				E91C0E131ED2DC5600515842 /* VideoThumbnailHandler.swift in Sources */,
+				F92C0E131ED2DC5600515842 /* RoleAssetPreviewHandler.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
