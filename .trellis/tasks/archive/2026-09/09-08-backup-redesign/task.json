@@ -3,7 +3,7 @@
   "name": "backup-redesign",
   "title": "iCloud 备份与恢复重设计",
   "description": "iCloud 备份重设计已实现并提交本地：账户合计最近 3 份、恢复前副本、严格校验、摘要缓存及全链路可视化。326 项 Flutter 测试、76 项原生检查通过；首页回归已在 iPhone 验证。双设备 iCloud 验收待完成。",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": "fullstack",
   "scope": "backup-restore",
   "package": null,
@@ -11,7 +11,7 @@
   "creator": "丹青",
   "assignee": "丹青",
   "createdAt": "2026-09-08",
-  "completedAt": null,
+  "completedAt": "2026-09-08",
   "branch": null,
   "base_branch": "main",
   "worktree_path": null,
@@ -29,6 +29,13 @@
     "ios/Runner/BackupV3Catalog.swift",
     "ios/Runner/BackupV3Transport.swift"
   ],
-  "notes": "产品规则已确认并获开发授权；实现、测试、原生能力与规格已提交本地，提交清单见 verification.md。未推送/部署 schema。首页回归已在连接的 iPhone 修复验证；保留 in_progress 等待真实双设备 iCloud 与其余发布验收。",
-  "meta": {}
+  "notes": "用户要求归档本轮开发：实现、测试、原生能力与规格已提交本地；首页回归已在连接的 iPhone 修复验证。未推送或部署 CloudKit schema。归档仅结束本轮开发，不表示下列发布验收已通过；具体证据见 verification.md。",
+  "meta": {
+    "pending_release_validation": [
+      "CloudKit production schema 与签名配置核验",
+      "同账户双设备并发备份、发现、恢复及合计三份保留清理",
+      "真机数 GB、低空间、断网、后台暂停与进程故障验收",
+      "旧真实备份兼容及完整用户验收"
+    ]
+  }
 }

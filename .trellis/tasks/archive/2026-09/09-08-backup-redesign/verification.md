@@ -74,3 +74,8 @@ macOS 构建命令：`xcodebuild -quiet -workspace macos/Runner.xcworkspace -sch
 - `8cd645d` 文档: 说明云备份使用与平台验收要求
 
 规格与本任务记录随最后一笔 Trellis 提交保存。任务继续保留 in_progress，等待真实双设备 iCloud 验收；本地提交不代表已完成发布验收。原有 ios/Podfile.lock 修改和 devtools_options.yaml 未纳入。
+
+
+## 用户要求归档
+
+用户在本地代码提交完成后明确要求 Trellis 归档，本轮开发任务据此归档。此前“保留 in_progress”等文字为当时的阶段记录；归档不代表真实双设备 iCloud、生产 schema/签名及其余发布门槛已验收通过。上述待验证事项保留在本文和 task.json 的 pending_release_validation 中，供后续发布验收继续处理。
