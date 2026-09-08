@@ -9,9 +9,12 @@ import '../data/providers/role_assets_provider.dart';
 import '../data/repositories/role_asset_repository.dart';
 import '../data/services/video_thumbnail_service.dart';
 import '../theme/zaidang_tokens.dart';
+import '../widgets/role_asset_rename_dialog.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
 import '../widgets/zaidang_snack_bar.dart';
 import 'cover_preview_page.dart';
+
+enum _AssetAction { rename, delete }
 
 /// 使用父级 NestedScrollView 的纵向控制器，与详情共享立绘和吸顶标签。
 class RoleAssetsTab extends ConsumerStatefulWidget {
@@ -21,12 +24,16 @@ class RoleAssetsTab extends ConsumerStatefulWidget {
     required this.overlapHandle,
     required this.onBusyChanged,
     this.enabled = true,
+    this.isEnabled,
   });
 
   final int roleId;
   final SliverOverlapAbsorberHandle overlapHandle;
   final ValueChanged<bool> onBusyChanged;
   final bool enabled;
+
+  /// Check parent save state even before its disabled-state rebuild.
+  final bool Function()? isEnabled;
 
   @override
   ConsumerState<RoleAssetsTab> createState() => _RoleAssetsTabState();
@@ -41,7 +48,9 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
   @override
   bool get wantKeepAlive => true;
 
-  bool get _canAct => widget.enabled && !_busy;
+  bool get _enabled => widget.enabled && (widget.isEnabled?.call() ?? true);
+
+  bool get _canAct => _enabled && !_busy;
 
   void _setBusy(bool busy) {
     setState(() => _busy = busy);
@@ -78,13 +87,13 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
           ),
         ),
       );
-      if (fromGallery == null || !mounted || !widget.enabled) return;
+      if (fromGallery == null || !mounted || !_enabled) return;
       final picker = ref.read(roleAssetPickerProvider);
       final repository = ref.read(roleAssetRepositoryProvider);
       final files = await (fromGallery
           ? picker.pickMedia()
           : picker.pickFiles());
-      if (files.isEmpty || !mounted || !widget.enabled) return;
+      if (files.isEmpty || !mounted || !_enabled) return;
       setState(() => _importing = true);
       await repository.importFiles(widget.roleId, files);
       if (mounted) {
@@ -116,14 +125,14 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
         '.gif',
         '.webp',
         '.bmp',
-      }.contains(p.extension(asset.name).toLowerCase());
+      }.contains(p.extension(asset.relativePath).toLowerCase());
 
   Future<void> _openAsset(RoleAsset asset, List<RoleAsset> all) async {
     if (!_canAct) return;
     _setBusy(true);
     try {
       final file = await ref.read(roleAssetRepositoryProvider).fileFor(asset);
-      if (!mounted || !widget.enabled) return;
+      if (!mounted || !_enabled) return;
       if (_previewable(asset)) {
         final images = all.where(_previewable).toList();
         final root = file.parent.parent;
@@ -137,7 +146,9 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
           ),
         );
       } else {
-        await ref.read(roleAssetOpenerProvider).open(file);
+        await ref
+            .read(roleAssetOpenerProvider)
+            .open(file, displayName: asset.name);
       }
     } catch (error) {
       if (mounted) {
@@ -152,9 +163,84 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
     }
   }
 
-  Future<void> _deleteAsset(RoleAsset asset) async {
+  Future<void> _showAssetActions(RoleAsset asset, BuildContext anchor) async {
     if (!_canAct) return;
+    FocusManager.instance.primaryFocus?.unfocus();
     _setBusy(true);
+    try {
+      final overlay =
+          Navigator.of(context).overlay!.context.findRenderObject()
+              as RenderBox;
+      final button = anchor.findRenderObject()! as RenderBox;
+      final action = await showMenu<_AssetAction>(
+        context: context,
+        position: RelativeRect.fromRect(
+          Rect.fromPoints(
+            button.localToGlobal(Offset.zero, ancestor: overlay),
+            button.localToGlobal(
+              button.size.bottomRight(Offset.zero),
+              ancestor: overlay,
+            ),
+          ),
+          Offset.zero & overlay.size,
+        ),
+        items: const [
+          PopupMenuItem(
+            value: _AssetAction.rename,
+            child: Row(
+              children: [
+                Icon(Icons.edit_outlined, size: 20),
+                SizedBox(width: 12),
+                Text('重命名'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: _AssetAction.delete,
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline, size: 20),
+                SizedBox(width: 12),
+                Text('删除'),
+              ],
+            ),
+          ),
+        ],
+      );
+      if (!mounted || !_enabled || action == null) return;
+      switch (action) {
+        case _AssetAction.rename:
+          final changed = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => RoleAssetRenameDialog(
+              name: asset.name,
+              relativePath: asset.relativePath,
+              canSave: () => mounted && _enabled,
+              onSave: (baseName) async {
+                if (!mounted || !_enabled) return;
+                await ref
+                    .read(roleAssetRepositoryProvider)
+                    .rename(
+                      roleId: widget.roleId,
+                      assetId: asset.id,
+                      baseName: baseName,
+                    );
+              },
+            ),
+          );
+          if (changed == true && mounted) {
+            showZaidangSnackBar(context, '资产已重命名');
+          }
+        case _AssetAction.delete:
+          await _deleteAsset(asset);
+      }
+    } finally {
+      if (mounted) _setBusy(false);
+    }
+  }
+
+  Future<void> _deleteAsset(RoleAsset asset) async {
     try {
       final confirmed = await showZaidangConfirmDialog(
         context: context,
@@ -163,7 +249,7 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
         consequence: '删除立即生效，原始导入文件不受影响。',
         confirmLabel: '删除资产',
       );
-      if (!confirmed || !mounted || !widget.enabled) return;
+      if (!confirmed || !mounted || !_enabled) return;
       await ref
           .read(roleAssetRepositoryProvider)
           .delete(roleId: widget.roleId, assetId: asset.id);
@@ -176,8 +262,6 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
           tone: ZaidangSnackBarTone.error,
         );
       }
-    } finally {
-      if (mounted) _setBusy(false);
     }
   }
 
@@ -328,10 +412,18 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
                         '${asset.kind.label} · ${_formatBytes(asset.bytes)}',
                       ),
                       onTap: _canAct ? () => _openAsset(asset, all) : null,
-                      trailing: IconButton(
-                        tooltip: '删除${asset.name}',
-                        icon: const Icon(Icons.delete_outline, size: 20),
-                        onPressed: _canAct ? () => _deleteAsset(asset) : null,
+                      trailing: Builder(
+                        builder: (context) => IconButton(
+                          tooltip: '更多操作：${asset.name}',
+                          icon: Icon(
+                            Icons.more_horiz,
+                            size: 20,
+                            semanticLabel: '更多操作：${asset.name}',
+                          ),
+                          onPressed: _canAct
+                              ? () => _showAssetActions(asset, context)
+                              : null,
+                        ),
                       ),
                     );
                   },

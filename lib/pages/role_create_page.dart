@@ -598,6 +598,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                   roleId: widget.role!.id,
                   overlapHandle: handle,
                   enabled: !_saving,
+                  isEnabled: () => !_saving,
                   onBusyChanged: (busy) {
                     if (mounted) setState(() => _assetBusy = busy);
                   },

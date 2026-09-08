@@ -10,6 +10,13 @@ abstract interface class RoleAssetRepository {
 
   /// 一批文件全数复制和登记成功才生效；失败清理本批新增文件。
   Future<void> importFiles(int roleId, List<XFile> files);
+
+  /// 仅修改显示名称，保留扩展名和导入文件。
+  Future<void> rename({
+    required int roleId,
+    required int assetId,
+    required String baseName,
+  });
   Future<void> delete({required int roleId, required int assetId});
   Future<File> fileFor(RoleAsset asset);
 }

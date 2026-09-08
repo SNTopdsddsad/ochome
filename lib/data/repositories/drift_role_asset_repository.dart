@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../database/app_database.dart' as db;
 import '../models/role_asset.dart';
+import '../models/role_asset_name.dart';
 import '../services/local_file_store.dart';
 import '../services/role_asset_store.dart';
 import 'role_asset_repository.dart';
@@ -91,6 +92,27 @@ class DriftRoleAssetRepository implements RoleAssetRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<void> rename({
+    required int roleId,
+    required int assetId,
+    required String baseName,
+  }) => _db.transaction(() async {
+    final asset =
+        await (_db.select(_db.roleAssets)
+              ..where((t) => t.id.equals(assetId) & t.roleId.equals(roleId)))
+            .getSingleOrNull();
+    if (asset == null) throw StateError('资产不存在或不属于此角色');
+    final name = RoleAssetName(
+      name: asset.name,
+      relativePath: asset.relativePath,
+    ).renamed(baseName);
+    if (name == asset.name) return;
+    await (_db.update(_db.roleAssets)
+          ..where((t) => t.id.equals(assetId) & t.roleId.equals(roleId)))
+        .write(db.RoleAssetsCompanion(name: Value(name)));
+  });
 
   @override
   Future<File> fileFor(RoleAsset asset) async {
