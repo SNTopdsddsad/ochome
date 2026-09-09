@@ -70,7 +70,7 @@ final class RoleDescRevisionsProvider
   }
 }
 
-String _$roleDescRevisionsHash() => r'e95f101581f5f6651ad0049a053f46f6c669a2dd';
+String _$roleDescRevisionsHash() => r'35053c3d3f364100c8b36ffe1ca35a05b3e54298';
 
 /// 单个角色的设定修订列表，新的在前。
 

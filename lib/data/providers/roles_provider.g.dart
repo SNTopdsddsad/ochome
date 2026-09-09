@@ -49,4 +49,4 @@ final class RolesProvider
   }
 }
 
-String _$rolesHash() => r'e17afe777cc642bcef020bafe54ca053b0ad99b1';
+String _$rolesHash() => r'a9d5d42a9a7cad52372e06e6912a6e93f82d8189';

@@ -7,7 +7,9 @@ import '../../features/backup/backup_coordinator.dart';
 import '../../features/backup/backup_transport.dart';
 import '../services/data_storage.dart';
 import 'app_database_provider.dart';
+import 'database_switch_provider.dart';
 import 'role_assets_provider.dart';
+import 'role_desc_revisions_provider.dart';
 import 'role_repository_provider.dart';
 import 'roles_provider.dart';
 
@@ -29,6 +31,12 @@ final backupCoordinatorProvider = FutureProvider<BackupCoordinator>((
     storage: storage,
     transport: ref.watch(backupTransportProvider),
     closeDatabase: () async {
+      ref.read(databaseSwitchProvider.notifier).begin();
+      // Hidden routes pause their streams. Drift.close waits for their done
+      // events, which cannot arrive until those subscriptions are cancelled.
+      ref.invalidate(rolesProvider);
+      ref.invalidate(roleAssetsProvider);
+      ref.invalidate(roleDescRevisionsProvider);
       if (!storage.isRecoveryOnly) await ref.read(appDatabaseProvider).close();
     },
     reopenDatabase: () async {
@@ -42,6 +50,7 @@ final backupCoordinatorProvider = FutureProvider<BackupCoordinator>((
           .get();
       imageCache.clear();
       imageCache.clearLiveImages();
+      ref.read(databaseSwitchProvider.notifier).complete();
     },
   );
   ref.onDispose(() => unawaited(coordinator.dispose()));

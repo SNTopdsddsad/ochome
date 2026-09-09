@@ -7,6 +7,7 @@ import '../services/role_asset_picker.dart';
 import '../services/role_asset_opener.dart';
 import '../services/video_thumbnail_service.dart';
 import 'app_database_provider.dart';
+import 'database_switch_provider.dart';
 
 final roleAssetRepositoryProvider = Provider<RoleAssetRepository>((ref) {
   return DriftRoleAssetRepository(ref.watch(appDatabaseProvider));
@@ -14,6 +15,7 @@ final roleAssetRepositoryProvider = Provider<RoleAssetRepository>((ref) {
 
 final roleAssetsProvider = StreamProvider.autoDispose
     .family<List<RoleAsset>, int>((ref, roleId) {
+      if (ref.watch(databaseSwitchProvider)) return const Stream.empty();
       return ref.watch(roleAssetRepositoryProvider).watchForRole(roleId);
     });
 
