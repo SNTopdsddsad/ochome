@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:ochome/data/database/app_database.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
@@ -317,12 +319,12 @@ void main() {
       await coordinator.confirmRestore(ready.operationId);
       expect(coordinator.currentJob!.phase, BackupPhase.completed);
       expect(storage.activeDirectory.path, isNot(oldRoot));
-      expect(await coordinator.hasPrevious(), isTrue);
+      expect(storage.rollbackDirectory, isNull);
+      expect(
+        await File(p.join(oldRoot, AppDatabase.sqliteFileName)).exists(),
+        isFalse,
+      );
       expect(readName(storage.activeDirectory), '白鸦');
-      await coordinator.restorePrevious();
-      expect(readName(storage.activeDirectory), '本机后来修改');
-      await coordinator.discardPrevious();
-      expect(await coordinator.hasPrevious(), isFalse);
     },
   );
 
@@ -340,42 +342,6 @@ void main() {
     expect(storage.activeDirectory.path, oldRoot);
     expect(reopenCalls, 0);
   });
-
-  for (final fault in ['missing', 'truncated', 'same-length']) {
-    test(
-      'local rollback refuses $fault previous media without changing current data',
-      () async {
-        final descriptor = (await backup()).descriptor!;
-        updateName(storage.activeDirectory, '恢复之前');
-        await coordinator.prepareRestore(BackupSource.snapshot(descriptor));
-        final ready = await waitForJob(
-          coordinator,
-          (job) => job.requiresConfirmation || job.isTerminal,
-        );
-        await coordinator.confirmRestore(ready.operationId);
-        final old = storage.previousDirectory!;
-        if (fault == 'missing') {
-          await File(p.join(old.path, 'covers/cover.png')).delete();
-        } else if (fault == 'truncated') {
-          await File(p.join(old.path, 'role_assets/empty.txt'))
-              .writeAsBytes([1]);
-        } else {
-          await File(p.join(old.path, 'covers/cover.png'))
-              .writeAsBytes([9, 9, 9, 9]);
-        }
-        final currentRoot = storage.activeDirectory.path;
-        await expectLater(
-          coordinator.restorePrevious(),
-          throwsA(isA<BackupFailure>()),
-        );
-        expect(storage.activeDirectory.path, currentRoot);
-        expect(readName(storage.activeDirectory), '白鸦');
-        expect(coordinator.previousExists, isTrue);
-        await coordinator.discardPrevious();
-        expect(coordinator.previousExists, isFalse);
-      },
-    );
-  }
 
   test('restore retry drains old writer and reclaims only the failed staging dataset', () async {
     final descriptor = (await backup()).descriptor!;
@@ -747,7 +713,7 @@ void main() {
     await coordinator.confirmRestore(ready.operationId);
     expect(readName(storage.activeDirectory), '白鸦');
     expect(storage.isRecoveryOnly, isFalse);
-    expect(await coordinator.hasPrevious(), isFalse);
+    expect(storage.rollbackDirectory, isNull);
   });
 
   test(

@@ -7,6 +7,9 @@ import 'package:ochome/data/models/role.dart';
 import 'package:ochome/data/providers/app_database_provider.dart';
 import 'package:ochome/data/providers/backup_coordinator_provider.dart';
 import 'package:ochome/data/providers/role_repository_provider.dart';
+import 'package:ochome/data/providers/role_assets_provider.dart';
+import 'package:ochome/data/providers/role_desc_revisions_provider.dart';
+import 'package:ochome/data/providers/roles_provider.dart';
 import 'package:ochome/data/services/data_storage.dart';
 import 'package:ochome/features/backup/backup_coordinator.dart';
 import 'package:ochome/features/backup/backup_models.dart';
@@ -95,9 +98,66 @@ void main() {
         throwsA(isA<StateError>()),
       );
       expect((await restoredRepository.getById(1))!.name, original.name);
-      expect(await service.hasPrevious(), isTrue);
+      expect(storage!.rollbackDirectory, isNull);
     },
   );
+
+  for (final paused in [false, true]) {
+    test(
+      'restore reconnects database subscriptions (paused: $paused)',
+      () async {
+        createFixture(root);
+        await openProviders();
+        final owner = container!;
+        final service = coordinator!;
+        final roles = owner.listen(rolesProvider, (_, _) {});
+        final assets = owner.listen(roleAssetsProvider(1), (_, _) {});
+        final revisions = owner.listen(roleDescRevisionsProvider(1), (_, _) {});
+        final original = (await owner.read(rolesProvider.future)).first;
+        await owner.read(roleAssetsProvider(1).future);
+        await owner.read(roleDescRevisionsProvider(1).future);
+        if (paused) {
+          roles.pause();
+          assets.pause();
+          revisions.pause();
+        }
+        await service.startBackup();
+        await waitForJob(service, (job) => job.phase == BackupPhase.completed);
+        final descriptor = (await service.listBackups()).snapshots.single;
+        await owner
+            .read(roleRepositoryProvider)
+            .update(_rename(original, '恢复前的编辑'));
+        await service.prepareRestore(BackupSource.snapshot(descriptor));
+        await waitForJob(
+          service,
+          (job) => job.phase == BackupPhase.readyForReview,
+        );
+        final activation = service.confirmRestore(
+          service.currentJob!.operationId,
+        );
+        try {
+          await activation.timeout(const Duration(seconds: 3));
+          expect(service.currentJob!.phase, BackupPhase.completed);
+          if (paused) {
+            roles.resume();
+            assets.resume();
+            revisions.resume();
+          }
+          expect(
+            (await owner.read(rolesProvider.future)).first.name,
+            original.name,
+          );
+          await owner.read(roleAssetsProvider(1).future);
+          await owner.read(roleDescRevisionsProvider(1).future);
+        } finally {
+          roles.close();
+          assets.close();
+          revisions.close();
+          await activation;
+        }
+      },
+    );
+  }
 
   test('pristine initialization materializes the ordinary DB only after storage bootstrap', () async {
     await openProviders();

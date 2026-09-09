@@ -23,36 +23,30 @@ void main() {
     await root.delete(recursive: true);
   });
 
-  test(
-    'legacy path and unrelated support files survive two activations',
-    () async {
-      await _dataset(root, 'old');
-      final unrelated = await File(p.join(root.path, 'settings.txt'))
-          .writeAsString('keep');
-      storage = await DataStorage.open(root);
-      expect(storage!.activeDirectory.path, await root.resolveSymbolicLinks());
-      final first = await storage!.createStagingDataset();
-      await _dataset(first, 'first');
-      await storage!.activate(
-        first,
-        closeDatabase: _noop,
-        reopenDatabase: _noop,
-      );
-      expect(await storage!.hasPrevious(), isTrue);
-      expect(_name(root), 'old');
-      final second = await storage!.createStagingDataset();
-      await _dataset(second, 'second');
-      await storage!.activate(
-        second,
-        closeDatabase: _noop,
-        reopenDatabase: _noop,
-      );
-      expect(_name(storage!.activeDirectory), 'second');
-      expect(_name(storage!.previousDirectory!), 'first');
-      expect(await File(p.join(root.path, 'ochome.sqlite')).exists(), isFalse);
-      expect(await unrelated.readAsString(), 'keep');
-    },
-  );
+  test('successful activations retire old data and preserve unrelated support files', () async {
+    await _dataset(root, 'old');
+    final unrelated = await File(p.join(root.path, 'settings.txt'))
+        .writeAsString('keep');
+    storage = await DataStorage.open(root);
+    expect(storage!.activeDirectory.path, await root.resolveSymbolicLinks());
+    final first = await storage!.createStagingDataset();
+    await _dataset(first, 'first');
+    await storage!.activate(first, closeDatabase: _noop, reopenDatabase: _noop);
+    expect(storage!.rollbackDirectory, isNull);
+    expect(await File(p.join(root.path, 'ochome.sqlite')).exists(), isFalse);
+    final second = await storage!.createStagingDataset();
+    await _dataset(second, 'second');
+    await storage!.activate(
+      second,
+      closeDatabase: _noop,
+      reopenDatabase: _noop,
+    );
+    expect(_name(storage!.activeDirectory), 'second');
+    expect(storage!.rollbackDirectory, isNull);
+    expect(await first.exists(), isFalse);
+    expect(await File(p.join(root.path, 'ochome.sqlite')).exists(), isFalse);
+    expect(await unrelated.readAsString(), 'keep');
+  });
 
   test(
     'nested exclusive mutation is safe and late repository writes are rejected',
@@ -81,7 +75,7 @@ void main() {
     },
   );
 
-  test('failed open restores old root and prior rollback copy', () async {
+  test('failed open restores old root', () async {
     await _dataset(root, 'old');
     storage = await DataStorage.open(root);
     final stage = await storage!.createStagingDataset();
@@ -107,27 +101,30 @@ void main() {
   });
 
   test(
-    'restorePrevious toggles whole datasets and discard removes only previous',
+    'startup retires a previously retained backup after checking current data',
     () async {
       await _dataset(root, 'old');
       storage = await DataStorage.open(root);
       final stage = await storage!.createStagingDataset();
       await _dataset(stage, 'new');
-      await storage!.activate(
-        stage,
-        closeDatabase: _noop,
-        reopenDatabase: _noop,
+      final pointerFile = File(
+        p.join(storage!.controlDirectory.path, 'active.json'),
       );
-      await storage!.restorePrevious(
-        closeDatabase: _noop,
-        reopenDatabase: _noop,
+      await storage!.close();
+      await pointerFile.writeAsString(
+        jsonEncode({
+          'format': 1,
+          'current': {'kind': 'dataset', 'id': p.basename(stage.path)},
+          'previous': {'kind': 'legacy'},
+          'epoch': 1,
+          'garbage': [],
+        }),
+        flush: true,
       );
-      expect(_name(storage!.activeDirectory), 'old');
-      expect(_name(storage!.previousDirectory!), 'new');
-      await storage!.discardPrevious();
-      expect(await storage!.hasPrevious(), isFalse);
-      expect(await stage.exists(), isFalse);
-      expect(_name(root), 'old');
+      storage = await DataStorage.open(root);
+      expect(_name(storage!.activeDirectory), 'new');
+      expect(storage!.rollbackDirectory, isNull);
+      expect(await File(p.join(root.path, 'ochome.sqlite')).exists(), isFalse);
     },
   );
 
@@ -143,6 +140,97 @@ void main() {
     await pin2.release();
     expect(await file.exists(), isFalse);
     await pin2.release();
+  });
+
+  test(
+    'retirement failure keeps restored data active and cleanup can retry',
+    () async {
+      await _dataset(root, 'old');
+      var failRetirement = true;
+      storage = await DataStorage.open(
+        root,
+        atomicReplace: (temporary, target) async {
+          final value = jsonDecode(await temporary.readAsString()) as Map;
+          if (failRetirement &&
+              p.basename(target.path) == 'active.json' &&
+              value['previous'] == null &&
+              (value['garbage'] as List).isNotEmpty) {
+            throw const FileSystemException('retirement write failed');
+          }
+          await temporary.rename(target.path);
+        },
+      );
+      final stage = await storage!.createStagingDataset();
+      await _dataset(stage, 'new');
+      await storage!.activate(
+        stage,
+        closeDatabase: _noop,
+        reopenDatabase: _noop,
+      );
+      expect(_name(storage!.activeDirectory), 'new');
+      expect(_name(root), 'old');
+      expect(storage!.cleanupPending, isTrue);
+      final intent = jsonDecode(
+        await File(
+          p.join(storage!.controlDirectory.path, 'restore-intent.json'),
+        ).readAsString(),
+      ) as Map;
+      expect(intent['phase'], 'healthy');
+      failRetirement = false;
+      await storage!.cleanupRetiredData();
+      expect(storage!.cleanupPending, isFalse);
+      expect(storage!.rollbackDirectory, isNull);
+      expect(await File(p.join(root.path, 'ochome.sqlite')).exists(), isFalse);
+      expect(_name(storage!.activeDirectory), 'new');
+    },
+  );
+
+  test('startup cleanup failure cannot leave a prepared rollback after accepting new data', () async {
+    await _dataset(root, 'old');
+    storage = await DataStorage.open(root);
+    final stage = await storage!.createStagingDataset();
+    await _dataset(stage, 'new');
+    final activeFile = File(
+      p.join(storage!.controlDirectory.path, 'active.json'),
+    );
+    final intentFile = File(
+      p.join(storage!.controlDirectory.path, 'restore-intent.json'),
+    );
+    final old = jsonDecode(await activeFile.readAsString()) as Map;
+    final next = {
+      'format': 1,
+      'current': {'kind': 'dataset', 'id': p.basename(stage.path)},
+      'previous': old['current'],
+      'epoch': 1,
+      'garbage': [],
+    };
+    await storage!.close();
+    await activeFile.writeAsString(jsonEncode(next), flush: true);
+    await intentFile.writeAsString(
+      jsonEncode({'format': 1, 'phase': 'prepared', 'old': old, 'next': next}),
+      flush: true,
+    );
+    storage = await DataStorage.open(
+      root,
+      atomicReplace: (temporary, target) async {
+        final value = jsonDecode(await temporary.readAsString()) as Map;
+        if (p.basename(target.path) == 'active.json' &&
+            value['previous'] == null) {
+          throw const FileSystemException('retirement write failed');
+        }
+        await temporary.rename(target.path);
+      },
+    );
+    expect(_name(storage!.activeDirectory), 'new');
+    expect(
+      (jsonDecode(await intentFile.readAsString()) as Map)['phase'],
+      'healthy',
+    );
+    await storage!.close();
+    await File(p.join(stage.path, 'ochome.sqlite'))
+        .writeAsString('corrupt after accepted restore');
+    await expectLater(DataStorage.open(root), throwsFormatException);
+    expect(_name(root), 'old');
   });
 
   test('an ongoing write drains before activation starts', () async {
@@ -209,7 +297,8 @@ void main() {
       await activeFile.writeAsString(jsonEncode(next), flush: true);
       storage = await DataStorage.open(root);
       expect(_name(storage!.activeDirectory), 'new');
-      expect(_name(storage!.previousDirectory!), 'old');
+      expect(storage!.rollbackDirectory, isNull);
+      expect(await File(p.join(root.path, 'ochome.sqlite')).exists(), isFalse);
     },
   );
 
@@ -356,7 +445,8 @@ void main() {
           if (rejectGarbageCleanup &&
               p.basename(target.path) == 'active.json') {
             final value = jsonDecode(await temporary.readAsString()) as Map;
-            if ((value['garbage'] as List).isEmpty) {
+            if (value['previous'] == null &&
+                (value['garbage'] as List).isEmpty) {
               throw StateError('injected cleanup persistence error');
             }
           }

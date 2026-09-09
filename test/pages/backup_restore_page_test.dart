@@ -125,48 +125,49 @@ void main() {
   );
 
   testWidgets(
-    'overview shows account-wide retention and no file backup export',
+    'overview keeps backup action and cloud history without file export',
     (tester) async {
       await open(tester);
-      expect(find.text('同一 iCloud 账户合计保留最近 3 份'), findsOneWidget);
-      expect(find.text('本机已保存资料'), findsOneWidget);
+      expect(find.text('云端备份'), findsOneWidget);
+      expect(find.text('本机已保存资料'), findsNothing);
+      expect(find.text('立即备份'), findsOneWidget);
       expect(find.text('保存到文件'), findsNothing);
+      expect(find.text('本机恢复前副本'), findsNothing);
       expect(find.text('从文件恢复'), findsNothing);
       expect(find.textContaining('测试 iPhone'), findsOneWidget);
       await tester.tap(find.byKey(const Key('backup-start')));
       await tester.pumpAndSettle();
-      expect(find.text('这次会备份什么'), findsOneWidget);
-      expect(coordinator.backupCalls, 0);
-      await tester.tap(find.byKey(const Key('backup-start-confirm')));
-      await tester.pumpAndSettle();
+      expect(find.text('这次会备份什么'), findsNothing);
       expect(coordinator.backupCalls, 1);
     },
   );
 
-  testWidgets(
-    'history contents use frozen names and metadata file information',
-    (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: zaidangLightTheme(),
-          home: BackupContentsPage(
-            loadContents: () async => _contents,
-            descriptor: _descriptor,
-          ),
+  testWidgets('history preserves frozen role names and summarizes file kinds', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: zaidangLightTheme(),
+        home: BackupContentsPage(
+          loadContents: () async => _contents,
+          descriptor: _descriptor,
         ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('备份时的白鸦'), findsOneWidget);
-      await tester.tap(find.widgetWithText(ChoiceChip, '文件清单'));
-      await tester.pumpAndSettle();
-      expect(find.text('最初的衣服参考.png'), findsOneWidget);
-      await tester.tap(find.text('最初的衣服参考.png'));
-      await tester.pumpAndSettle();
-      expect(find.text('所属角色'), findsOneWidget);
-      expect(find.text('原始文件大小'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    },
-  );
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('备份时的白鸦'), findsNothing);
+    await tester.tap(find.text('查看备份内容'));
+    await tester.pumpAndSettle();
+    expect(find.text('备份时的白鸦'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ChoiceChip, '文件分类'));
+    await tester.pumpAndSettle();
+    expect(find.text('最初的衣服参考.png'), findsNothing);
+    expect(find.text('立绘'), findsOneWidget);
+    expect(find.text('图片'), findsOneWidget);
+    expect(find.text('1 个'), findsNWidgets(2));
+    expect(find.text('原始文件大小'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('100 percent of bytes still waiting for cloud is not completed', (
     tester,
@@ -189,30 +190,13 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('等待 iCloud 上传确认'), findsOneWidget);
+    expect(find.text('正在确认云端备份'), findsOneWidget);
     expect(find.text('这份备份已完成'), findsNothing);
     final indicator = tester.widget<LinearProgressIndicator>(
       find.byKey(const Key('backup-stage-progress')),
     );
     expect(indicator.value, isNull);
-    expect(find.textContaining('正在等待 iCloud 确认文件上传'), findsOneWidget);
-    final uploadStep = find
-        .ancestor(of: find.text('上传变化内容'), matching: find.byType(Row))
-        .first;
-    expect(
-      find.descendant(
-        of: uploadStep,
-        matching: find.byIcon(Icons.radio_button_checked),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: uploadStep,
-        matching: find.byIcon(Icons.check_circle_outline),
-      ),
-      findsNothing,
-    );
+    expect(find.text('上传变化内容'), findsNothing);
   });
 
   testWidgets(
@@ -240,26 +224,26 @@ void main() {
       await tester.ensureVisible(review);
       await tester.tap(review);
       await tester.pumpAndSettle();
-      expect(find.text('用这份备份替换本机资料？'), findsOneWidget);
+      expect(find.text('替换本机资料？'), findsOneWidget);
       expect(
         find.descendant(
           of: find.byType(Dialog),
-          matching: find.text('测试 iPhone'),
+          matching: find.textContaining('测试 iPhone'),
         ),
         findsOneWidget,
       );
       expect(coordinator.confirmCalls, 0);
-      await tester.tap(find.text('先不恢复'));
+      await tester.tap(find.text('暂不恢复'));
       await tester.pumpAndSettle();
       expect(coordinator.confirmCalls, 0);
       await tester.ensureVisible(review);
       await tester.tap(review);
       await tester.pumpAndSettle();
-      final confirm = find.byKey(const Key('backup-activate-confirm'));
+      final confirm = find.byKey(const Key('zaidang-confirm-action'));
       await tester.ensureVisible(confirm);
-      final button = tester.widget<OutlinedButton>(confirm);
+      final button = tester.widget<FilledButton>(confirm);
       expect(
-        button.style!.foregroundColor!.resolve({}),
+        button.style!.backgroundColor!.resolve({}),
         ZaidangTokens.light.ink,
       );
       await tester.tap(confirm);
@@ -281,35 +265,211 @@ void main() {
       currentItem: '白鸦动作.mp4',
     );
     await open(tester);
+    expect(find.text('白鸦动作.mp4'), findsNothing);
+    await tester.tap(find.text('查看原因'));
+    await tester.pumpAndSettle();
     expect(find.text('白鸦动作.mp4'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
     await open(tester);
+    expect(find.text('白鸦动作.mp4'), findsNothing);
+    await tester.tap(find.text('查看原因'));
+    await tester.pumpAndSettle();
     expect(find.text('白鸦动作.mp4'), findsOneWidget);
     expect(coordinator.currentJob!.operationId, _jobId);
     expect(coordinator.backupCalls, 0);
     expect(find.byKey(const Key('backup-retry-job')), findsOneWidget);
   });
 
-  testWidgets('previous-copy cleanup waits for a destructive confirmation', (
+  testWidgets('completed journal stays hidden when entering or reopening', (
     tester,
   ) async {
-    coordinator.previous = true;
+    coordinator.job = BackupJobState(
+      operationId: _jobId,
+      kind: BackupJobKind.backup,
+      phase: BackupPhase.completed,
+      startedAtUtc: DateTime.utc(2026, 9, 8),
+      descriptor: _descriptor,
+    );
     await open(tester);
-    final cleanup = find.byKey(const Key('backup-discard-previous'));
-    await tester.scrollUntilVisible(cleanup, 250);
-    await tester.tap(cleanup);
+    expect(find.byKey(const Key('backup-job-panel')), findsNothing);
+    expect(find.text('备份已完成'), findsNothing);
+    expect(find.text('立即备份'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await open(tester);
+    expect(find.text('备份已完成'), findsNothing);
+  });
+
+  testWidgets(
+    'observed completion briefly confirms once and removes progress',
+    (tester) async {
+      await open(tester);
+      final running = BackupJobState(
+        operationId: _jobId,
+        kind: BackupJobKind.backup,
+        phase: BackupPhase.uploading,
+        startedAtUtc: DateTime.utc(2026, 9, 8),
+      );
+      coordinator.emit(running);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('立即备份'), findsNothing);
+      coordinator.emit(running.copyWith(phase: BackupPhase.completed));
+      await tester.pumpAndSettle();
+      expect(find.text('备份已完成'), findsOneWidget);
+      expect(find.byKey(const Key('backup-job-panel')), findsNothing);
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(find.text('备份已完成'), findsNothing);
+      coordinator.emit(coordinator.job!);
+      await tester.pumpAndSettle();
+      expect(find.text('备份已完成'), findsNothing);
+    },
+  );
+
+  testWidgets('rapid backup taps cannot enqueue a second start', (
+    tester,
+  ) async {
+    coordinator.startGate = Completer<String>();
+    await open(tester);
+    final start = tester.widget<FilledButton>(
+      find.byKey(const Key('backup-start')),
+    );
+    start.onPressed!();
+    start.onPressed!();
+    expect(coordinator.backupCalls, 1);
+    coordinator.startGate!.complete(_jobId);
     await tester.pumpAndSettle();
-    expect(coordinator.discardCalls, 0);
-    await tester.tap(find.byKey(const Key('zaidang-confirm-cancel')));
+  });
+
+  testWidgets('cloud read errors are not an empty history', (tester) async {
+    coordinator.historyFails = true;
+    await open(tester);
+    expect(find.text('暂时无法读取备份列表'), findsOneWidget);
+    expect(find.text('还没有云端备份'), findsNothing);
+    expect(find.text('重新检查'), findsOneWidget);
+    expect(find.byKey(const Key('backup-start')), findsNothing);
+    coordinator.historyFails = false;
+    await tester.tap(find.text('重新检查'));
     await tester.pumpAndSettle();
-    expect(coordinator.discardCalls, 0);
-    await tester.scrollUntilVisible(cleanup, 250);
-    await tester.tap(cleanup);
+    expect(find.text('立即备份'), findsOneWidget);
+    expect(find.textContaining('测试 iPhone'), findsOneWidget);
+  });
+
+  testWidgets('transient refresh failure keeps known backups visible', (
+    tester,
+  ) async {
+    await open(tester);
+    coordinator.historyFails = true;
+    await tester.tap(find.byTooltip('刷新云端备份'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('zaidang-confirm-action')));
-    await tester.pumpAndSettle();
-    expect(coordinator.discardCalls, 1);
+    expect(find.textContaining('测试 iPhone'), findsOneWidget);
+    expect(find.text('暂显示上次读取的备份'), findsOneWidget);
+    expect(find.text('还没有云端备份'), findsNothing);
+    expect(find.text('重新检查'), findsOneWidget);
+  });
+
+  testWidgets(
+    'restore completion crosses a route gap and is consumed only once',
+    (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          backupCoordinatorProvider.overrideWith((ref) async => coordinator),
+        ],
+      );
+      addTearDown(container.dispose);
+      final showPage = ValueNotifier(true);
+      addTearDown(showPage.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: zaidangLightTheme(),
+            home: ValueListenableBuilder<bool>(
+              valueListenable: showPage,
+              builder: (_, show, _) => show
+                  ? const BackupRestorePage(icloudSupported: true)
+                  : const Scaffold(body: Text('重建路由')),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final activating = BackupJobState(
+        operationId: _jobId,
+        kind: BackupJobKind.restore,
+        phase: BackupPhase.activating,
+        startedAtUtc: DateTime.utc(2026, 9, 8),
+      );
+      coordinator.emit(activating);
+      await tester.pump();
+      showPage.value = false;
+      await tester.pump();
+      coordinator.emit(activating.copyWith(phase: BackupPhase.completed));
+      await tester.pump();
+      showPage.value = true;
+      await tester.pumpAndSettle();
+      expect(find.text('资料已恢复'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      showPage.value = false;
+      await tester.pump();
+      showPage.value = true;
+      await tester.pumpAndSettle();
+      expect(find.text('资料已恢复'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'cleanup issue survives hidden completion and retries explicitly',
+    (tester) async {
+      coordinator.job = BackupJobState(
+        operationId: _jobId,
+        kind: BackupJobKind.backup,
+        phase: BackupPhase.completed,
+        startedAtUtc: DateTime.utc(2026, 9, 8),
+        cleanupPending: true,
+      );
+      await open(tester);
+      expect(find.byKey(const Key('backup-job-panel')), findsNothing);
+      final retry = find.byKey(const Key('backup-retry-cleanup'));
+      await tester.ensureVisible(retry);
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(coordinator.cleanupCalls, 1);
+    },
+  );
+
+  testWidgets('unmeasured uploads do not invent progress or show diagnostics', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: zaidangLightTheme(),
+        home: Scaffold(
+          body: BackupJobPanel(
+            job: BackupJobState(
+              operationId: _jobId,
+              kind: BackupJobKind.backup,
+              phase: BackupPhase.uploading,
+              startedAtUtc: DateTime.utc(2026, 9, 8),
+              currentItem: '原文件.png',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(
+      tester
+          .widget<LinearProgressIndicator>(
+            find.byKey(const Key('backup-stage-progress')),
+          )
+          .value,
+      isNull,
+    );
+    expect(find.text('原文件.png'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   for (final dark in [false, true]) {
@@ -344,7 +504,8 @@ void main() {
         await tester.ensureVisible(start);
         await tester.tap(start);
         await tester.pumpAndSettle();
-        expect(find.text('这次会备份什么'), findsOneWidget);
+        expect(find.text('这次会备份什么'), findsNothing);
+        expect(coordinator.backupCalls, 1);
         expect(tester.takeException(), isNull);
       },
     );
@@ -357,17 +518,26 @@ class _FakeCoordinator implements BackupCoordinator {
   final DataStorage storage;
   final _events = StreamController<BackupJobState>.broadcast();
   BackupJobState? job;
-  bool previous = false;
   int availabilityCalls = 0,
       backupCalls = 0,
       confirmCalls = 0,
-      discardCalls = 0;
+      cleanupCalls = 0;
+  Completer<String>? startGate;
+  bool historyFails = false;
+  void emit(BackupJobState next) {
+    job = next;
+    _events.add(next);
+  }
+
+  @override
+  Future<void> retryCleanup() async {
+    cleanupCalls++;
+  }
+
   @override
   BackupJobState? get currentJob => job;
   @override
   BackupFailure? get recoveryNotice => null;
-  @override
-  bool get previousExists => previous;
   @override
   Stream<BackupJobState> watchJob() => _events.stream;
   @override
@@ -385,30 +555,22 @@ class _FakeCoordinator implements BackupCoordinator {
   @override
   Future<SnapshotContents> currentContents() async => _contents;
   @override
-  Future<BackupHistory> listBackups() async => BackupHistory(
-    snapshots: [_descriptor],
-    legacyExists: false,
-    legacyDiscoveryComplete: true,
-  );
+  Future<BackupHistory> listBackups() async {
+    if (historyFails) throw const BackupFailure('network', '网络暂不可用，请重试');
+    return BackupHistory(snapshots: [_descriptor]);
+  }
+
   @override
   Future<SnapshotContents> contentsFor(BackupSource source) async => _contents;
   @override
-  Future<bool> hasPrevious() async => previous;
-  @override
   Future<String> startBackup() async {
     backupCalls++;
-    return _jobId;
+    return startGate?.future ?? Future.value(_jobId);
   }
 
   @override
   Future<void> confirmRestore(String operationId) async {
     confirmCalls++;
-  }
-
-  @override
-  Future<void> discardPrevious() async {
-    discardCalls++;
-    previous = false;
   }
 
   @override
