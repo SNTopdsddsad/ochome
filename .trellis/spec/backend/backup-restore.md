@@ -25,8 +25,6 @@ Future<String> prepareRestore(BackupSource source);
 Future<void> confirmRestore(String operationId);
 Future<void> cancel(String operationId);
 Future<void> retry(String operationId);
-Future<void> restorePrevious();
-Future<void> discardPrevious();
 Future<void> retryCleanup();
 ```
 
@@ -86,16 +84,23 @@ close/reopen the database themselves.
   may retain `/private/var` while the existing support root resolves to `/var`.
   Both sides of first-launch atomic replacement must share the same physical
   parent. Keep inner-symlink rejection; never fix aliases by disabling containment.
-- Preserve one previous known dataset. Unknown directories/control evidence from
-  corrupted-state recovery are retained rather than guessed/deleted. Normal
+- Keep the old dataset only until activation and reopen succeed, then retire it
+  automatically; startup also retires backups retained by earlier builds. The
+  on-disk `previous` field is only a temporary rollback guard, not a user feature.
+  Remove the rollback reference durably before deleting files. Unknown directories
+  and control evidence from corrupted-state recovery are retained rather than
+  guessed/deleted. Normal
   writes and data-root lookup are forbidden in recovery-only, while validated
   cloud restore remains possible; never silently replace corruption with an empty DB.
-- The coordinator validates local previous restore using detached DB business inventory and actual
-  referenced media (existence/exact known length and historical hash when recorded)
-  before activation. SQLite readability alone is insufficient.
 - `pinFiles` uses canonical physical paths and reference counts. Deletion waits
   for pins; retired dataset GC also respects pins. Galleries, native previews,
   renderer reads and backup snapshots release pins in finally/dispose.
+- Before closing the live database, suspend watched queries and explicitly
+  invalidate all role, asset and revision stream providers, including families.
+  Hidden routes pause Riverpod subscriptions; Drift.close waits indefinitely for
+  their done events unless they are cancelled first. Keep streams suspended
+  until the replacement (or rollback) database passes its open check, so active
+  listeners cannot reconnect to the closing database.
 - Cancellation drains native writers before staging cleanup. Confirmation cannot
   overtake cancellation; neither may accept stale operation/epoch/review revision.
   Restarted ready tasks require review again and never auto-activate.
@@ -221,3 +226,9 @@ presence does not prove lossless migration support.
 AppStorageBootstrap, MyApp and GoRouter. It verifies fresh/healthy startup opens
 archive without cloud availability, native replace failure shows a retryable
 local error, and corrupt SQLite remains behind the recovery route.
+
+Retirement retains file pins and retries failed cleanup without undoing a healthy
+restore. A startup-accepted prepared switch is marked healthy before retirement,
+so a later cleanup failure cannot leave an intent that rolls back subsequent edits.
+Recovery-only activation records `preservePrevious` in its intent and detaches
+corrupt/unknown old data without deleting it.

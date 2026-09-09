@@ -38,6 +38,16 @@ Questions to answer:
 
 ## Styling Patterns
 
+### Visible copy
+
+Prefer self-explanatory controls and meaningful data over explanatory text. Do
+not add introductory paragraphs, repeated process/status descriptions or
+implementation details to normal app states. Explain only when the user needs
+to decide or act: destructive consequences, actionable errors and required
+recovery steps. This applies to new UI and future refinements; it is not a
+request to rewrite unrelated screens.
+
+
 Colors come from [Theming](./theming.md) (崽档笔记《主题色与设计 Token》: 纸白 + 墨色 + 火漆红). Widgets read `Theme.of(context)` or `ZaidangTokens`; they do not hardcode hex.
 
 Controls over user images must retain at least 3:1 icon contrast over both white
