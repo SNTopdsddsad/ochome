@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>崽档 · 备份与恢复 UI 方案</title><link rel="stylesheet" href="styles.css">
+<style>
+/* Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V4 */
+body{padding:var(--space-xl);background:var(--color-review)}
+.board-head{max-width:1200px;margin:0 auto var(--space-xl);display:flex;align-items:end;justify-content:space-between;gap:var(--space-lg)}
+.board-head h1{font-size:30px;font-weight:500;letter-spacing:-.035em}.board-head p{color:var(--color-muted);margin-top:var(--space-sm);font-size:14px}
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-lg);max-width:1200px;margin:auto}
+figure{margin:0;min-width:0}figcaption{font-size:14px;font-weight:500;margin-bottom:12px}figcaption span{display:block;color:var(--color-muted);font-size:12px;font-weight:400;margin-top:4px}
+iframe{width:100%;height:690px;border:1px solid var(--color-rule);background:var(--color-paper);display:block}
+footer{max-width:1200px;margin:var(--space-lg) auto 0;color:var(--color-muted);font-size:12px}
+@media(max-width:900px){.board{grid-template-columns:minmax(0,1fr);max-width:414px}.board-head{display:block;max-width:414px}.board-head a{margin-top:var(--space-md)}body{padding:var(--space-lg) var(--space-md)}footer{max-width:414px}}
+</style></head><body>
+<header class="board-head"><div><h1>让备份回到两件事。</h1><p>保存现在的资料，需要时取回。纸白与火漆红，安静克制。</p></div><a href="prototype.html">打开交互原型 ↗</a></header>
+<div class="board">
+<figure><figcaption>日常备份<span>一个主按钮，一份简短目录。</span></figcaption><iframe title="简化后的备份首页" src="prototype.html?clean&state=idle"></iframe></figure>
+<figure><figcaption>按需查看<span>选中一份备份，再看内容与恢复操作。</span></figcaption><iframe title="按需展开的备份详情" src="prototype.html?clean&state=detail"></iframe></figure>
+<figure><figcaption>恢复前确认<span>下载并检查后，明确告知覆盖范围。</span></figcaption><iframe title="恢复前确认界面" src="prototype.html?clean&state=ready"></iframe></figure>
+</div>
+<footer>崽档 · 备份与恢复 UI 提案　/　2026.09.09<br>独立交互原型，不连接 iCloud。时间与数量取自本次已展示的备份，操作与耗时均为演示。</footer>
+</body></html>

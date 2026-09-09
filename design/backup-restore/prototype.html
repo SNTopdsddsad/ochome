@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>崽档 · 备份与恢复交互原型</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside class="review" aria-label="原型演示控制">
+    <div><strong>崽档 / 备份与恢复</strong><p>交互原型 · 示例来自已展示的备份，不连接 iCloud</p></div>
+    <div class="review-controls">
+      <label for="scenario">演示状态</label>
+      <select id="scenario">
+        <option value="idle">正常首页</option><option value="empty">首次备份</option>
+        <option value="backup">备份进行中</option><option value="waiting">等待 iCloud 确认</option>
+        <option value="detail">备份详情</option><option value="ready">恢复确认</option>
+        <option value="failure">备份失败</option><option value="offline">iCloud 不可用</option>
+        <option value="recovery">本机资料无法打开</option><option value="stalled">恢复耗时较长</option>
+      </select>
+      <button class="text-button" id="theme-toggle" aria-pressed="false">深色预览</button>
+      <a href="plan.md">阅读方案</a>
+    </div>
+  </aside>
+  <div class="app" id="app">
+    <header class="appbar">
+      <button class="icon-button" id="back" aria-label="返回设置"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5-7 7 7 7"/></svg></button>
+      <h1 id="page-title">备份与恢复</h1>
+      <button class="icon-button" id="refresh" aria-label="刷新云端备份"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M19 12a7 7 0 0 0-12-5L4 10m16 4-3 3A7 7 0 0 1 5 12"/></svg></button>
+    </header>
+    <main id="main"></main>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </div>
+  <dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-copy">
+    <form method="dialog">
+      <p class="dialog-caption">恢复备份</p>
+      <h2 id="confirm-title">替换本机资料？</h2>
+      <p class="confirm-target">9 月 9 日 14:32 的备份<span>来自 iPhone · 2 个角色 · 5 个文件</span></p>
+      <p id="confirm-copy">本机现有的角色资料、设定历史、立绘和资产将被替换。恢复后无法撤销。</p>
+      <p class="muted">这份备份已下载并通过检查。</p>
+      <div class="dialog-actions"><button value="cancel" class="secondary" autofocus>暂不恢复</button><button type="button" class="ink-button" id="activate">确认恢复</button></div>
+    </form>
+  </dialog>
+  <script src="app.js"></script>
+</body>
+</html>

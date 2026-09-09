@@ -1,0 +1,24 @@
+{
+  "date": "2026-09-09",
+  "scope": "Backup and restore page plan plus interactive prototype; no production Flutter changes",
+  "source": "lib/theme/zaidang_tokens.dart",
+  "framework": "Flutter Material; plain HTML review artifact",
+  "genre": "editorial",
+  "macrostructure": "Workbench (native utility adaptation)",
+  "theme": "existing Zaidang paper / ink / seal red",
+  "user_preference": "纸白与火漆红，安静克制",
+  "typography": "Preserve system-native Chinese single family deliberately",
+  "enrichment": "none",
+  "motion": [
+    "button press",
+    "indeterminate progress"
+  ],
+  "preserve": [
+    "routes",
+    "snapshot protocol",
+    "validation",
+    "retention of 3",
+    "atomic rollback during activation"
+  ],
+  "deletions": []
+}
