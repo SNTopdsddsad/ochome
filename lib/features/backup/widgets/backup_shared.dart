@@ -4,6 +4,67 @@ import '../../../theme/zaidang_tokens.dart';
 import '../backup_models.dart';
 import '../backup_protocol.dart';
 
+/// Page-local readable secondary ink; the global app palette stays unchanged.
+Color backupSecondaryColor(BuildContext context) {
+  final tokens = ZaidangTokens.of(context);
+  return Theme.of(context).brightness == Brightness.dark
+      ? tokens.inkSecondary
+      : Color.lerp(tokens.inkSecondary, tokens.ink, .28)!;
+}
+
+String backupDateLabel(DateTime time, {bool includeYear = false}) {
+  final local = time.toLocal();
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${includeYear ? '${local.year} 年 ' : ''}'
+      '${local.month} 月 ${local.day} 日 ${two(local.hour)}:${two(local.minute)}';
+}
+
+ButtonStyle backupPrimaryStyle(BuildContext context) => FilledButton.styleFrom(
+  minimumSize: const Size(double.infinity, 52),
+  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+);
+
+class BackupDisclosure extends StatefulWidget {
+  const BackupDisclosure({
+    super.key,
+    required this.title,
+    required this.children,
+  });
+  final String title;
+  final List<Widget> children;
+  @override
+  State<BackupDisclosure> createState() => _BackupDisclosureState();
+}
+
+class _BackupDisclosureState extends State<BackupDisclosure> {
+  bool _expanded = false;
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Align(
+        alignment: Alignment.centerLeft,
+        child: Semantics(
+          expanded: _expanded,
+          child: TextButton.icon(
+            onPressed: () => setState(() => _expanded = !_expanded),
+            style: TextButton.styleFrom(
+              foregroundColor: backupSecondaryColor(context),
+              minimumSize: const Size(44, 44),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+            ),
+            icon: Icon(_expanded ? Icons.remove : Icons.add, size: 18),
+            label: Text(widget.title, style: const TextStyle(fontSize: 13)),
+          ),
+        ),
+      ),
+      if (_expanded) ...widget.children,
+    ],
+  );
+}
+
 String backupBytes(int? bytes) {
   if (bytes == null) return '正在计算';
   if (bytes < 1000) return '$bytes B';
@@ -92,7 +153,7 @@ class BackupKeyValue extends StatelessWidget {
           flex: 4,
           child: Text(
             label,
-            style: TextStyle(color: ZaidangTokens.of(context).inkSecondary),
+            style: TextStyle(color: backupSecondaryColor(context)),
           ),
         ),
         const SizedBox(width: 12),
@@ -112,15 +173,12 @@ class BackupNotice extends StatelessWidget {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 19, color: ZaidangTokens.of(context).inkSecondary),
+        Icon(icon, size: 19, color: backupSecondaryColor(context)),
         const SizedBox(width: 9),
         Expanded(
           child: Text(
             message,
-            style: TextStyle(
-              color: ZaidangTokens.of(context).inkSecondary,
-              height: 1.5,
-            ),
+            style: TextStyle(color: backupSecondaryColor(context), height: 1.5),
           ),
         ),
       ],
@@ -181,7 +239,7 @@ class BackupSummaryView extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 12,
-                            color: ZaidangTokens.of(context).inkSecondary,
+                            color: backupSecondaryColor(context),
                           ),
                         ),
                       ],
@@ -194,10 +252,7 @@ class BackupSummaryView extends StatelessWidget {
         const SizedBox(height: 14),
         Text(
           '含 ${summary.customAttributeCount} 项自定义属性、${summary.coverCount} 张立绘原图',
-          style: TextStyle(
-            fontSize: 12,
-            color: ZaidangTokens.of(context).inkSecondary,
-          ),
+          style: TextStyle(fontSize: 12, color: backupSecondaryColor(context)),
         ),
       ],
     ),
@@ -213,12 +268,12 @@ class BackupBody extends StatelessWidget {
     builder: (context, constraints) {
       final horizontal = constraints.maxWidth > 640
           ? (constraints.maxWidth - 600) / 2
-          : 20.0;
+          : 24.0;
       return ListView(
         controller: controller,
         padding: EdgeInsets.fromLTRB(
           horizontal,
-          20,
+          32,
           horizontal,
           MediaQuery.paddingOf(context).bottom + 24,
         ),

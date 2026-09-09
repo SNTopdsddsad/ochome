@@ -72,11 +72,8 @@ class BackupCoordinator {
   Future<BackupHistory> listBackups() async {
     final account = await _requireAccount();
     final catalog = await transport.catalog(account.accountId!);
-    final legacy = await transport.legacyInfo(account.accountId!);
     return BackupHistory(
       snapshots: catalog.snapshots,
-      legacyExists: legacy.exists,
-      legacyDiscoveryComplete: legacy.discoveryComplete,
       retiredCount: catalog.retired.length,
     );
   }
@@ -1007,6 +1004,7 @@ class BackupCoordinator {
           job.state.copyWith(
             phase: BackupPhase.completed,
             completedAtUtc: DateTime.now().toUtc(),
+            cleanupPending: storage.cleanupPending,
             resetProgress: true,
           ),
         );
@@ -1113,7 +1111,7 @@ class BackupCoordinator {
     final dataset = job.dataset;
     if (dataset == null ||
         dataset.path == storage.activeDirectory.path ||
-        dataset.path == storage.previousDirectory?.path) {
+        dataset.path == storage.rollbackDirectory?.path) {
       return;
     }
     final datasets = p.join(storage.supportDirectory.path, 'datasets');
@@ -1146,7 +1144,7 @@ class BackupCoordinator {
     if (previous.dataset == null ||
         previous.state.kind != BackupJobKind.restore ||
         previous.dataset!.path == storage.activeDirectory.path ||
-        previous.dataset!.path == storage.previousDirectory?.path) {
+        previous.dataset!.path == storage.rollbackDirectory?.path) {
       return;
     }
     try {
@@ -1295,23 +1293,20 @@ class BackupCoordinator {
       await startBackup();
     } else if (job.state.kind == BackupJobKind.cleanup) {
       await retryCleanup();
-    } else {
-      await restorePrevious();
     }
   }
 
-  Future<bool> hasPrevious() => storage.hasPrevious();
-  bool get previousExists => storage.previousDirectory != null;
   Future<void> retryCleanup() async {
     await _awaitVisibleBoundary();
     final previous = _job;
     final job = _begin(BackupJobKind.cleanup);
     _launch(job, () async {
       await _reclaimAbandonedStage(previous, job);
+      await storage.cleanupRetiredData();
       final account = await _requireAccount();
       job.accountId = account.accountId;
       await _cleanup(job);
-      if (job.state.cleanupPending) {
+      if (job.state.cleanupPending || storage.cleanupPending) {
         throw const BackupFailure(
           'cleanup_pending',
           '部分文件仍受其他任务保护，或尚待云端确认，请稍后重试',
@@ -1327,102 +1322,6 @@ class BackupCoordinator {
     });
     await _running;
     if (job.state.phase == BackupPhase.failed) throw job.state.error!;
-  }
-
-  Future<void> restorePrevious() async {
-    await _awaitVisibleBoundary();
-    final job = _begin(BackupJobKind.restorePrevious);
-    _launch(
-      job,
-      () => storage.exclusively(() async {
-        await _phase(job, BackupPhase.validating);
-        await _validatePrevious(job);
-        await _phase(job, BackupPhase.activating);
-        await storage.restorePrevious(
-          closeDatabase: closeDatabase,
-          reopenDatabase: reopenDatabase,
-        );
-        await _update(
-          job,
-          job.state.copyWith(
-            phase: BackupPhase.completed,
-            completedAtUtc: DateTime.now().toUtc(),
-            cleanupPending: storage.cleanupPending,
-          ),
-        );
-      }),
-    );
-    await _running;
-    if (job.state.phase == BackupPhase.failed) throw job.state.error!;
-  }
-
-  Future<void> _validatePrevious(_Job job) async {
-    final previous = storage.previousDirectory;
-    if (previous == null) {
-      throw const BackupFailure('previous_missing', '没有可恢复的本地副本');
-    }
-    final inspection = Directory(
-      p.join(job.directory.path, 'previous-inspection'),
-    );
-    final database = await const SqliteSnapshotter().createSnapshot(
-      liveSqlite: File(p.join(previous.path, AppDatabase.sqliteFileName)),
-      destDir: inspection,
-    );
-    final sources = await normalizeSnapshotCovers(database, previous);
-    final inventory = await inspectBackupDatabase(database);
-    var done = 0;
-    final paths = inventory.paths.toList()..sort();
-    final assetBytes = {
-      for (final asset in inventory.assets) asset.relativePath: asset.bytes,
-    };
-    for (final path in paths) {
-      final file = File(sources[path] ?? p.join(previous.path, path));
-      if (await FileSystemEntity.type(file.path, followLinks: false) !=
-          FileSystemEntityType.file) {
-        throw const BackupFailure(
-          'previous_file_missing',
-          '恢复前副本缺少原始文件，已保留当前资料',
-        );
-      }
-      final cover = path.startsWith('covers/');
-      final length = await file.length();
-      if ((cover && length <= 0) || (!cover && length != assetBytes[path])) {
-        throw const BackupFailure(
-          'previous_file_incomplete',
-          '恢复前副本存在不完整文件，已保留当前资料',
-        );
-      }
-      final baseline = await _fingerprints.cachedFingerprint(
-        file,
-        requireCurrentStat: false,
-      );
-      if (baseline != null) {
-        await verifyBackupFile(
-          file,
-          bytes: baseline.bytes,
-          sha256: baseline.sha256,
-        );
-      }
-      await _update(
-        job,
-        job.state.copyWith(completedFiles: ++done, totalFiles: paths.length),
-      );
-    }
-  }
-
-  Future<void> discardPrevious() async {
-    await _awaitVisibleBoundary();
-    if (_busy || _controlBusy || (_job?.state.requiresConfirmation ?? false)) {
-      throw const BackupFailure('busy', '请先完成当前任务');
-    }
-    _busy = true;
-    final settlement = _settlement = Completer<void>();
-    try {
-      await storage.discardPrevious();
-    } finally {
-      _busy = false;
-      settlement.complete();
-    }
   }
 
   Future<void> recoverOnStartup() async {
@@ -1582,7 +1481,7 @@ class BackupCoordinator {
     if (available != null && available < extra + margin) {
       throw const BackupFailure(
         'insufficient_space',
-        '本机剩余空间不足，请释放空间后重试；恢复前副本不会被自动删除',
+        '本机剩余空间不足，请释放空间后重试；恢复成功前会保留原资料',
       );
     }
   }

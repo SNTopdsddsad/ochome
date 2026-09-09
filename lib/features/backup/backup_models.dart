@@ -1,6 +1,6 @@
 import 'backup_protocol.dart';
 
-enum BackupJobKind { backup, restore, restorePrevious, cleanup }
+enum BackupJobKind { backup, restore, cleanup }
 
 enum BackupPhase {
   preparing,
@@ -55,15 +55,8 @@ class BackupAvailability {
 }
 
 class BackupHistory {
-  const BackupHistory({
-    required this.snapshots,
-    required this.legacyExists,
-    required this.legacyDiscoveryComplete,
-    this.retiredCount = 0,
-  });
+  const BackupHistory({required this.snapshots, this.retiredCount = 0});
   final List<BackupDescriptor> snapshots;
-  final bool legacyExists;
-  final bool legacyDiscoveryComplete;
   final int retiredCount;
 }
 
@@ -149,7 +142,6 @@ class BackupJobState {
   }.contains(phase);
   bool get canCancel =>
       !isTerminal &&
-      kind != BackupJobKind.restorePrevious &&
       kind != BackupJobKind.cleanup &&
       phase != BackupPhase.activating &&
       phase != BackupPhase.publishing;

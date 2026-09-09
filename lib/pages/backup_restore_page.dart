@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/providers/backup_coordinator_provider.dart';
+import '../data/providers/backup_completion_feedback_provider.dart';
 import '../data/services/icloud_container.dart';
 import '../features/backup/backup_coordinator.dart';
 import '../features/backup/backup_models.dart';
@@ -13,6 +14,7 @@ import '../features/backup/widgets/backup_job_panel.dart';
 import '../features/backup/widgets/backup_shared.dart';
 import '../theme/zaidang_tokens.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
+import '../widgets/zaidang_snack_bar.dart';
 import '../widgets/storage_error_details.dart';
 import 'backup_contents_page.dart';
 
@@ -37,6 +39,7 @@ class BackupRestorePage extends ConsumerWidget {
           data: (coordinator) => _BackupHome(
             key: ObjectKey(coordinator),
             coordinator: coordinator,
+            feedback: ref.watch(backupCompletionFeedbackProvider(coordinator)),
           ),
           loading: () => Scaffold(
             appBar: AppBar(title: const Text('备份与恢复')),
@@ -63,8 +66,13 @@ class BackupRestorePage extends ConsumerWidget {
 }
 
 class _BackupHome extends StatefulWidget {
-  const _BackupHome({super.key, required this.coordinator});
+  const _BackupHome({
+    super.key,
+    required this.coordinator,
+    required this.feedback,
+  });
   final BackupCoordinator coordinator;
+  final BackupCompletionFeedback feedback;
   @override
   State<_BackupHome> createState() => _BackupHomeState();
 }
@@ -76,8 +84,10 @@ class _BackupHomeState extends State<_BackupHome> {
   BackupAvailability? _availability;
   BackupHistory? _history;
   SnapshotContents? _current;
-  bool _hasPrevious = false, _loading = true, _actionBusy = false;
+  bool _loading = true, _actionBusy = false;
   String? _cloudError, _localError, _actionError;
+  String? _dismissedJobId;
+  String? _historyAccountId;
   int _loadGeneration = 0;
   final _scrollController = ScrollController();
 
@@ -85,6 +95,8 @@ class _BackupHomeState extends State<_BackupHome> {
   void initState() {
     super.initState();
     _job = _coordinator.currentJob;
+    widget.feedback.addListener(_showCompletion);
+    _showCompletion();
     _subscription = _coordinator.watchJob().listen((job) {
       if (!mounted) return;
       final wasTerminal = _job?.isTerminal ?? true;
@@ -101,9 +113,23 @@ class _BackupHomeState extends State<_BackupHome> {
   @override
   void dispose() {
     _loadGeneration++;
+    widget.feedback.removeListener(_showCompletion);
     unawaited(_subscription?.cancel());
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _showCompletion() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final job = widget.feedback.takeCompletion();
+      if (job == null) return;
+      showZaidangSnackBar(context, switch (job.kind) {
+        BackupJobKind.backup => '备份已完成',
+        BackupJobKind.restore => '资料已恢复',
+        BackupJobKind.cleanup => '空间清理已完成',
+      }, tone: ZaidangSnackBarTone.success);
+    });
   }
 
   void _revealJob() {
@@ -132,7 +158,6 @@ class _BackupHomeState extends State<_BackupHome> {
     BackupAvailability? availability;
     BackupHistory? history;
     SnapshotContents? contents;
-    var previous = false;
     String? cloudError, localError;
     await Future.wait([
       (() async {
@@ -153,15 +178,9 @@ class _BackupHomeState extends State<_BackupHome> {
         } catch (error) {
           localError = backupErrorMessage(error);
         }
-        try {
-          previous = _coordinator.previousExists;
-        } catch (error) {
-          localError ??= backupErrorMessage(error);
-        }
         if (mounted && generation == _loadGeneration) {
           setState(() {
             _current = contents;
-            _hasPrevious = previous;
             _localError = localError;
           });
         }
@@ -170,9 +189,17 @@ class _BackupHomeState extends State<_BackupHome> {
     if (!mounted || generation != _loadGeneration) return;
     setState(() {
       _availability = availability;
-      _history = history;
+      if (history != null) {
+        _history = history;
+        _historyAccountId = availability?.accountId;
+      } else if (availability?.errorCode == 'account_unavailable' ||
+          (availability?.accountId != null &&
+              _historyAccountId != null &&
+              availability!.accountId != _historyAccountId)) {
+        _history = null;
+        _historyAccountId = null;
+      }
       _current = contents;
-      _hasPrevious = previous;
       _cloudError = cloudError;
       _localError = localError;
       _loading = false;
@@ -188,62 +215,30 @@ class _BackupHomeState extends State<_BackupHome> {
     try {
       await action();
     } catch (error) {
-      if (mounted) setState(() => _actionError = backupErrorMessage(error));
+      if (mounted) {
+        setState(() => _actionError = backupErrorMessage(error));
+        if (ModalRoute.of(context)?.isCurrent == false) {
+          showZaidangSnackBar(
+            context,
+            _actionError!,
+            tone: ZaidangSnackBarTone.error,
+          );
+        }
+      }
     } finally {
       if (mounted) setState(() => _actionBusy = false);
     }
   }
 
   Future<void> _startBackup() => _perform(() async {
-    if (_running || _current == null) return;
-    final contents = _current!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => Dialog(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '这次会备份什么',
-                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 16),
-                BackupSummaryView(summary: contents.summary),
-                BackupKeyValue('角色资产', _assetCountText(contents.summary)),
-                const BackupNotice('只备份已保存资料。开始时会重新核对范围；本次上传量和复用量将在检查云端后显示。'),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    key: const Key('backup-start-confirm'),
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('开始备份'),
-                  ),
-                ),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('先不备份'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-    if (confirmed == true && mounted) await _coordinator.startBackup();
+    if (_running ||
+        _current == null ||
+        _coordinator.storage.isRecoveryOnly ||
+        !(_availability?.available ?? false)) {
+      return;
+    }
+    await _coordinator.startBackup();
   });
-
-  String _assetCountText(SnapshotSummary summary) => [
-    for (final kind in ['image', 'video', 'audio', 'document'])
-      '${summary.assetCountsByKind[kind] ?? 0} ${backupKindLabel(kind)}',
-  ].join(' / ');
 
   Future<void> _cancelJob(BackupJobState job) => _perform(() async {
     final confirmed = await showZaidangConfirmDialog(
@@ -259,92 +254,31 @@ class _BackupHomeState extends State<_BackupHome> {
   });
 
   Future<void> _reviewRestore(BackupJobState job) => _perform(() async {
-    final preview = job.restorePreview;
-    if (preview == null) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => Dialog(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 460),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '用这份备份替换本机资料？',
-                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 14),
-                BackupKeyValue('备份内容时间', backupTime(job.contentCreatedAtUtc)),
-                BackupKeyValue(
-                  '来源设备',
-                  job.descriptor?.deviceName ?? '旧版备份或来源未提供',
-                ),
-                BackupKeyValue(
-                  '将恢复',
-                  '${preview.incoming.summary.roleCount} 位角色 · ${preview.incoming.summary.originalFileCount} 份原文件',
-                ),
-                BackupKeyValue(
-                  '本机替换范围',
-                  preview.currentUnreadable || preview.current == null
-                      ? '本机资料暂时无法读取，原文件会保留'
-                      : '${preview.current!.summary.roleCount} 位角色 · ${preview.current!.summary.originalFileCount} 份原文件',
-                ),
-                BackupKeyValue('准备区所需空间', backupBytes(preview.additionalBytes)),
-                const BackupKeyValue('恢复前副本', '保留最近一份，可再次切回'),
-                if (preview.limitedIntegrity)
-                  const BackupNotice('这是旧版备份，缺少历史内容摘要；已完成可用的结构与文件检查。'),
-                const BackupNotice(
-                  '本机的角色资料、设定历史、立绘和资产都会被替换。确认后才开始切换。',
-                  icon: Icons.shield_outlined,
-                ),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    key: const Key('backup-activate-confirm'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: ZaidangTokens.of(context).ink,
-                    ),
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('确认替换并恢复'),
-                  ),
-                ),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('先不恢复'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-    if (confirmed == true && mounted) {
-      await _coordinator.confirmRestore(job.operationId);
+    final currentJob = _coordinator.currentJob;
+    final preview = currentJob?.restorePreview;
+    if (currentJob?.operationId != job.operationId ||
+        !(currentJob?.requiresConfirmation ?? false) ||
+        preview == null) {
+      return;
     }
-  });
-
-  Future<void> _previous({required bool discard}) => _perform(() async {
-    if (_running) return;
+    final time = currentJob!.contentCreatedAtUtc;
+    final summary = preview.incoming.summary;
     final confirmed = await showZaidangConfirmDialog(
       context: context,
-      title: discard ? '清理恢复前副本？' : '切回上次恢复前的资料？',
-      body: discard ? '会删除本机保留的那份恢复前资料。' : '当前本机资料会被恢复前的副本替换，包括这期间的编辑。',
-      consequence: discard ? '清理后无法再通过这份副本切回，当前资料不会删除。' : '当前资料会保留为新的恢复前副本。',
-      confirmLabel: discard ? '清理副本' : '确认切回',
-      cancelLabel: '先不操作',
+      title: '替换本机资料？',
+      body:
+          '${time == null ? '所选备份' : '${backupDateLabel(time, includeYear: true)} 的备份'}\n'
+          '来自 ${currentJob.descriptor?.deviceName ?? '来源未提供'} · '
+          '${summary.roleCount} 个角色 · ${summary.originalFileCount} 个文件'
+          '${preview.limitedIntegrity ? '\n\n备份缺少历史内容摘要，已完成可用的结构与文件检查。' : ''}'
+          '${preview.currentUnreadable ? '\n本机资料暂时无法读取，无法统计当前范围。' : ''}',
+      consequence: '本机现有的角色资料、设定历史、立绘和资产将被替换。恢复后无法撤销。',
+      confirmLabel: '确认恢复',
+      cancelLabel: '暂不恢复',
       showSparkle: false,
     );
-    if (!confirmed || !mounted) return;
-    if (discard) {
-      await _coordinator.discardPrevious();
-    } else {
-      await _coordinator.restorePrevious();
+    if (confirmed && mounted) {
+      await _coordinator.confirmRestore(job.operationId);
     }
   });
 
@@ -356,18 +290,20 @@ class _BackupHomeState extends State<_BackupHome> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => BackupContentsPage(
-          title: source == null
-              ? '本次资料目录'
-              : source.legacy
-              ? '旧版备份内容'
-              : '备份详情',
+          title: source == null ? '本次资料目录' : '备份详情',
           descriptor: source?.descriptor,
+          coordinator: source == null ? null : _coordinator,
+          onReviewRestore: _reviewRestore,
+          onCancelJob: _cancelJob,
           loadContents: contents != null
               ? () async => contents
               : () => _coordinator.contentsFor(source!),
           onPrepareRestore: source == null || _running
               ? null
               : () async {
+                  if (_running || _actionBusy) {
+                    throw const BackupFailure('busy', '已有操作进行中，请先完成或取消');
+                  }
                   await _coordinator.prepareRestore(source);
                 },
         ),
@@ -378,16 +314,32 @@ class _BackupHomeState extends State<_BackupHome> {
   @override
   Widget build(BuildContext context) {
     final tokens = ZaidangTokens.of(context);
+    final secondary = backupSecondaryColor(context);
     final recoveryOnly = _coordinator.storage.isRecoveryOnly;
+    final job = _job;
+    final showJob =
+        job != null &&
+        job.operationId != _dismissedJobId &&
+        job.phase != BackupPhase.completed &&
+        job.phase != BackupPhase.cancelled;
+    final cleanupPending =
+        (job?.cleanupPending ?? false) ||
+        _coordinator.storage.cleanupPending ||
+        (_history?.retiredCount ?? 0) > 0;
     return PopScope(
       canPop: !_switching && !recoveryOnly,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('备份与恢复'),
+          title: const Text(
+            '备份与恢复',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+          ),
+          centerTitle: true,
+          automaticallyImplyLeading: !_switching && !recoveryOnly,
           actions: [
             IconButton(
-              tooltip: '刷新备份状态',
-              onPressed: _loading || _switching ? null : _reload,
+              tooltip: '刷新云端备份',
+              onPressed: _loading || _running || _actionBusy ? null : _reload,
               icon: const Icon(Icons.refresh),
             ),
           ],
@@ -395,162 +347,165 @@ class _BackupHomeState extends State<_BackupHome> {
         body: BackupBody(
           controller: _scrollController,
           children: [
-            if (_coordinator.recoveryNotice != null)
-              BackupNotice(
-                _coordinator.recoveryNotice!.message,
-                icon: Icons.info_outline,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Icon(
+                Icons.cloud_upload_outlined,
+                size: 38,
+                color: tokens.accent,
               ),
-            if (recoveryOnly)
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              '备份到 iCloud',
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 24),
+            if (_coordinator.recoveryNotice != null)
+              BackupDisclosure(
+                title: '查看上次操作说明',
+                children: [BackupNotice(_coordinator.recoveryNotice!.message)],
+              ),
+            if (recoveryOnly) ...[
               const BackupNotice(
-                '本机资料暂时无法打开。原文件已保留，可以选择有效云端备份恢复。',
+                '本机资料暂时无法打开，可以选择一份云端备份恢复。',
                 icon: Icons.shield_outlined,
               ),
-            if (recoveryOnly)
               StorageErrorDetails(error: _coordinator.storage.recoveryError),
-            if (_job case final job?) ...[
+            ],
+            if (showJob)
               BackupJobPanel(
+                key: ValueKey(job.operationId),
                 job: job,
                 onCancel: _actionBusy ? null : () => _cancelJob(job),
                 onRetry: _actionBusy
                     ? null
                     : () => _perform(() => _coordinator.retry(job.operationId)),
                 onReview: _actionBusy ? null : () => _reviewRestore(job),
-                onContents: job.contents == null
-                    ? null
-                    : () => _openContents(contents: job.contents),
-                onViewBackup: job.descriptor == null
-                    ? null
-                    : () => _openContents(
-                        source: BackupSource.snapshot(job.descriptor!),
-                      ),
-              ),
-              const SizedBox(height: 22),
-            ],
-            if ((_job?.cleanupPending ?? false) ||
-                (_history?.retiredCount ?? 0) > 0)
-              OutlinedButton(
-                key: const Key('backup-retry-cleanup'),
-                onPressed: _running || _actionBusy
-                    ? null
-                    : () => _perform(_coordinator.retryCleanup),
-                child: const Text('重试空间清理'),
               ),
             if (_actionError != null)
               BackupNotice(_actionError!, icon: Icons.error_outline),
-            if (_current case final contents?) ...[
-              BackupSummaryView(summary: contents.summary, title: '本机已保存资料'),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: _switching
-                      ? null
-                      : () => _openContents(contents: contents),
-                  icon: const Icon(Icons.folder_open_outlined),
-                  label: const Text('查看全部内容'),
-                ),
-              ),
-            ],
-            if (_localError != null)
-              BackupNotice(_localError!, icon: Icons.error_outline),
-            if (_loading && _current == null)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            if (_cloudError != null)
-              BackupNotice(_cloudError!, icon: Icons.cloud_off_outlined),
-            const SizedBox(height: 8),
-            FilledButton(
-              key: const Key('backup-start'),
-              onPressed:
-                  _running ||
+            if (!showJob && !recoveryOnly) ...[
+              if (_localError != null)
+                BackupNotice(_localError!, icon: Icons.error_outline),
+              if (_cloudError != null)
+                BackupNotice(_cloudError!, icon: Icons.cloud_off_outlined),
+              if (_localError != null || _cloudError != null)
+                OutlinedButton(
+                  onPressed: _loading ? null : _reload,
+                  child: const Text('重新检查'),
+                )
+              else
+                FilledButton(
+                  key: const Key('backup-start'),
+                  style: backupPrimaryStyle(context),
+                  onPressed:
                       _actionBusy ||
-                      _current == null ||
-                      _history == null ||
-                      !(_availability?.available ?? false)
-                  ? null
-                  : _startBackup,
-              child: const Text('备份到 iCloud'),
-            ),
-            const SizedBox(height: 9),
-            Text(
-              '完整记录已保存资料，只上传需要的文件。',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: tokens.inkSecondary, fontSize: 12),
-            ),
-            const SizedBox(height: 26),
+                          _current == null ||
+                          _history == null ||
+                          !(_availability?.available ?? false)
+                      ? null
+                      : _startBackup,
+                  child: Text(
+                    _loading && _current == null ? '正在准备资料…' : '立即备份',
+                  ),
+                ),
+            ],
+            if (showJob && !job.canRetry && job.isTerminal && !recoveryOnly)
+              TextButton(
+                onPressed: _actionBusy
+                    ? null
+                    : () {
+                        setState(() => _dismissedJobId = job.operationId);
+                        unawaited(_reload());
+                      },
+                child: const Text('返回备份'),
+              ),
+            const SizedBox(height: 48),
             const Text(
               '云端备份',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 4),
-            Text(
-              '同一 iCloud 账户合计保留最近 3 份',
-              style: TextStyle(color: tokens.inkSecondary, fontSize: 12),
-            ),
+            const SizedBox(height: 8),
+            if (_cloudError != null && _history != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  '暂显示上次读取的备份',
+                  style: TextStyle(fontSize: 13, color: secondary),
+                ),
+              ),
             if (_loading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
                 child: LinearProgressIndicator(),
               ),
-            if (!_loading && _history != null && _history!.snapshots.isEmpty)
-              const BackupNotice('账户中还没有已完成的新格式备份。'),
-            for (final backup
-                in _history?.snapshots ?? const <BackupDescriptor>[])
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(vertical: 5),
-                leading: const Icon(Icons.inventory_2_outlined),
-                title: Text(backupTime(backup.createdAtUtc)),
-                subtitle: Text(
-                  '${backup.deviceName} · ${backup.roleCount} 位角色\n${backupBytes(backup.totalBytes)} · ${backup.fileCount} 份原文件',
+            if (!_loading && _history == null) ...[
+              const Divider(height: 1),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Text('暂时无法读取备份列表'),
+              ),
+              if (recoveryOnly || showJob)
+                TextButton(
+                  onPressed: _running || _actionBusy ? null : _reload,
+                  child: const Text('重新读取备份列表'),
                 ),
-                isThreeLine: true,
-                trailing: const Icon(Icons.chevron_right),
+            ],
+            if (!_loading &&
+                _history != null &&
+                _history!.snapshots.isEmpty) ...[
+              const Divider(height: 1),
+              const SizedBox(height: 24),
+              const Text('还没有云端备份', style: TextStyle(fontSize: 16)),
+              const SizedBox(height: 24),
+              const Divider(height: 1),
+            ],
+            for (final backup
+                in _history?.snapshots ?? const <BackupDescriptor>[]) ...[
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                title: Text(
+                  backupDateLabel(
+                    backup.createdAtUtc,
+                    includeYear:
+                        backup.createdAtUtc.toLocal().year !=
+                        DateTime.now().year,
+                  ),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '${backup.deviceName} · ${backupBytes(backup.totalBytes)}',
+                    style: TextStyle(fontSize: 13, color: secondary),
+                  ),
+                ),
+                trailing: Icon(Icons.chevron_right, color: secondary, size: 20),
                 onTap: _switching
                     ? null
                     : () =>
                           _openContents(source: BackupSource.snapshot(backup)),
               ),
-            if ((_history?.retiredCount ?? 0) > 0)
-              const BackupNotice('部分旧备份正在等待安全清理，可能暂时额外占用空间。'),
-            if (_history?.legacyExists ?? false) ...[
-              const Divider(height: 28),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.history),
-                title: const Text('旧版备份'),
-                subtitle: const Text('先读取目录，检查后再选择恢复'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: _switching
-                    ? null
-                    : () => _openContents(source: const BackupSource.legacy()),
-              ),
-            ] else if (_history != null && !_history!.legacyDiscoveryComplete)
-              const BackupNotice('旧版备份仍在发现中，稍后可以刷新。'),
-            if (_hasPrevious) ...[
-              const Divider(height: 32),
-              const Text(
-                '本机恢复前副本',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
-              ),
-              const BackupNotice('保留最近一次恢复前的资料。切回会替换此后的编辑；清理可释放对应空间。'),
-              OutlinedButton(
-                key: const Key('backup-restore-previous'),
-                onPressed: _running || _actionBusy
-                    ? null
-                    : () => _previous(discard: false),
-                style: OutlinedButton.styleFrom(foregroundColor: tokens.ink),
-                child: const Text('切回恢复前资料'),
-              ),
-              TextButton(
-                key: const Key('backup-discard-previous'),
-                onPressed: _running || _actionBusy
-                    ? null
-                    : () => _previous(discard: true),
-                style: TextButton.styleFrom(foregroundColor: tokens.ink),
-                child: const Text('清理恢复前副本'),
-              ),
             ],
+            if (_history?.snapshots.isNotEmpty ?? false)
+              const Divider(height: 1),
+            const SizedBox(height: 16),
+            if (cleanupPending)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  key: const Key('backup-retry-cleanup'),
+                  onPressed: _running || _actionBusy
+                      ? null
+                      : () => _perform(_coordinator.retryCleanup),
+                  child: const Text('重试空间清理'),
+                ),
+              ),
             if (!recoveryOnly && !Navigator.of(context).canPop()) ...[
               const SizedBox(height: 20),
               TextButton(

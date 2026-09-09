@@ -1,10 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../theme/zaidang_tokens.dart';
 import '../backup_models.dart';
 import 'backup_shared.dart';
 
-class BackupJobPanel extends StatelessWidget {
+/// Only actionable job state belongs on the page. Journals retain diagnostics.
+class BackupJobPanel extends StatefulWidget {
   const BackupJobPanel({
     super.key,
     required this.job,
@@ -17,58 +20,130 @@ class BackupJobPanel extends StatelessWidget {
   final BackupJobState job;
   final VoidCallback? onCancel, onRetry, onReview, onContents, onViewBackup;
 
-  bool get _backup => job.kind == BackupJobKind.backup;
+  @override
+  State<BackupJobPanel> createState() => _BackupJobPanelState();
+}
+
+class _BackupJobPanelState extends State<BackupJobPanel> {
+  Timer? _timer;
+  DateTime _lastProgress = DateTime.now();
+  bool get _slow => DateTime.now().difference(_lastProgress).inSeconds >= 60;
+
+  @override
+  void initState() {
+    super.initState();
+    _watchProgress();
+  }
+
+  @override
+  void didUpdateWidget(BackupJobPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final before = oldWidget.job, after = widget.job;
+    if (before.operationId != after.operationId ||
+        before.phase != after.phase ||
+        before.currentItem != after.currentItem ||
+        before.completedBytes != after.completedBytes ||
+        before.completedFiles != after.completedFiles) {
+      _lastProgress = DateTime.now();
+    }
+    _watchProgress();
+  }
+
+  void _watchProgress() {
+    if (widget.job.isTerminal || widget.job.requiresConfirmation) {
+      _timer?.cancel();
+      _timer = null;
+    } else {
+      _timer ??= Timer.periodic(const Duration(seconds: 15), (_) {
+        if (mounted && _slow) setState(() {});
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final job = widget.job;
+    if (job.phase == BackupPhase.completed ||
+        job.phase == BackupPhase.cancelled) {
+      return const SizedBox.shrink();
+    }
     final tokens = ZaidangTokens.of(context);
-    final completed = job.phase == BackupPhase.completed;
-    final label = completed
-        ? (_backup
-              ? '这份备份已完成'
-              : job.kind == BackupJobKind.cleanup
-              ? '清理已完成'
-              : '已恢复这份资料')
-        : backupPhaseLabel(job.phase);
+    final backup = job.kind == BackupJobKind.backup;
+    final failed =
+        job.phase == BackupPhase.failed || job.phase == BackupPhase.interrupted;
+    final label = failed
+        ? job.kind == BackupJobKind.cleanup
+              ? '空间清理未完成'
+              : backup
+              ? '这次备份未完成'
+              : '这次恢复未完成'
+        : _slow && !job.requiresConfirmation
+        ? switch (job.kind) {
+            BackupJobKind.backup => '备份耗时较长',
+            BackupJobKind.restore => '恢复耗时较长',
+            BackupJobKind.cleanup => '空间清理耗时较长',
+          }
+        : switch (job.phase) {
+            BackupPhase.waitingForCloud || BackupPhase.publishing => '正在确认云端备份',
+            BackupPhase.readyForReview => '备份已通过检查',
+            BackupPhase.activating => '正在恢复资料',
+            _ =>
+              job.kind == BackupJobKind.cleanup
+                  ? '正在清理旧文件'
+                  : backup
+                  ? '正在备份'
+                  : '正在下载并检查',
+          };
+    final String? description = failed
+        ? job.error?.message ?? '请重试'
+        : job.phase == BackupPhase.activating
+        ? '请保持 App 打开'
+        : null;
     final measured = const {
       BackupPhase.hashing,
       BackupPhase.staging,
       BackupPhase.uploading,
       BackupPhase.downloading,
     }.contains(job.phase);
-    final total = job.totalBytes;
-    final done = job.completedBytes;
+    final total = job.totalBytes, done = job.completedBytes;
     final fraction = measured && total != null && total > 0 && done != null
         ? (done / total).clamp(0.0, 1.0)
         : null;
-    return BackupPaperCard(
+    return Container(
       key: const Key('backup-job-panel'),
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        border: Border.symmetric(horizontal: BorderSide(color: tokens.border)),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Semantics(
             liveRegion: true,
             child: Text(
               label,
-              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w500),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            '${_backup ? '备份' : '操作'}开始：${backupTime(job.startedAtUtc)}',
-            style: TextStyle(color: tokens.inkSecondary, fontSize: 12),
-          ),
-          if (job.contentCreatedAtUtc != null)
+          if (description != null) ...[
+            const SizedBox(height: 8),
             Text(
-              '备份内容时间：${backupTime(job.contentCreatedAtUtc)}',
-              style: TextStyle(color: tokens.inkSecondary, fontSize: 12),
+              description,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.6,
+                color: backupSecondaryColor(context),
+              ),
             ),
-          if (job.completedAtUtc != null)
-            BackupKeyValue('本次完成时间', backupTime(job.completedAtUtc)),
-          if (job.descriptor != null)
-            BackupKeyValue('来源设备', job.descriptor!.deviceName),
+          ],
           if (!job.isTerminal && !job.requiresConfirmation) ...[
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             LinearProgressIndicator(
               key: const Key('backup-stage-progress'),
               value: fraction,
@@ -77,196 +152,76 @@ class BackupJobPanel extends StatelessWidget {
                   ? '进度暂不可测量'
                   : '${(fraction * 100).floor()}%',
             ),
-            const SizedBox(height: 8),
-            if (fraction != null)
+            if (fraction != null) ...[
+              const SizedBox(height: 8),
               Text(
                 '${job.currentItem == null ? '本阶段' : '当前文件'} ${backupBytes(done)} / ${backupBytes(total)}',
-                style: TextStyle(color: tokens.inkSecondary, fontSize: 12),
-              )
-            else
-              Text(
-                job.phase == BackupPhase.waitingForCloud
-                    ? '正在等待 iCloud 确认文件上传，暂时无法计算进度。'
-                    : job.phase == BackupPhase.publishing
-                    ? '文件上传已确认，正在完成这份备份。'
-                    : '正在处理，请稍候。',
-                style: TextStyle(color: tokens.inkSecondary, fontSize: 12),
-              ),
-          ],
-          if (job.completedFiles != null && job.totalFiles != null)
-            BackupKeyValue(
-              job.phase == BackupPhase.waitingForCloud ? '已确认上传项目' : '本阶段已处理项目',
-              '${job.completedFiles} / ${job.totalFiles} 份',
-            ),
-          if (job.failedAtPhase != null && job.error != null)
-            BackupKeyValue('停止阶段', backupPhaseLabel(job.failedAtPhase!)),
-          const SizedBox(height: 16),
-          _BackupStages(job: job),
-          if (job.currentItem != null && job.currentItem!.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              job.error == null ? '当前文件' : '相关文件',
-              style: TextStyle(color: tokens.inkSecondary, fontSize: 12),
-            ),
-            const SizedBox(height: 4),
-            Text(job.currentItem!),
-          ],
-          if (job.contents case final contents?) ...[
-            const Divider(height: 26),
-            BackupKeyValue(
-              '完整范围',
-              '${contents.summary.roleCount} 位角色 · ${contents.summary.originalFileCount} 份原文件',
-            ),
-            BackupKeyValue(
-              '完整资料量',
-              contents.summary.knownLogicalDataBytes == null
-                  ? '总量待检查'
-                  : backupBytes(contents.summary.knownLogicalDataBytes),
-            ),
-          ],
-          if (_backup && job.uploadBytes != null)
-            BackupKeyValue('本次需传输', backupBytes(job.uploadBytes)),
-          if (_backup && (job.reusedFiles > 0 || job.uploadBytes != null))
-            BackupKeyValue(
-              '本次复用',
-              '${job.reusedFiles} 份 · ${backupBytes(job.reusedBytes)}',
-            ),
-          if (job.error != null)
-            BackupNotice(job.error!.message, icon: Icons.error_outline),
-          if (job.cleanupPending)
-            const BackupNotice('旧文件清理尚未完成，可能暂时多占空间。新的完整备份已保留。'),
-          if (!job.isTerminal && job.phase != BackupPhase.activating)
-            BackupNotice(
-              _backup ? '可以离开页面，回来继续查看同一个任务。' : '现在只准备和检查资料，确认后才会替换本机内容。',
-              icon: Icons.shield_outlined,
-            ),
-          if (job.phase == BackupPhase.activating)
-            const BackupNotice('正在切换整套资料，暂时不能取消。', icon: Icons.shield_outlined),
-          if (job.requiresConfirmation)
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                key: const Key('backup-review-restore'),
-                onPressed: onReview,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: tokens.ink,
-                  side: BorderSide(color: tokens.border),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: backupSecondaryColor(context),
                 ),
-                child: const Text('查看并确认恢复'),
               ),
+            ],
+          ],
+          if (failed || _slow)
+            BackupDisclosure(
+              key: ValueKey('${job.operationId}-details'),
+              title: failed ? '查看原因' : '查看当前状态',
+              children: [
+                BackupKeyValue(
+                  '当前步骤',
+                  backupPhaseLabel(job.failedAtPhase ?? job.phase),
+                ),
+                if (job.currentItem?.isNotEmpty ?? false)
+                  Text(job.currentItem!),
+              ],
             ),
-          if (job.canRetry)
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                key: const Key('backup-retry-job'),
-                onPressed: onRetry,
-                child: const Text('重新检查并重试'),
+          if (job.requiresConfirmation || job.canRetry || job.canCancel)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 16,
+                runSpacing: 8,
+                children: [
+                  if (job.canCancel)
+                    TextButton(
+                      key: const Key('backup-cancel-job'),
+                      onPressed: widget.onCancel,
+                      style: TextButton.styleFrom(foregroundColor: tokens.ink),
+                      child: Text(
+                        job.requiresConfirmation
+                            ? '放弃恢复'
+                            : backup
+                            ? '取消备份'
+                            : '取消',
+                      ),
+                    ),
+                  if (job.canRetry)
+                    TextButton(
+                      key: const Key('backup-retry-job'),
+                      onPressed: widget.onRetry,
+                      style: TextButton.styleFrom(foregroundColor: tokens.ink),
+                      child: Text(
+                        job.kind == BackupJobKind.cleanup
+                            ? '重试清理'
+                            : backup
+                            ? '重试备份'
+                            : '重试恢复',
+                      ),
+                    ),
+                  if (job.requiresConfirmation)
+                    TextButton(
+                      key: const Key('backup-review-restore'),
+                      onPressed: widget.onReview,
+                      style: TextButton.styleFrom(foregroundColor: tokens.ink),
+                      child: const Text('继续恢复'),
+                    ),
+                ],
               ),
-            ),
-          if (completed && job.descriptor != null && onViewBackup != null)
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: onViewBackup,
-                child: const Text('查看这份备份'),
-              ),
-            ),
-          if (onContents != null && job.contents != null)
-            TextButton.icon(
-              onPressed: onContents,
-              icon: const Icon(Icons.folder_open_outlined),
-              label: const Text('查看本次资料目录'),
-            ),
-          if (job.canCancel)
-            TextButton(
-              key: const Key('backup-cancel-job'),
-              onPressed: onCancel,
-              style: TextButton.styleFrom(foregroundColor: tokens.ink),
-              child: const Text('取消本次操作'),
             ),
         ],
       ),
-    );
-  }
-}
-
-class _BackupStages extends StatelessWidget {
-  const _BackupStages({required this.job});
-  final BackupJobState job;
-  @override
-  Widget build(BuildContext context) {
-    final backup = job.kind == BackupJobKind.backup;
-    final local =
-        job.kind == BackupJobKind.restorePrevious ||
-        job.kind == BackupJobKind.cleanup;
-    final labels = local
-        ? ['检查本机副本', '处理本机资料', '完成']
-        : backup
-        ? ['整理资料', '准备原文件', '上传变化内容', '确认备份完成']
-        : ['读取目录', '下载原文件', '检查与升级', '确认并恢复'];
-    final phase = job.failedAtPhase ?? job.phase;
-    final step = local
-        ? switch (phase) {
-            BackupPhase.completed => 3,
-            BackupPhase.activating => 1,
-            _ => 0,
-          }
-        : backup
-        ? switch (phase) {
-            BackupPhase.preparing || BackupPhase.readingContents => 0,
-            BackupPhase.hashing || BackupPhase.staging => 1,
-            BackupPhase.uploading || BackupPhase.waitingForCloud => 2,
-            BackupPhase.publishing => 3,
-            BackupPhase.completed => 4,
-            _ => -1,
-          }
-        : switch (phase) {
-            BackupPhase.preparing || BackupPhase.readingContents => 0,
-            BackupPhase.downloading => 1,
-            BackupPhase.validating => 2,
-            BackupPhase.readyForReview || BackupPhase.activating => 3,
-            BackupPhase.completed => 4,
-            _ => -1,
-          };
-    if (step < 0) return const SizedBox.shrink();
-    final tokens = ZaidangTokens.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (var index = 0; index < labels.length; index++)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: [
-                Icon(
-                  index < step
-                      ? Icons.check_circle_outline
-                      : index == step
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_unchecked,
-                  size: 18,
-                  color: index == step ? tokens.accent : tokens.inkSecondary,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    labels[index],
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: index > step ? tokens.inkSecondary : tokens.ink,
-                    ),
-                  ),
-                ),
-                if (index < step)
-                  Text(
-                    '已完成',
-                    style: TextStyle(fontSize: 11, color: tokens.inkSecondary),
-                  ),
-              ],
-            ),
-          ),
-      ],
     );
   }
 }

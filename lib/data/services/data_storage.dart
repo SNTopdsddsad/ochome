@@ -84,8 +84,12 @@ class DataStorage {
   int get mutationRevision => _mutationRevision;
   Stream<int> get changes => _changes.stream;
   bool get cleanupPending =>
-      _pointer.garbage.isNotEmpty || _deletions.isNotEmpty;
-  Directory? get previousDirectory =>
+      _pointer.previous != null ||
+      _pointer.garbage.isNotEmpty ||
+      _deletions.isNotEmpty;
+
+  /// Only protects an unfinished switch; never exposed as a user backup.
+  Directory? get rollbackDirectory =>
       _pointer.previous == null ? null : _directory(_pointer.previous!);
 
   /// An isolated instance for tests/tools. The Dart fallback flushes the file
@@ -242,42 +246,44 @@ class DataStorage {
     () => _activate(_refForStaging(staging), closeDatabase, reopenDatabase),
   );
 
-  Future<bool> hasPrevious() async {
-    final previous = _pointer.previous;
-    if (previous == null) return false;
-    try {
-      await _health(previous);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
+  Future<void> cleanupRetiredData() => exclusively(_finishCleanup);
 
-  Future<void> restorePrevious({
-    required Future<void> Function() closeDatabase,
-    required Future<void> Function() reopenDatabase,
-  }) => exclusively(() async {
-    final previous = _pointer.previous;
-    if (previous == null) throw StateError('没有可恢复的本地副本');
-    await _activate(previous, closeDatabase, reopenDatabase);
-  });
-
-  Future<void> discardPrevious() => exclusively(() async {
-    if (_recoveryOnly) throw StateError('本地资料需要恢复，暂不能清理副本');
+  Future<void> _retirePrevious({bool preserveFiles = false}) async {
     final previous = _pointer.previous;
     if (previous == null) return;
+    if (!preserveFiles) {
+      try {
+        await _health(previous);
+      } on FormatException {
+        // Unknown/corrupt recovery evidence is detached, never guessed/deleted.
+        preserveFiles = true;
+      }
+    }
     final next = _Pointer(_pointer.current, null, epoch, [
       ..._pointer.garbage,
-      previous,
+      if (!preserveFiles) previous,
     ]);
     await _writePointer(next);
     _pointer = next;
-    try {
-      await _cleanup();
-    } catch (_) {
-      /* Deferred cleanup cannot undo removal. */
+    _knownPointer = next;
+  }
+
+  Future<void> _finishCleanup() async {
+    if (_recoveryOnly) return;
+    final intentFile = File(
+      p.join(controlDirectory.path, 'restore-intent.json'),
+    );
+    var preserveFiles = false;
+    if (await intentFile.exists()) {
+      final intent = await _read(intentFile);
+      // A prepared switch still needs its rollback data.
+      if (intent['phase'] != 'healthy') return;
+      preserveFiles = intent['preservePrevious'] == true;
     }
-  });
+    await _retirePrevious(preserveFiles: preserveFiles);
+    await _removeIntent();
+    await _cleanup();
+  }
 
   Future<void> _activate(
     _DatasetRef nextRef,
@@ -311,6 +317,7 @@ class DataStorage {
       await _write('restore-intent.json', {
         'format': 1,
         'phase': 'prepared',
+        'preservePrevious': wasRecoveryOnly,
         'old': old.json,
         'next': next.json,
       });
@@ -323,6 +330,7 @@ class DataStorage {
       await _write('restore-intent.json', {
         'format': 1,
         'phase': 'healthy',
+        'preservePrevious': wasRecoveryOnly,
         'old': old.json,
         'next': next.json,
       });
@@ -354,8 +362,7 @@ class DataStorage {
     _changes.add(epoch);
     // Once healthy, cleanup failure cannot undo data or change restore success.
     try {
-      await _removeIntent();
-      await _cleanup();
+      await _finishCleanup();
     } catch (_) {
       /* Retry at startup; platform cleanup errors do not undo healthy data. */
     }
@@ -375,6 +382,7 @@ class DataStorage {
     );
     _Pointer? active;
     Object? activeError;
+    var preservePrevious = false;
     if (await activeFile.exists()) {
       try {
         active = _Pointer.parse(await _read(activeFile));
@@ -391,6 +399,7 @@ class DataStorage {
       }
       final old = _Pointer.parse(intent['old']);
       final next = _Pointer.parse(intent['next']);
+      preservePrevious = intent['preservePrevious'] == true;
       if (next.previous != old.current || next.epoch != old.epoch + 1) {
         throw const FormatException('恢复日志不一致');
       }
@@ -431,7 +440,13 @@ class DataStorage {
       }
       _knownPointer = active;
       await _writePointer(active);
-      await _removeIntent();
+      if (active.current == next.current && active.epoch == next.epoch) {
+        // Startup has accepted this dataset. Cleanup failure must not leave a
+        // prepared journal that could later roll back newly written data.
+        await _write('restore-intent.json', {...intent, 'phase': 'healthy'});
+      } else {
+        await _removeIntent();
+      }
     } else if (activeError != null) {
       throw const FormatException('资料指针损坏，原文件已保留，请修复后重试');
     }
@@ -452,6 +467,8 @@ class DataStorage {
     }
     _pointer = active;
     try {
+      await _retirePrevious(preserveFiles: preservePrevious);
+      await _removeIntent();
       await _cleanup();
     } catch (_) {
       /* Keep retired data for retry. */
