@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/role.dart';
 import '../data/models/role_custom_attribute.dart';
 import '../data/providers/role_repository_provider.dart';
+import '../data/providers/world_repository_provider.dart';
+import '../data/providers/worlds_provider.dart';
 import '../data/services/cover_image_picker.dart';
 import '../theme/zaidang_tokens.dart';
 import '../widgets/archive_editor/archive_card.dart';
@@ -14,6 +16,7 @@ import '../widgets/archive_editor/glass_buttons.dart';
 import '../widgets/archive_editor/immersive_cover.dart';
 import '../widgets/archive_editor/pinned_identity.dart';
 import '../widgets/cover_file_view.dart';
+import '../widgets/role_list_tile.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
 import '../widgets/zaidang_snack_bar.dart';
 import '../features/role_card/role_card_content.dart';
@@ -65,6 +68,9 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
   bool _validateAttributes = false;
 
   late String _coverImg;
+
+  /// 所属世界观；`null` 为未归属。提交前会核对该世界观仍然存在。
+  int? _worldId;
   bool _saving = false;
   bool _exportOpen = false;
 
@@ -130,6 +136,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
     _occupationController = TextEditingController(text: role?.occupation ?? '');
     _descController = TextEditingController(text: role?.desc ?? '');
     _coverImg = role?.coverImg ?? '';
+    _worldId = role?.worldId;
     _attributes.addAll(
       (role?.customAttributes ?? []).map(_CustomAttributeDraft.fromAttribute),
     );
@@ -248,6 +255,8 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
           ),
         ),
       );
+      // 编辑期间世界观可能已被删除；置空而不是让外键报错。
+      final worldId = await _resolveWorldId();
       if (_isEditing) {
         await repository.update(
           Role(
@@ -261,7 +270,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
             desc: desc,
             coverImg: _coverImg,
             customAttributes: customAttributes,
-            worldId: widget.role!.worldId,
+            worldId: worldId,
           ),
         );
       } else {
@@ -275,6 +284,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
           desc: desc,
           coverImg: _coverImg,
           customAttributes: customAttributes,
+          worldId: worldId,
         );
       }
       if (mounted) {
@@ -295,6 +305,133 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
         });
       }
     }
+  }
+
+  Future<int?> _resolveWorldId() async {
+    final worldId = _worldId;
+    if (worldId == null) return null;
+    final exists = await ref.read(worldRepositoryProvider).getById(worldId);
+    if (exists == null && mounted) {
+      setState(() => _worldId = null);
+    }
+    return exists?.id;
+  }
+
+  Future<void> _pickWorld() async {
+    if (_saving) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    final worlds = await ref.read(worldRepositoryProvider).list();
+    if (!mounted) return;
+    final tokens = ZaidangTokens.of(context);
+    final picked = await showModalBottomSheet<_WorldChoice>(
+      context: context,
+      backgroundColor: tokens.surface,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) {
+        final maxHeight = MediaQuery.sizeOf(context).height * 0.7;
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: ListView(
+              key: const Key('role-world-picker'),
+              shrinkWrap: true,
+              children: [
+                ListTile(
+                  key: const Key('role-world-option-none'),
+                  leading: Icon(
+                    Icons.block_outlined,
+                    color: tokens.inkSecondary,
+                  ),
+                  title: Text('不归属', style: TextStyle(color: tokens.ink)),
+                  trailing: _worldId == null
+                      ? Icon(Icons.check, color: tokens.accent)
+                      : null,
+                  onTap: () =>
+                      Navigator.of(context).pop(const _WorldChoice(null)),
+                ),
+                if (worlds.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: Text(
+                      '还没有世界观',
+                      style: TextStyle(color: tokens.inkSecondary),
+                    ),
+                  ),
+                for (final world in worlds)
+                  ListTile(
+                    key: Key('role-world-option-${world.id}'),
+                    leading: SizedBox.square(
+                      dimension: 40,
+                      child: RoleCoverThumb(
+                        path: world.coverImg,
+                        placeholderIcon: Icons.public_outlined,
+                      ),
+                    ),
+                    title: Text(
+                      world.name,
+                      style: TextStyle(color: tokens.ink),
+                    ),
+                    trailing: _worldId == world.id
+                        ? Icon(Icons.check, color: tokens.accent)
+                        : null,
+                    onTap: () =>
+                        Navigator.of(context).pop(_WorldChoice(world.id)),
+                  ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (picked == null || !mounted || _saving) return;
+    setState(() => _worldId = picked.worldId);
+  }
+
+  Widget _buildWorldRow() {
+    final tokens = ZaidangTokens.of(context);
+    final worldId = _worldId;
+    String label;
+    if (worldId == null) {
+      label = '未归属';
+    } else {
+      // 只有真的有归属才订阅世界观列表，未归属的表单不碰世界观仓库。
+      final worlds = ref.watch(worldsProvider).value;
+      if (worlds == null) {
+        label = '…';
+      } else {
+        final match = worlds.where((world) => world.id == worldId);
+        label = match.isEmpty ? '未归属' : match.first.name;
+      }
+    }
+    final assigned = worldId != null && label != '未归属';
+    return Semantics(
+      button: true,
+      enabled: !_saving,
+      label: '世界观：$label',
+      child: InkWell(
+        key: const Key('role-world-row'),
+        onTap: _saving ? null : _pickWorld,
+        borderRadius: BorderRadius.circular(8),
+        child: InputDecorator(
+          decoration: const InputDecoration(
+            labelText: '世界观',
+            suffixIcon: Icon(Icons.expand_more),
+          ),
+          isEmpty: false,
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: assigned ? tokens.ink : tokens.inkSecondary,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _openDescHistory() async {
@@ -636,6 +773,8 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
             hint: '学生、骑士、无所属',
           ),
         ),
+        const SizedBox(height: 12),
+        _buildWorldRow(),
       ],
     ),
   );
@@ -953,6 +1092,12 @@ class _DescSectionHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 底部弹层的选择结果；包一层是为了把「选了不归属」与「直接关掉弹层」区分开。
+class _WorldChoice {
+  const _WorldChoice(this.worldId);
+  final int? worldId;
 }
 
 class _CustomAttributeDraft {
