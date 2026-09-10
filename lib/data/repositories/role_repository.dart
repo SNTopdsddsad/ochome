@@ -24,6 +24,7 @@ abstract interface class RoleRepository {
     required String desc,
     required String coverImg,
     List<RoleCustomAttribute> customAttributes = const [],
+    int? worldId,
   });
 
   /// 按 [Role.id] 全量更新。
@@ -36,6 +37,9 @@ abstract interface class RoleRepository {
 
   /// 监听全部角色；表数据变化时重新发出列表。
   Stream<List<Role>> watchAll();
+
+  /// 监听归属某世界观的角色；表数据变化时重新发出列表。
+  Stream<List<Role>> watchByWorld(int worldId);
 
   /// 某角色设定修订，新的在前。
   Stream<List<RoleDescRevision>> watchDescRevisions(int roleId);

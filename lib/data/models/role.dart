@@ -16,6 +16,7 @@ class Role {
     required this.desc,
     required this.coverImg,
     this.customAttributes = const [],
+    this.worldId,
   });
 
   /// 数据库主键，插入后由 Drift 回填。
@@ -48,6 +49,9 @@ class Role {
   /// 当前角色自定义的属性，按展示顺序排列；仓库和表单提供不可变快照。
   final List<RoleCustomAttribute> customAttributes;
 
+  /// 所属世界观 id；`null` 表示未归属。重建 [Role] 时必须显式保留。
+  final int? worldId;
+
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
@@ -61,6 +65,7 @@ class Role {
             other.occupation == occupation &&
             other.desc == desc &&
             other.coverImg == coverImg &&
+            other.worldId == worldId &&
             _sameAttributes(other.customAttributes);
   }
 
@@ -87,6 +92,7 @@ class Role {
     occupation,
     desc,
     coverImg,
+    worldId,
     Object.hashAll(customAttributes),
   );
 }

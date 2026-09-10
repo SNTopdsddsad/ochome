@@ -261,6 +261,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
             desc: desc,
             coverImg: _coverImg,
             customAttributes: customAttributes,
+            worldId: widget.role!.worldId,
           ),
         );
       } else {
