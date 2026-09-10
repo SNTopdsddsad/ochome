@@ -19,6 +19,7 @@ This directory contains guidelines for backend development. Fill in each file wi
 | [Role Custom Attributes](./role-custom-attributes.md) | Ordered attributes, whole-role preservation, migration and backup contracts | Active |
 | [Backup and Restore](./backup-restore.md) | Account-wide snapshots, immutable media, recovery-only data switching and native contracts | Active |
 | [Role Assets](./role-assets.md) | Asset ownership, file import, schema v8 and backup/restore contracts | Active |
+| [Worlds](./worlds.md) | World table, ordered entries JSON, `role.world_id` SET NULL, schema v9 migration and backup | Active |
 | [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
 | [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |

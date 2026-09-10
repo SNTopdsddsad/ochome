@@ -175,11 +175,23 @@ Wrong: `GestureDetector(onPanUpdate: ..., child: PhotoViewGallery(...))`.
 Correct: configure `PhotoViewGalleryPageOptions` with `FileImage`, scale limits
 and `onTapUp`, leaving its existing gesture recognizers in charge.
 
+## Shared Archive Editor Widgets
+
+The create/edit chrome (immersive blurred cover with calling card, pinned
+identity, glass back/save buttons, paper `ArchiveCard`, `SectionLabel`,
+`FieldRow`, `KeepAliveDetails`, content-width padding) lives in
+`lib/widgets/archive_editor/`. Both `RoleCreatePage` and `WorldCreatePage`
+compose these widgets; do not copy private variants back into a page. Pages pass
+their own test keys (`heroKey`, `portraitKey`, `boxKey`) and copy nouns
+(`coverNoun`, `emptyName`) so finders remain page-specific. See
+[Worlds UI](./worlds.md).
+
 ## Editable Custom-Attribute Slivers
 
 `RoleCreatePage` puts `SliverReorderableList` in the existing page scroll, with
 `DecoratedSliver` using the same paper-card decoration as fixed fields. Do not
-introduce a separately scrolling list inside the form.
+introduce a separately scrolling list inside the form. `WorldCreatePage` applies
+the same pattern to 词条.
 
 Each draft owns its name/content controllers, a `FocusNode` and a `UniqueKey`.
 Keep that identity through rename, move and drag operations. The current Flutter

@@ -24,6 +24,7 @@ This directory contains guidelines for frontend development. Fill in each file w
 | [Navigation](./navigation.md) | go_router tab shell, root create/edit/backup, archive OC / 世界观 tabs | Active |
 | [Backup and Restore](./backup-restore.md) | App-owned jobs, historical contents, progress truth and dataset lifecycle | Active |
 | [Role Assets](./role-assets.md) | Shared detail header, independent tab scroll state and local asset interactions | Active |
+| [Worlds UI](./worlds.md) | World list/editor, shared `archive_editor` widgets, entry slivers, delete flow and the role world selector | Active |
 | [Type Safety](./type-safety.md) | Type patterns, validation | To fill |
 | [Git Commit](./git-commit.md) | Chinese commit messages by module and feature | Active |
 
