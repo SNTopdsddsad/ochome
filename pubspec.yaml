@@ -48,6 +48,7 @@ dependencies:
   file_selector: 1.1.0
   open_file: 4.0.0
   crypto: 3.0.7
+  characters: ^1.4.1
 
 dev_dependencies:
   flutter_test:

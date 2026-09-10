@@ -1355,6 +1355,422 @@ class RoleAssetsCompanion extends UpdateCompanion<RoleAsset> {
   }
 }
 
+class $RoleRelationshipsTable extends RoleRelationships
+    with TableInfo<$RoleRelationshipsTable, RoleRelationship> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RoleRelationshipsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _fromRoleIdMeta = const VerificationMeta(
+    'fromRoleId',
+  );
+  @override
+  late final GeneratedColumn<int> fromRoleId = GeneratedColumn<int>(
+    'from_role_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES role (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _toRoleIdMeta = const VerificationMeta(
+    'toRoleId',
+  );
+  @override
+  late final GeneratedColumn<int> toRoleId = GeneratedColumn<int>(
+    'to_role_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES role (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _fromLabelMeta = const VerificationMeta(
+    'fromLabel',
+  );
+  @override
+  late final GeneratedColumn<String> fromLabel = GeneratedColumn<String>(
+    'from_label',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _toLabelMeta = const VerificationMeta(
+    'toLabel',
+  );
+  @override
+  late final GeneratedColumn<String> toLabel = GeneratedColumn<String>(
+    'to_label',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    fromRoleId,
+    toRoleId,
+    fromLabel,
+    toLabel,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'role_relationship';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RoleRelationship> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('from_role_id')) {
+      context.handle(
+        _fromRoleIdMeta,
+        fromRoleId.isAcceptableOrUnknown(
+          data['from_role_id']!,
+          _fromRoleIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fromRoleIdMeta);
+    }
+    if (data.containsKey('to_role_id')) {
+      context.handle(
+        _toRoleIdMeta,
+        toRoleId.isAcceptableOrUnknown(data['to_role_id']!, _toRoleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_toRoleIdMeta);
+    }
+    if (data.containsKey('from_label')) {
+      context.handle(
+        _fromLabelMeta,
+        fromLabel.isAcceptableOrUnknown(data['from_label']!, _fromLabelMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fromLabelMeta);
+    }
+    if (data.containsKey('to_label')) {
+      context.handle(
+        _toLabelMeta,
+        toLabel.isAcceptableOrUnknown(data['to_label']!, _toLabelMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_toLabelMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RoleRelationship map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RoleRelationship(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      fromRoleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}from_role_id'],
+      )!,
+      toRoleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}to_role_id'],
+      )!,
+      fromLabel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}from_label'],
+      )!,
+      toLabel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}to_label'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $RoleRelationshipsTable createAlias(String alias) {
+    return $RoleRelationshipsTable(attachedDatabase, alias);
+  }
+}
+
+class RoleRelationship extends DataClass
+    implements Insertable<RoleRelationship> {
+  final int id;
+  final int fromRoleId;
+  final int toRoleId;
+
+  /// from 是 to 的 ___。
+  final String fromLabel;
+
+  /// to 是 from 的 ___。
+  final String toLabel;
+  final DateTime createdAt;
+  const RoleRelationship({
+    required this.id,
+    required this.fromRoleId,
+    required this.toRoleId,
+    required this.fromLabel,
+    required this.toLabel,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['from_role_id'] = Variable<int>(fromRoleId);
+    map['to_role_id'] = Variable<int>(toRoleId);
+    map['from_label'] = Variable<String>(fromLabel);
+    map['to_label'] = Variable<String>(toLabel);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  RoleRelationshipsCompanion toCompanion(bool nullToAbsent) {
+    return RoleRelationshipsCompanion(
+      id: Value(id),
+      fromRoleId: Value(fromRoleId),
+      toRoleId: Value(toRoleId),
+      fromLabel: Value(fromLabel),
+      toLabel: Value(toLabel),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory RoleRelationship.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RoleRelationship(
+      id: serializer.fromJson<int>(json['id']),
+      fromRoleId: serializer.fromJson<int>(json['fromRoleId']),
+      toRoleId: serializer.fromJson<int>(json['toRoleId']),
+      fromLabel: serializer.fromJson<String>(json['fromLabel']),
+      toLabel: serializer.fromJson<String>(json['toLabel']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'fromRoleId': serializer.toJson<int>(fromRoleId),
+      'toRoleId': serializer.toJson<int>(toRoleId),
+      'fromLabel': serializer.toJson<String>(fromLabel),
+      'toLabel': serializer.toJson<String>(toLabel),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  RoleRelationship copyWith({
+    int? id,
+    int? fromRoleId,
+    int? toRoleId,
+    String? fromLabel,
+    String? toLabel,
+    DateTime? createdAt,
+  }) => RoleRelationship(
+    id: id ?? this.id,
+    fromRoleId: fromRoleId ?? this.fromRoleId,
+    toRoleId: toRoleId ?? this.toRoleId,
+    fromLabel: fromLabel ?? this.fromLabel,
+    toLabel: toLabel ?? this.toLabel,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  RoleRelationship copyWithCompanion(RoleRelationshipsCompanion data) {
+    return RoleRelationship(
+      id: data.id.present ? data.id.value : this.id,
+      fromRoleId: data.fromRoleId.present
+          ? data.fromRoleId.value
+          : this.fromRoleId,
+      toRoleId: data.toRoleId.present ? data.toRoleId.value : this.toRoleId,
+      fromLabel: data.fromLabel.present ? data.fromLabel.value : this.fromLabel,
+      toLabel: data.toLabel.present ? data.toLabel.value : this.toLabel,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoleRelationship(')
+          ..write('id: $id, ')
+          ..write('fromRoleId: $fromRoleId, ')
+          ..write('toRoleId: $toRoleId, ')
+          ..write('fromLabel: $fromLabel, ')
+          ..write('toLabel: $toLabel, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, fromRoleId, toRoleId, fromLabel, toLabel, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RoleRelationship &&
+          other.id == this.id &&
+          other.fromRoleId == this.fromRoleId &&
+          other.toRoleId == this.toRoleId &&
+          other.fromLabel == this.fromLabel &&
+          other.toLabel == this.toLabel &&
+          other.createdAt == this.createdAt);
+}
+
+class RoleRelationshipsCompanion extends UpdateCompanion<RoleRelationship> {
+  final Value<int> id;
+  final Value<int> fromRoleId;
+  final Value<int> toRoleId;
+  final Value<String> fromLabel;
+  final Value<String> toLabel;
+  final Value<DateTime> createdAt;
+  const RoleRelationshipsCompanion({
+    this.id = const Value.absent(),
+    this.fromRoleId = const Value.absent(),
+    this.toRoleId = const Value.absent(),
+    this.fromLabel = const Value.absent(),
+    this.toLabel = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  RoleRelationshipsCompanion.insert({
+    this.id = const Value.absent(),
+    required int fromRoleId,
+    required int toRoleId,
+    required String fromLabel,
+    required String toLabel,
+    required DateTime createdAt,
+  }) : fromRoleId = Value(fromRoleId),
+       toRoleId = Value(toRoleId),
+       fromLabel = Value(fromLabel),
+       toLabel = Value(toLabel),
+       createdAt = Value(createdAt);
+  static Insertable<RoleRelationship> custom({
+    Expression<int>? id,
+    Expression<int>? fromRoleId,
+    Expression<int>? toRoleId,
+    Expression<String>? fromLabel,
+    Expression<String>? toLabel,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (fromRoleId != null) 'from_role_id': fromRoleId,
+      if (toRoleId != null) 'to_role_id': toRoleId,
+      if (fromLabel != null) 'from_label': fromLabel,
+      if (toLabel != null) 'to_label': toLabel,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  RoleRelationshipsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? fromRoleId,
+    Value<int>? toRoleId,
+    Value<String>? fromLabel,
+    Value<String>? toLabel,
+    Value<DateTime>? createdAt,
+  }) {
+    return RoleRelationshipsCompanion(
+      id: id ?? this.id,
+      fromRoleId: fromRoleId ?? this.fromRoleId,
+      toRoleId: toRoleId ?? this.toRoleId,
+      fromLabel: fromLabel ?? this.fromLabel,
+      toLabel: toLabel ?? this.toLabel,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (fromRoleId.present) {
+      map['from_role_id'] = Variable<int>(fromRoleId.value);
+    }
+    if (toRoleId.present) {
+      map['to_role_id'] = Variable<int>(toRoleId.value);
+    }
+    if (fromLabel.present) {
+      map['from_label'] = Variable<String>(fromLabel.value);
+    }
+    if (toLabel.present) {
+      map['to_label'] = Variable<String>(toLabel.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoleRelationshipsCompanion(')
+          ..write('id: $id, ')
+          ..write('fromRoleId: $fromRoleId, ')
+          ..write('toRoleId: $toRoleId, ')
+          ..write('fromLabel: $fromLabel, ')
+          ..write('toLabel: $toLabel, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1362,9 +1778,19 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $RoleDescRevisionsTable roleDescRevisions =
       $RoleDescRevisionsTable(this);
   late final $RoleAssetsTable roleAssets = $RoleAssetsTable(this);
+  late final $RoleRelationshipsTable roleRelationships =
+      $RoleRelationshipsTable(this);
   late final Index roleAssetRoleId = Index(
     'role_asset_role_id',
     'CREATE INDEX role_asset_role_id ON role_asset (role_id)',
+  );
+  late final Index roleRelationshipFromRoleId = Index(
+    'role_relationship_from_role_id',
+    'CREATE INDEX role_relationship_from_role_id ON role_relationship (from_role_id)',
+  );
+  late final Index roleRelationshipToRoleId = Index(
+    'role_relationship_to_role_id',
+    'CREATE INDEX role_relationship_to_role_id ON role_relationship (to_role_id)',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -1374,7 +1800,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     roles,
     roleDescRevisions,
     roleAssets,
+    roleRelationships,
     roleAssetRoleId,
+    roleRelationshipFromRoleId,
+    roleRelationshipToRoleId,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -1391,6 +1820,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('role_asset', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'role',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('role_relationship', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'role',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('role_relationship', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -1458,6 +1901,48 @@ final class $$RolesTableReferences
     ).filter((f) => f.roleId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_roleAssetsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$RoleRelationshipsTable, List<RoleRelationship>>
+  _outgoingRelationshipsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.roleRelationships,
+        aliasName: 'role__id__role_relationship__from_role_id',
+      );
+
+  $$RoleRelationshipsTableProcessedTableManager get outgoingRelationships {
+    final manager = $$RoleRelationshipsTableTableManager(
+      $_db,
+      $_db.roleRelationships,
+    ).filter((f) => f.fromRoleId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _outgoingRelationshipsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$RoleRelationshipsTable, List<RoleRelationship>>
+  _incomingRelationshipsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.roleRelationships,
+        aliasName: 'role__id__role_relationship__to_role_id',
+      );
+
+  $$RoleRelationshipsTableProcessedTableManager get incomingRelationships {
+    final manager = $$RoleRelationshipsTableTableManager(
+      $_db,
+      $_db.roleRelationships,
+    ).filter((f) => f.toRoleId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _incomingRelationshipsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -1563,6 +2048,56 @@ class $$RolesTableFilterComposer extends Composer<_$AppDatabase, $RolesTable> {
           }) => $$RoleAssetsTableFilterComposer(
             $db: $db,
             $table: $db.roleAssets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> outgoingRelationships(
+    Expression<bool> Function($$RoleRelationshipsTableFilterComposer f) f,
+  ) {
+    final $$RoleRelationshipsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.roleRelationships,
+      getReferencedColumn: (t) => t.fromRoleId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RoleRelationshipsTableFilterComposer(
+            $db: $db,
+            $table: $db.roleRelationships,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> incomingRelationships(
+    Expression<bool> Function($$RoleRelationshipsTableFilterComposer f) f,
+  ) {
+    final $$RoleRelationshipsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.roleRelationships,
+      getReferencedColumn: (t) => t.toRoleId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RoleRelationshipsTableFilterComposer(
+            $db: $db,
+            $table: $db.roleRelationships,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -1726,6 +2261,58 @@ class $$RolesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> outgoingRelationships<T extends Object>(
+    Expression<T> Function($$RoleRelationshipsTableAnnotationComposer a) f,
+  ) {
+    final $$RoleRelationshipsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.roleRelationships,
+          getReferencedColumn: (t) => t.fromRoleId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$RoleRelationshipsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.roleRelationships,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> incomingRelationships<T extends Object>(
+    Expression<T> Function($$RoleRelationshipsTableAnnotationComposer a) f,
+  ) {
+    final $$RoleRelationshipsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.roleRelationships,
+          getReferencedColumn: (t) => t.toRoleId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$RoleRelationshipsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.roleRelationships,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$RolesTableTableManager
@@ -1744,6 +2331,8 @@ class $$RolesTableTableManager
           PrefetchHooks Function({
             bool roleDescRevisionsRefs,
             bool roleAssetsRefs,
+            bool outgoingRelationships,
+            bool incomingRelationships,
           })
         > {
   $$RolesTableTableManager(_$AppDatabase db, $RolesTable table)
@@ -1812,12 +2401,19 @@ class $$RolesTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({roleDescRevisionsRefs = false, roleAssetsRefs = false}) {
+              ({
+                roleDescRevisionsRefs = false,
+                roleAssetsRefs = false,
+                outgoingRelationships = false,
+                incomingRelationships = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (roleDescRevisionsRefs) db.roleDescRevisions,
                     if (roleAssetsRefs) db.roleAssets,
+                    if (outgoingRelationships) db.roleRelationships,
+                    if (incomingRelationships) db.roleRelationships,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -1860,6 +2456,48 @@ class $$RolesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (outgoingRelationships)
+                        await $_getPrefetchedData<
+                          Role,
+                          $RolesTable,
+                          RoleRelationship
+                        >(
+                          currentTable: table,
+                          referencedTable: $$RolesTableReferences
+                              ._outgoingRelationshipsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$RolesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).outgoingRelationships,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.fromRoleId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (incomingRelationships)
+                        await $_getPrefetchedData<
+                          Role,
+                          $RolesTable,
+                          RoleRelationship
+                        >(
+                          currentTable: table,
+                          referencedTable: $$RolesTableReferences
+                              ._incomingRelationshipsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$RolesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).incomingRelationships,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.toRoleId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -1880,7 +2518,12 @@ typedef $$RolesTableProcessedTableManager =
       $$RolesTableUpdateCompanionBuilder,
       (Role, $$RolesTableReferences),
       Role,
-      PrefetchHooks Function({bool roleDescRevisionsRefs, bool roleAssetsRefs})
+      PrefetchHooks Function({
+        bool roleDescRevisionsRefs,
+        bool roleAssetsRefs,
+        bool outgoingRelationships,
+        bool incomingRelationships,
+      })
     >;
 typedef $$RoleDescRevisionsTableCreateCompanionBuilder =
     RoleDescRevisionsCompanion Function({
@@ -2533,6 +3176,432 @@ typedef $$RoleAssetsTableProcessedTableManager =
       RoleAsset,
       PrefetchHooks Function({bool roleId})
     >;
+typedef $$RoleRelationshipsTableCreateCompanionBuilder =
+    RoleRelationshipsCompanion Function({
+      Value<int> id,
+      required int fromRoleId,
+      required int toRoleId,
+      required String fromLabel,
+      required String toLabel,
+      required DateTime createdAt,
+    });
+typedef $$RoleRelationshipsTableUpdateCompanionBuilder =
+    RoleRelationshipsCompanion Function({
+      Value<int> id,
+      Value<int> fromRoleId,
+      Value<int> toRoleId,
+      Value<String> fromLabel,
+      Value<String> toLabel,
+      Value<DateTime> createdAt,
+    });
+
+final class $$RoleRelationshipsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $RoleRelationshipsTable,
+          RoleRelationship
+        > {
+  $$RoleRelationshipsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $RolesTable _fromRoleIdTable(_$AppDatabase db) =>
+      db.roles.createAlias('role_relationship__from_role_id__role__id');
+
+  $$RolesTableProcessedTableManager get fromRoleId {
+    final $_column = $_itemColumn<int>('from_role_id')!;
+
+    final manager = $$RolesTableTableManager(
+      $_db,
+      $_db.roles,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_fromRoleIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $RolesTable _toRoleIdTable(_$AppDatabase db) =>
+      db.roles.createAlias('role_relationship__to_role_id__role__id');
+
+  $$RolesTableProcessedTableManager get toRoleId {
+    final $_column = $_itemColumn<int>('to_role_id')!;
+
+    final manager = $$RolesTableTableManager(
+      $_db,
+      $_db.roles,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_toRoleIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$RoleRelationshipsTableFilterComposer
+    extends Composer<_$AppDatabase, $RoleRelationshipsTable> {
+  $$RoleRelationshipsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fromLabel => $composableBuilder(
+    column: $table.fromLabel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get toLabel => $composableBuilder(
+    column: $table.toLabel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$RolesTableFilterComposer get fromRoleId {
+    final $$RolesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.fromRoleId,
+      referencedTable: $db.roles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RolesTableFilterComposer(
+            $db: $db,
+            $table: $db.roles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$RolesTableFilterComposer get toRoleId {
+    final $$RolesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.toRoleId,
+      referencedTable: $db.roles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RolesTableFilterComposer(
+            $db: $db,
+            $table: $db.roles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RoleRelationshipsTableOrderingComposer
+    extends Composer<_$AppDatabase, $RoleRelationshipsTable> {
+  $$RoleRelationshipsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fromLabel => $composableBuilder(
+    column: $table.fromLabel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get toLabel => $composableBuilder(
+    column: $table.toLabel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$RolesTableOrderingComposer get fromRoleId {
+    final $$RolesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.fromRoleId,
+      referencedTable: $db.roles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RolesTableOrderingComposer(
+            $db: $db,
+            $table: $db.roles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$RolesTableOrderingComposer get toRoleId {
+    final $$RolesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.toRoleId,
+      referencedTable: $db.roles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RolesTableOrderingComposer(
+            $db: $db,
+            $table: $db.roles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RoleRelationshipsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RoleRelationshipsTable> {
+  $$RoleRelationshipsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get fromLabel =>
+      $composableBuilder(column: $table.fromLabel, builder: (column) => column);
+
+  GeneratedColumn<String> get toLabel =>
+      $composableBuilder(column: $table.toLabel, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$RolesTableAnnotationComposer get fromRoleId {
+    final $$RolesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.fromRoleId,
+      referencedTable: $db.roles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RolesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.roles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$RolesTableAnnotationComposer get toRoleId {
+    final $$RolesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.toRoleId,
+      referencedTable: $db.roles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RolesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.roles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RoleRelationshipsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RoleRelationshipsTable,
+          RoleRelationship,
+          $$RoleRelationshipsTableFilterComposer,
+          $$RoleRelationshipsTableOrderingComposer,
+          $$RoleRelationshipsTableAnnotationComposer,
+          $$RoleRelationshipsTableCreateCompanionBuilder,
+          $$RoleRelationshipsTableUpdateCompanionBuilder,
+          (RoleRelationship, $$RoleRelationshipsTableReferences),
+          RoleRelationship,
+          PrefetchHooks Function({bool fromRoleId, bool toRoleId})
+        > {
+  $$RoleRelationshipsTableTableManager(
+    _$AppDatabase db,
+    $RoleRelationshipsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RoleRelationshipsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RoleRelationshipsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RoleRelationshipsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> fromRoleId = const Value.absent(),
+                Value<int> toRoleId = const Value.absent(),
+                Value<String> fromLabel = const Value.absent(),
+                Value<String> toLabel = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => RoleRelationshipsCompanion(
+                id: id,
+                fromRoleId: fromRoleId,
+                toRoleId: toRoleId,
+                fromLabel: fromLabel,
+                toLabel: toLabel,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int fromRoleId,
+                required int toRoleId,
+                required String fromLabel,
+                required String toLabel,
+                required DateTime createdAt,
+              }) => RoleRelationshipsCompanion.insert(
+                id: id,
+                fromRoleId: fromRoleId,
+                toRoleId: toRoleId,
+                fromLabel: fromLabel,
+                toLabel: toLabel,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$RoleRelationshipsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({fromRoleId = false, toRoleId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (fromRoleId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.fromRoleId,
+                        referencedTable: $$RoleRelationshipsTableReferences
+                            ._fromRoleIdTable(db),
+                        referencedColumn: $$RoleRelationshipsTableReferences
+                            ._fromRoleIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+                    if (toRoleId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.toRoleId,
+                        referencedTable: $$RoleRelationshipsTableReferences
+                            ._toRoleIdTable(db),
+                        referencedColumn: $$RoleRelationshipsTableReferences
+                            ._toRoleIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$RoleRelationshipsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $RoleRelationshipsTable,
+      RoleRelationship,
+      $$RoleRelationshipsTableFilterComposer,
+      $$RoleRelationshipsTableOrderingComposer,
+      $$RoleRelationshipsTableAnnotationComposer,
+      $$RoleRelationshipsTableCreateCompanionBuilder,
+      $$RoleRelationshipsTableUpdateCompanionBuilder,
+      (RoleRelationship, $$RoleRelationshipsTableReferences),
+      RoleRelationship,
+      PrefetchHooks Function({bool fromRoleId, bool toRoleId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2543,4 +3612,6 @@ class $AppDatabaseManager {
       $$RoleDescRevisionsTableTableManager(_db, _db.roleDescRevisions);
   $$RoleAssetsTableTableManager get roleAssets =>
       $$RoleAssetsTableTableManager(_db, _db.roleAssets);
+  $$RoleRelationshipsTableTableManager get roleRelationships =>
+      $$RoleRelationshipsTableTableManager(_db, _db.roleRelationships);
 }
