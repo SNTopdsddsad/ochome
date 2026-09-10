@@ -10,6 +10,7 @@ import 'app_database_provider.dart';
 import 'database_switch_provider.dart';
 import 'role_assets_provider.dart';
 import 'role_desc_revisions_provider.dart';
+import 'role_relationships_provider.dart';
 import 'role_repository_provider.dart';
 import 'roles_provider.dart';
 
@@ -37,12 +38,14 @@ final backupCoordinatorProvider = FutureProvider<BackupCoordinator>((
       ref.invalidate(rolesProvider);
       ref.invalidate(roleAssetsProvider);
       ref.invalidate(roleDescRevisionsProvider);
+      ref.invalidate(roleRelationshipsProvider);
       if (!storage.isRecoveryOnly) await ref.read(appDatabaseProvider).close();
     },
     reopenDatabase: () async {
       ref.invalidate(appDatabaseProvider);
       ref.invalidate(roleRepositoryProvider);
       ref.invalidate(roleAssetRepositoryProvider);
+      ref.invalidate(roleRelationshipRepositoryProvider);
       ref.invalidate(rolesProvider);
       await ref
           .read(appDatabaseProvider)

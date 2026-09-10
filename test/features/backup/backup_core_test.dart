@@ -745,7 +745,7 @@ void main() {
     },
   );
 
-  for (final version in [3, 4, 5, 6, 7, 8]) {
+  for (final version in [3, 4, 5, 6, 7, 8, 9]) {
     test('legacy schema $version migrates in staging while retaining original fields', () async {
       final directory = Directory(p.join(root.path, 'legacy-$version'))
         ..createSync();
@@ -773,6 +773,23 @@ void main() {
           'CREATE INDEX role_asset_role_id ON role_asset(role_id)',
         );
       }
+      if (version >= 9) {
+        database.execute(
+          "INSERT INTO role (name,sex,birthday,occupation,desc,coverimg,age,race) VALUES ('旧版徒弟','','','','','','','')",
+        );
+        database.execute(
+          'CREATE TABLE role_relationship (id INTEGER PRIMARY KEY AUTOINCREMENT, from_role_id INTEGER NOT NULL REFERENCES role(id) ON DELETE CASCADE, to_role_id INTEGER NOT NULL REFERENCES role(id) ON DELETE CASCADE, from_label TEXT NOT NULL, to_label TEXT NOT NULL, created_at INTEGER NOT NULL)',
+        );
+        database.execute(
+          'CREATE INDEX role_relationship_from_role_id ON role_relationship(from_role_id)',
+        );
+        database.execute(
+          'CREATE INDEX role_relationship_to_role_id ON role_relationship(to_role_id)',
+        );
+        database.execute(
+          "INSERT INTO role_relationship VALUES (1, 1, 2, '师父', '徒弟', 1000)",
+        );
+      }
       database.userVersion = version;
       database.close();
       cloud.legacy['ochome.sqlite'] = await File(path).readAsBytes();
@@ -788,11 +805,18 @@ void main() {
         p.join(storage.activeDirectory.path, 'ochome.sqlite'),
       );
       try {
-        expect(migrated.userVersion, 8);
-        expect(migrated.select('SELECT desc FROM role').single['desc'], '设定内容');
+        expect(migrated.userVersion, AppDatabase.currentSchemaVersion);
+        expect(
+          migrated.select('SELECT desc FROM role WHERE id = 1').single['desc'],
+          '设定内容',
+        );
+        expect(
+          migrated.select('SELECT * FROM role_relationship'),
+          hasLength(version >= 9 ? 1 : 0),
+        );
         expect(
           migrated
-              .select('SELECT custom_attributes FROM role')
+              .select('SELECT custom_attributes FROM role WHERE id = 1')
               .single['custom_attributes'],
           '[]',
         );
@@ -816,6 +840,29 @@ void main() {
       inspectBackupDatabase(File(p.join(root.path, 'ochome.sqlite'))),
       throwsFormatException,
     );
+    final job = await backup();
+    expect(job.phase, BackupPhase.failed);
+    expect(cloud.active, isEmpty);
+  });
+
+  test('database business validation rejects self-linked or empty relationships', () async {
+    final path = p.join(root.path, 'ochome.sqlite');
+    final db = sqlite3.open(path);
+    // The shared fixture is schema 8; upgrade it by hand so the ≥9 branch runs.
+    final roleId = db.select('SELECT id FROM role LIMIT 1').single['id'] as int;
+    db.execute('''
+      CREATE TABLE role_relationship (id INTEGER PRIMARY KEY AUTOINCREMENT,
+        from_role_id INTEGER NOT NULL REFERENCES role(id) ON DELETE CASCADE,
+        to_role_id INTEGER NOT NULL REFERENCES role(id) ON DELETE CASCADE,
+        from_label TEXT NOT NULL, to_label TEXT NOT NULL, created_at INTEGER NOT NULL);
+      PRAGMA user_version = 9;
+    ''');
+    db.execute(
+      'INSERT INTO role_relationship (from_role_id, to_role_id, from_label, to_label, created_at) VALUES (?, ?, ?, ?, ?)',
+      [roleId, roleId, '师父', '徒弟', 1000],
+    );
+    db.close();
+    await expectLater(inspectBackupDatabase(File(path)), throwsFormatException);
     final job = await backup();
     expect(job.phase, BackupPhase.failed);
     expect(cloud.active, isEmpty);

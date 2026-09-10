@@ -163,6 +163,23 @@ Future<DatabaseInventory> inspectBackupDatabase(File file) {
           );
         }
       }
+      if (db.userVersion >= 9) {
+        final rows = db.select('SELECT * FROM role_relationship ORDER BY id');
+        if (rows.length > BackupJson.maxEntries) {
+          throw const FormatException('关系数量超出支持范围');
+        }
+        for (final row in rows) {
+          final from = BackupJson.integer(row['from_role_id'], min: 1);
+          final to = BackupJson.integer(row['to_role_id'], min: 1);
+          if (from == to || !roleIds.contains(from) || !roleIds.contains(to)) {
+            throw const FormatException('关系记录不完整');
+          }
+          BackupJson.integer(row['id'], min: 1);
+          BackupJson.string(row['from_label']);
+          BackupJson.string(row['to_label']);
+          BackupJson.integer(row['created_at']);
+        }
+      }
       for (final asset in assets) {
         assetIdsByRole
             .putIfAbsent(asset.roleIds.single, () => [])
