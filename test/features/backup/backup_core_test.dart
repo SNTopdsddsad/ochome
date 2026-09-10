@@ -788,8 +788,10 @@ void main() {
         p.join(storage.activeDirectory.path, 'ochome.sqlite'),
       );
       try {
-        expect(migrated.userVersion, 8);
+        expect(migrated.userVersion, AppDatabase.currentSchemaVersion);
         expect(migrated.select('SELECT desc FROM role').single['desc'], '设定内容');
+        expect(migrated.select('SELECT world_id FROM role').single['world_id'], isNull);
+        expect(migrated.select('SELECT * FROM world'), isEmpty);
         expect(
           migrated
               .select('SELECT custom_attributes FROM role')
