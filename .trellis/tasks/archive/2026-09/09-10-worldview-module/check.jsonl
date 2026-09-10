@@ -1,0 +1,4 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/role-custom-attributes.md", "reason": "校验 worldId 在所有 Role 重建路径中保留"}
+{"file": ".trellis/spec/frontend/theming.md", "reason": "校验新页面不把 accent 用于 AppBar/破坏性操作"}
+{"file": ".trellis/spec/backend/backup-restore.md", "reason": "校验 schema 9 与旧快照恢复兼容"}
