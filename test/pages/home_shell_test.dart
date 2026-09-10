@@ -5,11 +5,13 @@ import 'package:ochome/app.dart';
 import 'package:ochome/data/models/role.dart';
 import 'package:ochome/data/providers/role_repository_provider.dart';
 import 'package:ochome/data/providers/backup_coordinator_provider.dart';
+import 'package:ochome/data/providers/world_repository_provider.dart';
 import 'package:ochome/features/backup/backup_models.dart';
 import 'package:ochome/pages/role_list_page.dart';
 import 'package:ochome/theme/zaidang_tokens.dart';
 
 import '../fakes/fake_role_repository.dart';
+import '../fakes/fake_world_repository.dart';
 
 void main() {
   testWidgets('cold start shows 档案 with both tabs', (tester) async {
@@ -96,19 +98,20 @@ void main() {
 
     await tester.tap(find.widgetWithText(Tab, '世界观'));
     await tester.pumpAndSettle();
-    expect(find.text('暂无世界观'), findsOneWidget);
-    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.text('还没有世界观'), findsOneWidget);
+    expect(find.byTooltip('添加世界观'), findsOneWidget);
+    expect(find.byTooltip('添加角色'), findsNothing);
     expect(find.byTooltip('备份与恢复'), findsOneWidget);
 
     await tester.tap(_tab('我的'));
     await tester.pumpAndSettle();
     await tester.tap(_tab('档案'));
     await tester.pumpAndSettle();
-    expect(find.text('暂无世界观'), findsOneWidget);
+    expect(find.text('还没有世界观'), findsOneWidget);
 
     await tester.drag(find.byType(TabBarView), const Offset(350, 0));
     await tester.pumpAndSettle();
-    expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(find.byTooltip('添加角色'), findsOneWidget);
     expect(tester.element(find.byType(RoleListPage)), same(listElement));
     expect(scrollable.position.pixels, offset);
     expect(tester.takeException(), isNull);
@@ -236,6 +239,7 @@ Future<void> _pumpApp(
     ProviderScope(
       overrides: [
         roleRepositoryProvider.overrideWithValue(FakeRoleRepository(roles)),
+        worldRepositoryProvider.overrideWithValue(FakeWorldRepository()),
         // This suite tests routing, not disk bootstrap or iCloud availability.
         backupCoordinatorProvider.overrideWith((ref) async {
           throw const BackupFailure('test_unavailable', '测试环境未连接备份服务');
