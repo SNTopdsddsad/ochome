@@ -18,6 +18,7 @@ import 'cover_preview_page.dart';
 import 'role_card_export_page.dart';
 import 'role_desc_history_page.dart';
 import 'role_assets_tab.dart';
+import 'role_relationships_tab.dart';
 
 /// 新建 / 编辑 OC 人设。传入 [role] 即为编辑，字段按原文回填。
 class RoleCreatePage extends ConsumerStatefulWidget {
@@ -74,6 +75,10 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
   late final TabController _detailTabs;
   ScrollPosition? _detailsScrollPosition;
   bool _assetBusy = false;
+  bool _relationshipBusy = false;
+
+  /// 任一子 Tab 正在弹窗或写库时，禁止保存和返回。
+  bool get _tabBusy => _assetBusy || _relationshipBusy;
   final _attributesKey = GlobalKey<SliverReorderableListState>();
   final _attributes = <_CustomAttributeDraft>[];
   bool _validateAttributes = false;
@@ -133,7 +138,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
   @override
   void initState() {
     super.initState();
-    _detailTabs = TabController(length: 2, vsync: this)
+    _detailTabs = TabController(length: 3, vsync: this)
       ..addListener(_onDetailTabChanged);
     final role = widget.role;
     _nameController = TextEditingController(text: role?.name ?? '');
@@ -223,7 +228,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
   }
 
   Future<void> _submit() async {
-    if (_saving || _assetBusy) {
+    if (_saving || _tabBusy) {
       return;
     }
     setState(() => _validateAttributes = true);
@@ -354,7 +359,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: overlayStyle,
       child: PopScope(
-        canPop: !_saving && !_assetBusy,
+        canPop: !_saving && !_tabBusy,
         child: Scaffold(
           backgroundColor: tokens.bg,
           body: Form(
@@ -367,7 +372,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                   removeLeft: true,
                   removeRight: true,
                   child: AbsorbPointer(
-                    absorbing: _saving || _assetBusy,
+                    absorbing: _saving || _tabBusy,
                     child: _buildRoleScroll(context, overlayStyle, topInset),
                   ),
                 ),
@@ -421,7 +426,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                       trailing: _GlassSaveButton(
                         saving: _saving,
                         onPhoto: _coverImg.isNotEmpty,
-                        onPressed: _assetBusy ? null : _submit,
+                        onPressed: _tabBusy ? null : _submit,
                       ),
                     ),
                   ),
@@ -553,6 +558,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                   tabs: const [
                     Tab(text: '详情'),
                     Tab(text: '资产'),
+                    Tab(text: '关系'),
                   ],
                 ),
               ),
@@ -601,6 +607,16 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                   isEnabled: () => !_saving,
                   onBusyChanged: (busy) {
                     if (mounted) setState(() => _assetBusy = busy);
+                  },
+                ),
+                RoleRelationshipsTab(
+                  roleId: widget.role!.id,
+                  overlapHandle: handle,
+                  enabled: !_saving,
+                  isEnabled: () => !_saving,
+                  supportDirectory: widget.supportDirectory,
+                  onBusyChanged: (busy) {
+                    if (mounted) setState(() => _relationshipBusy = busy);
                   },
                 ),
               ],
