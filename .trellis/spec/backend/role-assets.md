@@ -40,7 +40,7 @@ uses full snapshot references, immutable file objects, exact SHA/length checks,
 account-wide latest3 and dataset activation. The previous v2 single-slot sources
 remain as compatibility fixtures only and must not be called by production UI.
 
-Read-only legacy restoration supports schema 3–8, preserving ordered attributes,
+Read-only legacy restoration supports schema 3–9, preserving ordered attributes,
 role descriptions/revisions and assets; old snapshots without asset tables imply
 an empty asset set. Unknown legacy file sizes must remain unknown in contents UI
 until actual download verification. Pins protect preview/renderer/backup reads

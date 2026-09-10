@@ -3,13 +3,14 @@
 ## Scope
 
 `RoleCreatePage` retains the single-scroll create form. Existing roles have
-**详情 / 资产** below their shared cover. Asset changes persist immediately;
+**详情 / 资产 / 关系** below their shared cover. Asset and relationship changes
+persist immediately (relationships: [Role Relationships](./role-relationships.md));
 the top Save action still saves the role form and returns to the preceding page.
 
 ## Scroll contract
 
 - Use `NestedScrollView` with one pinned, collapsible cover `SliverAppBar`.
-  Its expanded cover stays 352 logical pixels; its bottom contains the two tabs.
+  Its expanded cover stays 352 logical pixels; its bottom contains the tabs.
   When collapsed, the cover reserves the status-bar inset plus 60 pixels for
   the existing glass controls, then 48 pixels for the tab bar.
 - In the last 24 pixels of cover collapse, reveal a 32px circular portrait and
@@ -27,7 +28,7 @@ the top Save action still saves the role form and returns to the preceding page.
   not force Material transparency. `FlexibleSpaceBar` fades out its background
   on collapse, so an image alone cannot shield the toolbar from scrolling
   content. Retain transparency only for the non-pinned create header.
-- Wrap that header in `SliverOverlapAbsorber`. Both inner `CustomScrollView`s
+- Wrap that header in `SliverOverlapAbsorber`. Every inner `CustomScrollView`
   use `SliverOverlapInjector` and inherit the nested primary controller. Do not
   give either inner scroll view an independent controller.
 - Keep each tab alive and give it a different `PageStorageKey`. Form controllers

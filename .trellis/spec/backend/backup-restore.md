@@ -36,7 +36,9 @@ close/reopen the database themselves.
 
 ## 3. Data and protocol contracts
 
-- Business schema stays **8**. A protocol upgrade is not a reason to increment it.
+- Business schema is **9** (8 + `role_relationship`, see
+  [Role Relationships](./role-relationships.md)). A protocol upgrade is not a
+  reason to increment it; only a new business table or column is.
 - Documents root is `Documents/ochome-backup-v3` in
   `iCloud.com.xuwudi.ochome`. Immutable files live at
   `writers/<writerId>/objects/<objectId>` and
@@ -56,7 +58,7 @@ close/reopen the database themselves.
 - Legacy root discovery is read-only and fixes the selected slot. Only definite
   `legacy_manifest_missing` / known missing-manifest signals permit no-manifest
   compatibility. Network, pending discovery and malformed existing manifests do
-  not. Schema 3–8 fixtures must preserve original fields and migrations.
+  not. Schema 3–9 fixtures must preserve original fields and migrations.
 
 ## 4. Local storage and concurrency
 
@@ -96,7 +98,8 @@ close/reopen the database themselves.
   for pins; retired dataset GC also respects pins. Galleries, native previews,
   renderer reads and backup snapshots release pins in finally/dispose.
 - Before closing the live database, suspend watched queries and explicitly
-  invalidate all role, asset and revision stream providers, including families.
+  invalidate all role, asset, relationship and revision stream providers,
+  including families.
   Hidden routes pause Riverpod subscriptions; Drift.close waits indefinitely for
   their done events unless they are cancelled first. Keep streams suspended
   until the replacement (or rollback) database passes its open check, so active

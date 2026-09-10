@@ -1,0 +1,4 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/role-assets.md", "reason": "同类子表模式：FK 级联、独立仓储、迁移与备份清单"}
+{"file": ".trellis/spec/backend/backup-restore.md", "reason": "schema 版本与快照校验契约"}
+{"file": ".trellis/spec/frontend/role-assets.md", "reason": "详情页 Tab 交互模式"}
