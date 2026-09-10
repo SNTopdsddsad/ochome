@@ -87,6 +87,7 @@ class FakeRoleRepository implements RoleRepository {
     required String desc,
     required String coverImg,
     List<RoleCustomAttribute> customAttributes = const [],
+    int? worldId,
   }) async {
     final attributes = _attributesForWrite(customAttributes);
     final role = Role(
@@ -100,6 +101,7 @@ class FakeRoleRepository implements RoleRepository {
       desc: desc,
       coverImg: coverImg,
       customAttributes: attributes,
+      worldId: worldId,
     );
     _roles.add(role);
     if (desc.isNotEmpty) {
@@ -128,6 +130,7 @@ class FakeRoleRepository implements RoleRepository {
       desc: role.desc,
       coverImg: role.coverImg,
       customAttributes: attributes,
+      worldId: role.worldId,
     );
     _roles[index] = saved;
     if (previous != role.desc) {
@@ -166,6 +169,35 @@ class FakeRoleRepository implements RoleRepository {
   Stream<List<Role>> watchAll() async* {
     yield List<Role>.from(_roles);
     yield* _controller.stream;
+  }
+
+  @override
+  Stream<List<Role>> watchByWorld(int worldId) async* {
+    List<Role> filter(List<Role> roles) =>
+        roles.where((role) => role.worldId == worldId).toList();
+    yield filter(_roles);
+    yield* _controller.stream.map(filter);
+  }
+
+  /// 测试用：模拟世界观被删除后数据库的 `ON DELETE SET NULL`。
+  void detachWorld(int worldId) {
+    for (var index = 0; index < _roles.length; index++) {
+      final role = _roles[index];
+      if (role.worldId != worldId) continue;
+      _roles[index] = Role(
+        id: role.id,
+        name: role.name,
+        sex: role.sex,
+        age: role.age,
+        birthday: role.birthday,
+        race: role.race,
+        occupation: role.occupation,
+        desc: role.desc,
+        coverImg: role.coverImg,
+        customAttributes: role.customAttributes,
+      );
+    }
+    _emit();
   }
 
   @override
@@ -215,6 +247,7 @@ class FakeRoleRepository implements RoleRepository {
         desc: revision.content,
         coverImg: role.coverImg,
         customAttributes: role.customAttributes,
+        worldId: role.worldId,
       ),
     );
   }

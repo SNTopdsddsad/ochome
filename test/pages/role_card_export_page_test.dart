@@ -777,6 +777,7 @@ class _RecordingRepository extends FakeRoleRepository {
     required String desc,
     required String coverImg,
     List<RoleCustomAttribute> customAttributes = const [],
+    int? worldId,
   }) async {
     writes++;
     await saveGate;
@@ -790,6 +791,7 @@ class _RecordingRepository extends FakeRoleRepository {
       desc: desc,
       coverImg: coverImg,
       customAttributes: customAttributes,
+      worldId: worldId,
     );
   }
 }

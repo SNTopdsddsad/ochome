@@ -469,6 +469,7 @@ class _DelayedRepository extends FakeRoleRepository {
     required String desc,
     required String coverImg,
     List<RoleCustomAttribute> customAttributes = const [],
+    int? worldId,
   }) async {
     submitted = customAttributes;
     await complete.future;
@@ -482,6 +483,7 @@ class _DelayedRepository extends FakeRoleRepository {
       desc: desc,
       coverImg: coverImg,
       customAttributes: customAttributes,
+      worldId: worldId,
     );
   }
 

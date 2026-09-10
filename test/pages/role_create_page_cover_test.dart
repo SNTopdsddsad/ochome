@@ -317,6 +317,7 @@ class _DelayedSaveRoleRepository extends FakeRoleRepository {
     required String desc,
     required String coverImg,
     List<RoleCustomAttribute> customAttributes = const [],
+    int? worldId,
   }) async {
     await saveCompleted.future;
     return super.create(
@@ -329,6 +330,7 @@ class _DelayedSaveRoleRepository extends FakeRoleRepository {
       desc: desc,
       coverImg: coverImg,
       customAttributes: customAttributes,
+      worldId: worldId,
     );
   }
 
