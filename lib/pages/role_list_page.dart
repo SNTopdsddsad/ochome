@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../data/models/role.dart';
 import '../data/providers/roles_provider.dart';
 import '../theme/zaidang_tokens.dart';
-import '../widgets/cover_file_view.dart';
+import '../widgets/role_list_tile.dart';
 
 /// OC 页：纸面上的角色档案列表。立绘是主体，火漆红只给添加按钮。
 class RoleListPage extends ConsumerStatefulWidget {
@@ -41,7 +40,7 @@ class _RoleListPageState extends ConsumerState<RoleListPage>
             itemCount: items.length,
             separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (context, index) {
-              return _RoleTile(role: items[index]);
+              return RoleListTile(role: items[index]);
             },
           );
         },
@@ -56,58 +55,6 @@ class _RoleListPageState extends ConsumerState<RoleListPage>
           context.push('/roles/new');
         },
         child: const Icon(Icons.add),
-      ),
-    );
-  }
-}
-
-class _RoleTile extends StatelessWidget {
-  const _RoleTile({required this.role});
-
-  final Role role;
-
-  @override
-  Widget build(BuildContext context) {
-    final subtitle = [
-      role.race,
-      role.occupation,
-      role.sex,
-    ].where((text) => text.isNotEmpty).join(' · ');
-
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      leading: _CoverThumb(path: role.coverImg),
-      title: Text(role.name),
-      subtitle: subtitle.isEmpty ? null : Text(subtitle),
-      onTap: () {
-        context.push('/roles/${role.id}', extra: role);
-      },
-    );
-  }
-}
-
-/// 立绘缩略图用圆角方图，避免看起来像通讯录头像。
-class _CoverThumb extends StatelessWidget {
-  const _CoverThumb({required this.path});
-
-  final String path;
-
-  static const double _size = 56;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = ZaidangTokens.of(context);
-    final placeholder = ColoredBox(
-      color: tokens.surface,
-      child: Icon(Icons.person_outline, color: tokens.inkSecondary),
-    );
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
-      child: SizedBox(
-        width: _size,
-        height: _size,
-        child: CoverFileView(coverImg: path, placeholder: placeholder),
       ),
     );
   }
