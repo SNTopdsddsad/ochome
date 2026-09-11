@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Lint/test gate and forbidden literal patterns to verify against"}
+{"file": ".trellis/spec/frontend/theming.md", "reason": "Type/spacing/radius scale that migrated code must match"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Confirm dialog / snackbar / archive editor contracts"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Check for duplicated section-label / empty-state implementations after migration"}

@@ -21,15 +21,17 @@ primary controller. Widgets: `lib/pages/role_relationships_tab.dart`,
 - Row tap opens the editor prefilled; `more_horiz` opens 修改 / 删除. Deletion
   uses `showZaidangConfirmDialog` and states that both OCs keep their data.
 - Editor (`showRoleRelationshipEditor` → `RoleRelationshipEditorSheet`): a
-  modal bottom sheet (`surface`, 26 top radius, `border` hairline, max width
-  560) styled as a 关系便条. It is **not** an `AlertDialog` and must not
+  modal bottom sheet (`surface`, `ZaidangRadius.lgTop`, `border` hairline, max
+  width 560, `ZaidangSpacing.page` side padding, `pageTitle` header) styled as
+  a 关系便条. It is **not** an `AlertDialog` and must not
   regress to a dropdown + labeled text fields. Tapping the barrier closes it
   (discarding input, no write); the barrier goes through `maybePop`, so the
   sheet's `PopScope(canPop: !_saving)` still blocks it while saving. Keep
   `enableDrag: false`: the sheet's drag-to-close pops directly and would bypass
   that guard.
-  - **对方**: horizontal strip of 56×74 portrait cards (12 radius, 64-wide
-    column, 100-tall strip)
+  - **对方**: horizontal strip of 56×74 portrait cards (`ZaidangRadius.mdAll`
+    cell, `smAll` thumb, 64-wide column, 100-tall strip, `ZaidangSpacing.md`
+    between cells; names in `micro`)
     (`Key('role-relationship-candidate-<id>')`, `CoverFileView` with initial
     placeholder) excluding the current role. Selected card: `accent` border and
     `ink` name; unselected: `border` + `inkSecondary`. Border width is constant
@@ -37,9 +39,10 @@ primary controller. Widgets: `lib/pages/role_relationships_tab.dart`,
     is exactly one candidate or when editing.
   - **关系**: two fill-in-the-blank sentences
     (`Key('role-relationship-sentence-self'|'other')`):
-    `{我} 是 {对方} 的 ____` and `{对方} 是 {我} 的 ____`. Names, particles and
-    the blank share one 17px ink style so each row reads as a sentence; an
-    unselected counterpart renders as `对方` in `inkSecondary`. Blanks are
+    `{我} 是 {对方} 的 ____` and `{对方} 是 {我} 的 ____`. Names and the blank
+    use `subheading`, particles use `bodyLarge` — the same 17 size, so each row
+    reads as a sentence; an unselected counterpart renders as `对方` in
+    `inkSecondary`. Section headers are the shared `SectionLabel`. Blanks are
     `TextField`s with only an `UnderlineInputBorder` (1.5 constant width;
     `border` at rest, `accent` focused, `ink` when invalid), max 30 chars, no
     counter, hints `师父` / `徒弟`.
@@ -51,8 +54,8 @@ primary controller. Widgets: `lib/pages/role_relationships_tab.dart`,
     touched-mode validation (`先选一位对方 OC`, `两句话都要补完，才能记下这段关系`),
     which only appears after the first submit. Typing clears a repository error.
   - Primary action is a full-width 48px accent `FilledButton`
-    (`记下这段关系` / `保存修改`; `保存中…` with an inline 16px indicator while
-    saving). It is disabled only while saving and keeps the full `accent` fill
+    (`ZaidangRadius.mdAll`, `label` text; `记下这段关系` / `保存修改`;
+    `保存中…` with an inline 16px indicator while saving). It is disabled only while saving and keeps the full `accent` fill
     then — a dimmed accent drops `onAccent` text to ~2.4:1. Close is the header
     `IconButton` (`Key('role-relationship-cancel')`, tooltip `关闭`). An
     unchanged submission closes without writing. Selecting a card does not

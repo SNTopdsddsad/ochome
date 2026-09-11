@@ -19,8 +19,11 @@ PinnedIdentity({name, coverImg, supportDirectory, emptyName, placeholderIcon,
                 boxKey, portraitKey})
 GlassIconButton({icon, iconSize, tooltip, onPhoto, VoidCallback? onTap})
 GlassSaveButton({saving, onPhoto, onPressed})
-ArchiveCard / archiveCardDecoration / SectionLabel / FieldRow / KeepAliveDetails
+ArchiveCard / archiveCardDecoration / FieldRow / KeepAliveDetails
 archiveEditorHorizontalPadding(context)
+
+// lib/widgets/section_label.dart — shared 分区标签 (sectionLabel role)
+SectionLabel(text, {padding = EdgeInsets.only(bottom: ZaidangSpacing.sm)})
 
 // lib/widgets/role_list_tile.dart
 RoleListTile({role})                               // pushes /roles/:id with extra

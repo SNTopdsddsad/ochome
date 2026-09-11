@@ -9,13 +9,13 @@
 
 ## 1. Scope / Trigger
 
-**Trigger**: Any `ThemeData` / `ColorScheme` change, new hardcoded color, AppBar / list / form / empty / paywall chrome, destructive-action styling, watermark, or App icon.
+**Trigger**: Any `ThemeData` / `ColorScheme` change, new hardcoded color, **any `fontSize` / `fontWeight` / `EdgeInsets` / gap `SizedBox` / `Radius.circular` literal**, AppBar / list / form / empty / paywall chrome, destructive-action styling, watermark, or App icon.
 
 **Applies to**: in-app UI only (list, create/edit, settings, buyout badge).
 
-**Does not apply to**: 设定卡导出模板。模板审美基准见调研笔记第四节（10 张圈内设卡），在 Figma/纸上定版式后再自绘渲染。
+**Does not apply to**: 设定卡导出模板。模板审美基准见调研笔记第四节（10 张圈内设卡），在 Figma/纸上定版式后再自绘渲染。`lib/features/role_card/role_card_renderer.dart` and `role_card_fonts.dart` keep their own pixel values and are excluded from the literal guard.
 
-**Current implementation**: `lib/theme/zaidang_tokens.dart` defines the hand-written light/dark palette, and `lib/theme/zaidang_theme.dart` maps it into `ThemeData`. Do not reintroduce a seed palette.
+**Current implementation**: `lib/theme/` holds four token files. `zaidang_tokens.dart` is the hand-written light/dark palette; `zaidang_type.dart` (`ZaidangType`, a `ThemeExtension`), `zaidang_spacing.dart` (`ZaidangSpacing`) and `zaidang_radius.dart` (`ZaidangRadius`) are the type / spacing / radius scales. `zaidang_theme.dart` maps all of them into `ThemeData` (extensions, `textTheme`, component themes). Do not reintroduce a seed palette.
 
 ---
 
@@ -71,6 +71,39 @@ class ZaidangTokens {
 
 Dark `accent` is desaturated and lifted (`#D96C5A`), not an invert of `#C2402A`.
 
+### Type, spacing and radius scales
+
+```dart
+// lib/theme/zaidang_type.dart — 11 roles, 7 sizes, colour baked from tokens.
+class ZaidangType extends ThemeExtension<ZaidangType> {
+  final TextStyle hero, title, heading, pageTitle, subheading,
+      bodyLarge, body, label, sectionLabel, caption, micro;
+
+  factory ZaidangType.from(ZaidangTokens tokens);
+  static final light = ZaidangType.from(ZaidangTokens.light);
+  static final dark = ZaidangType.from(ZaidangTokens.dark);
+  static ZaidangType of(BuildContext context); // falls back to light
+  TextTheme toTextTheme();                     // mirrors the roles into 15 slots
+}
+
+// lib/theme/zaidang_spacing.dart
+abstract final class ZaidangSpacing {
+  static const double xxs = 2, xs = 4, sm = 8, md = 12, lg = 16,
+      xl = 20, xxl = 24, xxxl = 32;
+  static const double page = xl;  // horizontal page inset
+  static const double card = lg;  // card inner padding
+}
+
+// lib/theme/zaidang_radius.dart
+abstract final class ZaidangRadius {
+  static const double sm = 8, md = 16, lg = 26;
+  static const BorderRadius smAll, mdAll, lgAll, lgTop;
+  static const ShapeBorder pill = StadiumBorder();
+}
+```
+
+`copyWith` on a `ZaidangType` style may change **only** `color` (a token colour) and `height`. Never override `fontSize` or `fontWeight` at a call site; pick another role instead.
+
 ---
 
 ## 3. Contracts
@@ -125,29 +158,87 @@ Brand extras that ship with A (do not invent a second accent):
 | Empty state | `inkSecondary` |
 | FAB / filled primary | `accent` + `onAccent` |
 | Selected chip / tab | `accent` at 5–10% area, not a red page |
-| Bottom `NavigationBar` | 56px content height, 24px icons, 12px labels with 1.2 line height and 2px top spacing. Paper `bg`, 1px top `border` hairline, transparent indicator, selected icon+label `accent`, unselected `inkSecondary`. The stock bar adds the device bottom safe area once, outside the 56px content height. No red bar fill, no cool gray. |
+| Bottom `NavigationBar` | 56px content height, 24px icons, `micro` labels (12 / 1.2 line height) with `ZaidangSpacing.xxs` top spacing. Paper `bg`, 1px top `border` hairline, transparent indicator, selected icon+label `accent`, unselected `inkSecondary`. The stock bar adds the device bottom safe area once, outside the 56px content height. No red bar fill, no cool gray. |
 | Buyout / member badge | `accentGold` |
 | Body / heading text | `ink` only — never accent paragraphs |
 | Delete / dangerous | ink button + second confirm; no red fill |
-| SnackBar feedback | floating `surface` + `border`, `ink` text, 16-radius corners; small accent check only for success |
+| SnackBar feedback | floating `surface` + `border`, `body` ink text, `ZaidangRadius.mdAll` corners; small accent check only for success |
 
 Secondary confirmations use the approved **创作便笺** layout in
 `ZaidangConfirmDialog`; see [Component Guidelines](./component-guidelines.md#reusable-confirmation-dialogs).
-The global `DialogThemeData` shares surface, transparent tint, 26-radius border
-and soft shadow with the separate history-content viewer. It does not change
-that viewer into a confirmation flow.
+The global `DialogThemeData` shares surface, transparent tint, `ZaidangRadius.lgAll`
+border, `heading` title / `body` content styles and soft shadow with the separate
+history-content viewer. It does not change that viewer into a confirmation flow.
 
 Use `showZaidangSnackBar` for operation feedback. Its shared content and global
 SnackBar theme replace the default inverse gray strip; see the floating-feedback
 contract in [Component Guidelines](./component-guidelines.md#floating-feedback).
 
+### Type scale
+
+Every visible `Text` takes its style from `ZaidangType.of(context).<role>` (or
+inherits it from a component theme — AppBar title, dialog title/content, list
+tile title/subtitle, tab label, button label, input hint/error are already
+wired). `Theme.of(context).textTheme` mirrors the same roles for third-party
+widgets; app code prefers the semantic names.
+
+| Role | Size / weight / height | Colour | Use for |
+|------|------------------------|--------|---------|
+| `hero` | 26 / w600 / 1.2 | `ink` | Page-level headline, backup byte total |
+| `title` | 22 / w600 / 1.25 | `ink` | 新建 / 编辑 角色 · 世界观 title on the cover |
+| `heading` | 20 / w500 / 1.3 | `ink` | Dialog titles, stat numbers, bootstrap error title |
+| `pageTitle` | 17 / w600 / 1.3 | `ink` | `AppBar.titleTextStyle`, sheet titles |
+| `subheading` | 17 / w500 / 1.4 | `ink` | `ListTile` title, card title, pinned name, sentence names |
+| `bodyLarge` | 17 / w400 / 1.5 | `ink` | Input text + hint, field values, sentence particles |
+| `body` | 15 / w400 / 1.5 | `ink` | Body copy, dialog content, SnackBar, empty-state main line |
+| `label` | 15 / w500 / 1.3 | `ink` | Filled / outlined / text button and tab labels |
+| `sectionLabel` | 13 / w600 / 1.4 | `inkSecondary` | `SectionLabel` widget (分区标签) |
+| `caption` | 13 / w400 / 1.4 | `inkSecondary` | Subtitles, hints, counts, empty-state helper line |
+| `micro` | 12 / w400 / 1.3 | `inkSecondary` | Ordinals (`属性 3`), stat captions, nav labels, input errors |
+
+Only seven sizes exist: 26 / 22 / 20 / 17 / 15 / 13 / 12. If a design needs an
+eighth, change the scale in `zaidang_type.dart` and this table, never the page.
+
+### Spacing scale
+
+Use `ZaidangSpacing` for every `EdgeInsets`, gap `SizedBox`, `Wrap.spacing` /
+`runSpacing`, `titleSpacing`, `middleSpacing` and `Positioned` inset.
+
+| Token | Value | Typical use |
+|-------|-------|-------------|
+| `xxs` | 2 | Nav label top spacing, hairline offsets |
+| `xs` | 4 | Tight gaps inside a row, indicator / tab padding |
+| `sm` | 8 | Gap between a label and its control, thumb padding |
+| `md` | 12 | Gap between related rows, form gutter |
+| `lg` | 16 | Standard gap between blocks, list-tile horizontal padding |
+| `xl` | 20 | Page horizontal inset (`page`) |
+| `xxl` | 24 | Dialog / sheet padding, section gaps |
+| `xxxl` | 32 | Large section dividers, top breathing room |
+
+Rounding rule when migrating a literal: nearest step, ties round up
+(6 / 7 → `sm`, 10 → `md`, 14 → `lg`, 18 → `xl`, 22 → `xxl`, 28 → `xxxl`). `0`
+stays `0`. A `SizedBox` with a single dimension and no `child` is a gap and must
+use a token; a `SizedBox` with a `child`, or with both `width` and `height`, is a
+size and may keep a **named** constant (`_compactPreviewMaxHeight`,
+`glassButtonSize`, `_fieldScrollInset`). Bare magic numbers are not allowed even
+for sizes.
+
+### Radius scale
+
+| Token | Value | Use for |
+|-------|-------|---------|
+| `ZaidangRadius.sm` / `smAll` | 8 | Cards, inputs, thumbnails, buttons, tab indicator |
+| `ZaidangRadius.md` / `mdAll` | 16 | SnackBar, dialog action buttons, candidate strip cells |
+| `ZaidangRadius.lg` / `lgAll` / `lgTop` | 26 | Dialogs, bottom sheets, hero paper cap |
+| `ZaidangRadius.pill` | `StadiumBorder` | Glass save button |
+
 ### Type (prep checklist, UI-related)
 
-Ship only fonts that are free for commercial use: 思源宋体 / 思源黑体 / 霞鹜文楷. Pick with the visual draft. Do not embed licensed display fonts.
+Ship only fonts that are free for commercial use: 思源宋体 / 思源黑体 / 霞鹜文楷. Pick with the visual draft. Do not embed licensed display fonts. Swapping the family happens once in `ZaidangType.from`, not per page.
 
 ### How much polish
 
-Product brief: **only the export card is allowed to be pixel-obsessed.** Other screens use these tokens + stock widgets. Do not start a second design system review.
+Product brief: **only the export card is allowed to be pixel-obsessed.** Other screens use these tokens + stock widgets. Do not start a second design system review; extend the scales instead of bypassing them.
 
 ---
 
@@ -163,16 +254,21 @@ Product brief: **only the export card is allowed to be pixel-obsessed.** Other s
 | Gold | Buyout / member only | Gold as second primary |
 | Export vs App | App uses this table; card template may differ | Reuse export-card colors as ThemeData |
 | Destructive | Ink + confirm | `colorScheme.error = accent` |
+| Type | `ZaidangType.of(context).body` / `.caption` … | `TextStyle(fontSize: 15)` or `fontWeight:` at a call site |
+| Type override | `copyWith(color: tokens.ink)` / `copyWith(height: 1.8)` | `copyWith(fontSize:)` / `copyWith(fontWeight:)` |
+| Spacing | `EdgeInsets.all(ZaidangSpacing.card)`, `SizedBox(height: ZaidangSpacing.md)` | `EdgeInsets.all(16)`, `SizedBox(height: 12)` |
+| Radius | `ZaidangRadius.smAll`, `ZaidangRadius.pill` | `BorderRadius.circular(8)` |
+| Sizes | Named `static const` (`_compactPreviewMaxHeight = 520`) | Bare `520` in a `SizedBox(child:)` |
 
 ---
 
 ## 5. Good / Base / Bad Cases
 
-**Good**: `theme` / `darkTheme` both from `ZaidangTokens`; pages read `Theme.of(context)` or `ZaidangTokens.of(context)`; 立绘 is the largest color block.
+**Good**: `theme` / `darkTheme` both from `ZaidangTokens`; pages read `Theme.of(context)`, `ZaidangTokens.of(context)` and `ZaidangType.of(context)`; spacing and radii come from `ZaidangSpacing` / `ZaidangRadius`; 立绘 is the largest color block.
 
 **Base**: Pages consume the existing semantic theme; app canvas is paper and primary actions use the hand-written accent. No new illustration dependency is needed for routine chrome.
 
-**Bad**: Reintroducing a Material purple seed, or treating SiYuan Note's `daylight`/`midnight` CSS as 崽档 tokens (wrong source).
+**Bad**: Reintroducing a Material purple seed, treating SiYuan Note's `daylight`/`midnight` CSS as 崽档 tokens (wrong source), or sprinkling `fontSize: 14` / `EdgeInsets.all(10)` into a page because "it looked right".
 
 ---
 
@@ -186,6 +282,8 @@ Product brief: **only the export card is allowed to be pixel-obsessed.** Other s
 | AppBar | Background is `bg` or `surface`; action 保存 uses `accent` |
 | Destructive | Delete control is not `accent` / `error` red |
 | Contrast smoke | Light and dark `ink` on `bg` checked separately |
+| Type scale (`test/theme/zaidang_type_test.dart`) | Role table sizes / weights / heights; exactly seven sizes; `ink` vs `inkSecondary` per role in both modes; `toTextTheme` slot mapping; theme wiring (AppBar, dialog, SnackBar, ListTile, TabBar, input, nav label); `lerp` and `ZaidangType.of` |
+| Literal guard (`test/theme/design_token_guard_test.dart`) | No `fontSize:` / `fontWeight:` / `Radius.circular(<n>)` / numeric `EdgeInsets` / numeric gap `SizedBox` / numeric `spacing`, `runSpacing`, `titleSpacing` in `lib/**` outside `lib/theme/` and the export-card renderer |
 
 ---
 
@@ -235,6 +333,10 @@ darkTheme: zaidangTheme(ZaidangTokens.dark),
 - Don't apply this table to 设定卡 templates.
 - Don't introduce a third brand hue beyond 火漆红 and 琥珀金.
 - Don't sit a Material AppBar (opaque or transparent-with-title) on the create/edit 立绘. Use glass overlay controls and a paper bottom cap.
+- Don't write `fontSize:` / `fontWeight:` outside `lib/theme/zaidang_type.dart`; pick a `ZaidangType` role.
+- Don't write numeric `EdgeInsets`, gap `SizedBox`, `Wrap.spacing` or `Radius.circular` in pages and widgets; use `ZaidangSpacing` / `ZaidangRadius`.
+- Don't reach for `Theme.of(context).textTheme.bodyMedium` in app code; `ZaidangType.of(context).body` is the same style with a name that says what it is for.
+- Don't add an eighth font size or a ninth spacing step at a call site. Change the scale file and this spec together.
 
 ---
 

@@ -33,6 +33,15 @@ file lists what a reviewer checks.
   and `Colors.white` for an icon composited over user images are the accepted
   exceptions; the only allowed hex outside `lib/theme/` is the role-card
   export renderer.
+- **`fontSize:` / `fontWeight:` literals, numeric `EdgeInsets`, numeric gap
+  `SizedBox`, numeric `Wrap.spacing` / `runSpacing` / `titleSpacing`, or
+  `Radius.circular(<n>)` in pages/widgets.** Use `ZaidangType.of(context)`,
+  `ZaidangSpacing` and `ZaidangRadius` (`theming.md`). The export renderer
+  (`role_card_renderer.dart`, `role_card_fonts.dart`) is the only exemption;
+  `test/theme/design_token_guard_test.dart` fails the suite otherwise.
+- **`copyWith(fontSize:)` / `copyWith(fontWeight:)` on a `ZaidangType`
+  style.** Choose another role. Only `color` (a token colour) and `height`
+  may be overridden.
 - **`ColorScheme.fromSeed`, Material 3 tonal defaults, or stock `AlertDialog`
   for confirmations.** Use `showZaidangConfirmDialog`; the two remaining
   `AlertDialog`s (asset rename, revision viewer) are legacy, not a licence.
@@ -47,9 +56,10 @@ file lists what a reviewer checks.
 - **Text-only finders for interactive controls in tests** when the widget
   can carry a `Key`. Use `Key('feature-action')`; text finders are fine for
   asserting copy.
-- **Golden tests and `debugDisableShadows`.** Not used; verify colours and
-  contrast numerically (`zaidang_tokens_test.dart`,
-  `cover_preview_page_test.dart`) instead of pixel snapshots.
+- **Golden tests and `debugDisableShadows`.** Not used; verify colours,
+  type roles and contrast numerically (`zaidang_tokens_test.dart`,
+  `zaidang_type_test.dart`, `cover_preview_page_test.dart`) instead of pixel
+  snapshots.
 - **`Tooltip` as the accessible name.** Set `semanticsLabel` on the visible
   text and `excludeFromSemantics: true` on the tooltip.
 
@@ -57,8 +67,17 @@ file lists what a reviewer checks.
 
 ## Required Patterns
 
-- Colours from tokens; text sizes may be literal (`TextStyle(fontSize: 17)`)
-  but weights and colours come from tokens/`textTheme`.
+- Colours from `ZaidangTokens`; text styles from `ZaidangType.of(context)`
+  roles (`pageTitle`, `subheading`, `body`, `caption`, `micro`, …); spacing
+  from `ZaidangSpacing` (`page`, `card`, `xs`…`xxxl`); corners from
+  `ZaidangRadius` (`smAll`, `mdAll`, `lgAll`, `lgTop`, `pill`). Non-spacing
+  sizes (touch targets, max widths, scroll insets) are named `static const`s
+  with a one-line comment, never bare numbers.
+- Section headers use the shared `SectionLabel` from
+  `lib/widgets/section_label.dart`; do not re-create a private `_SectionLabel`.
+- Prefer inheriting from the component theme over passing a style: `AppBar`
+  titles, `ListTile` title/subtitle, dialog title/content, buttons, tabs and
+  input hints are already themed, so a plain `Text('…')` is correct there.
 - Every interactive control that a test or screen reader needs has a stable
   `Key('<feature>-<action>')` and a `tooltip` or `semanticsLabel` when the
   visible label is an icon or abbreviation.
@@ -128,6 +147,9 @@ await tester.pumpWidget(
 
 - [ ] `flutter analyze` clean, `flutter test` green, formatter run.
 - [ ] No hex/`Colors.*` outside `lib/theme/` and the export renderer.
+- [ ] No `fontSize` / `fontWeight` / numeric `EdgeInsets` / gap `SizedBox` /
+      `Radius.circular` literals; `test/theme/design_token_guard_test.dart`
+      passes and new sizes are named constants.
 - [ ] Copy is Chinese, uses `…` and `「」`, and explains only decisions and
       consequences.
 - [ ] Every async action: disabled state + early return + `mounted` after

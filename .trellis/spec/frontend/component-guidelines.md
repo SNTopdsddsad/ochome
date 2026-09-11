@@ -46,9 +46,11 @@ A widget file is laid out top to bottom as:
 5. Its `State`: controllers and flags first, lifecycle (`initState`,
    `dispose`), then action methods (`_select`, `_swap`, `_submit`,
    `_resolve`), then `build`, then small `_build*` helpers.
-6. Private helper widgets (`_SectionLabel`, `_CandidateStrip`,
-   `_SentenceRow`, `_Blank`, `_NotebookMark`) at the bottom of the same file.
-   They are promoted to their own file only when a second page needs them.
+6. Private helper widgets (`_CandidateStrip`, `_SentenceRow`, `_Blank`,
+   `_NotebookMark`) at the bottom of the same file. They are promoted to their
+   own file only when a second page needs them — `SectionLabel` went through
+   exactly that and now lives in `lib/widgets/section_label.dart`; reuse it
+   instead of adding a `_SectionLabel`.
 
 `build` wraps the content in this order when the widget can be dismissed
 while writing: `PopScope(canPop: !_saving)` → `KeyedSubtree(key:)` →
@@ -96,6 +98,8 @@ request to rewrite unrelated screens.
 
 
 Colors come from [Theming](./theming.md) (崽档笔记《主题色与设计 Token》: 纸白 + 墨色 + 火漆红). Widgets read `Theme.of(context)` or `ZaidangTokens`; they do not hardcode hex.
+
+Type, spacing and radius come from the same file's scales: `ZaidangType.of(context).<role>` for every `TextStyle`, `ZaidangSpacing` for every `EdgeInsets` / gap / `Wrap` spacing, `ZaidangRadius` for every corner. A widget never writes `fontSize:`, `EdgeInsets.all(16)` or `BorderRadius.circular(8)`; `test/theme/design_token_guard_test.dart` enforces this for `lib/**` outside the theme folder and the export renderer.
 
 Controls over user images must retain at least 3:1 icon contrast over both white
 and black image regions. A translucent white fill does not protect a white icon
@@ -221,10 +225,15 @@ and `onTapUp`, leaving its existing gesture recognizers in charge.
 ## Shared Archive Editor Widgets
 
 The create/edit chrome (immersive blurred cover with calling card, pinned
-identity, glass back/save buttons, paper `ArchiveCard`, `SectionLabel`,
-`FieldRow`, `KeepAliveDetails`, content-width padding) lives in
-`lib/widgets/archive_editor/`. Both `RoleCreatePage` and `WorldCreatePage`
-compose these widgets; do not copy private variants back into a page. Pages pass
+identity, glass back/save buttons, paper `ArchiveCard`, `FieldRow`,
+`KeepAliveDetails`, content-width padding) lives in
+`lib/widgets/archive_editor/`; the shared `SectionLabel` (`sectionLabel` role,
+default `ZaidangSpacing.sm` bottom padding) lives one level up in
+`lib/widgets/section_label.dart` because sheets and pickers use it too. Both
+`RoleCreatePage` and `WorldCreatePage` compose these widgets; do not copy
+private variants back into a page. `archiveEditorCardInset` is
+`ZaidangSpacing.page`, `ArchiveCard` pads `ZaidangSpacing.card` and rounds
+`ZaidangRadius.smAll`; the hero paper cap uses `ZaidangRadius.lgTop`. Pages pass
 their own test keys (`heroKey`, `portraitKey`, `boxKey`) and copy nouns
 (`coverNoun`, `emptyName`) so finders remain page-specific. See
 [Worlds UI](./worlds.md).
@@ -305,10 +314,13 @@ if (!confirmed || !context.mounted) return;
 - Dangerous actions use `ink` fill with `surface` text in both themes. The
   cancellation uses `bg`, `border` and `ink`. Essential body/consequence text
   also uses `ink`: light `inkSecondary` on `surface` is only about 3.8:1.
-- Use 26 outer radius, 15 button radius and at least 48 logical pixel action
-  height. Measure action labels with the effective text scaler before choosing
-  a row or a vertical stack. Keep the standard cancel-then-confirm traversal
-  order in both arrangements.
+- Use `ZaidangRadius.lgAll` (26) for the sheet, `ZaidangRadius.mdAll` (16) for
+  the action buttons and at least 48 logical pixel action height. Title is
+  `heading`, body is `body.copyWith(height: 1.8)` (the one sanctioned
+  line-height override, for the 便笺 feel), actions are `label`. Measure action
+  labels with the effective text scaler before choosing a row or a vertical
+  stack. Keep the standard cancel-then-confirm traversal order in both
+  arrangements.
 - Normally only the content scrolls and the buttons stay visible. Exceptionally
   short windows or huge action labels allow whole-sheet scrolling so every
   element remains reachable. Leave space inside the scroll viewport for the
@@ -352,10 +364,11 @@ presentation; the helper owns queue, width and timing policy.
 - Keep the native `SnackBar`/`ScaffoldMessenger` for live-region announcements,
   close control and lifecycle. Do not add a toast dependency or an unmanaged
   Overlay/timer implementation for ordinary feedback.
-- The global theme uses a floating surface, ink text, thin token border,
-  16-radius corners and restrained elevation. On desktop the helper caps width
-  at 480; mobile uses native safe-area handling and 16-unit theme insets. Never
-  provide both `width` and `margin` to a SnackBar.
+- The global theme uses a floating surface, `body` ink text, thin token
+  border, `ZaidangRadius.mdAll` corners and restrained elevation. On desktop
+  the helper caps width at 480; mobile uses native safe-area handling and
+  `ZaidangSpacing.lg` theme insets. Never provide both `width` and `margin` to
+  a SnackBar.
 - A success message has a small accent-colored check on a 10% tint; info and
   errors use ink icons. Essential copy stays ink, without a second title or
   a broad red/green background. Error/success comes from the actual operation,
