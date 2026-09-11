@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
+import 'zaidang_radius.dart';
+import 'zaidang_spacing.dart';
 import 'zaidang_tokens.dart';
+import 'zaidang_type.dart';
 
 /// 用手写语义色搭 [ThemeData]，避免 seed 把火漆红算成粉紫。
+/// 字号、间距、圆角同样来自 Token，原生组件不再落回 M3 默认值。
 ThemeData zaidangTheme(ZaidangTokens tokens, {required Brightness brightness}) {
+  final type = ZaidangType.from(tokens);
   final onSecondary = brightness == Brightness.light ? tokens.ink : tokens.bg;
   final scheme = ColorScheme(
     brightness: brightness,
@@ -23,18 +28,26 @@ ThemeData zaidangTheme(ZaidangTokens tokens, {required Brightness brightness}) {
     shadow: const Color(0xFF000000),
   );
 
+  final inputBorder = OutlineInputBorder(
+    borderRadius: ZaidangRadius.smAll,
+    borderSide: BorderSide(color: tokens.border),
+  );
+
   return ThemeData(
     useMaterial3: true,
     brightness: brightness,
     colorScheme: scheme,
     scaffoldBackgroundColor: tokens.bg,
-    extensions: <ThemeExtension<dynamic>>[tokens],
+    extensions: <ThemeExtension<dynamic>>[tokens, type],
+    textTheme: type.toTextTheme(),
     appBarTheme: AppBarThemeData(
       backgroundColor: tokens.bg,
       foregroundColor: tokens.ink,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
+      titleTextStyle: type.pageTitle,
+      toolbarTextStyle: type.body,
     ),
     dividerTheme: DividerThemeData(
       color: tokens.border,
@@ -46,26 +59,28 @@ ThemeData zaidangTheme(ZaidangTokens tokens, {required Brightness brightness}) {
       surfaceTintColor: Colors.transparent,
       elevation: 4,
       shadowColor: scheme.shadow.withValues(alpha: 0.12),
+      titleTextStyle: type.heading,
+      contentTextStyle: type.body,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: ZaidangRadius.lgAll,
         side: BorderSide(color: tokens.border),
       ),
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       backgroundColor: tokens.surface,
-      contentTextStyle: TextStyle(
-        color: tokens.ink,
-        fontSize: 15,
-        fontWeight: FontWeight.w400,
-        height: 1.4,
-      ),
+      contentTextStyle: type.body,
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: ZaidangRadius.mdAll,
         side: BorderSide(color: tokens.border),
       ),
-      insetPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      insetPadding: const EdgeInsets.fromLTRB(
+        ZaidangSpacing.lg,
+        ZaidangSpacing.sm,
+        ZaidangSpacing.lg,
+        ZaidangSpacing.lg,
+      ),
       showCloseIcon: true,
       closeIconColor: tokens.ink,
       actionTextColor: tokens.ink,
@@ -81,32 +96,45 @@ ThemeData zaidangTheme(ZaidangTokens tokens, {required Brightness brightness}) {
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       indicatorColor: Colors.transparent,
-      labelPadding: const EdgeInsets.only(top: 2),
+      labelPadding: const EdgeInsets.only(top: ZaidangSpacing.xxs),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         return IconThemeData(size: 24, color: _navigationColor(tokens, states));
       }),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
-        return TextStyle(
-          fontSize: 12,
-          height: 1.2,
-          color: _navigationColor(tokens, states),
-        );
+        return type.micro.copyWith(color: _navigationColor(tokens, states));
       }),
     ),
     listTileTheme: ListTileThemeData(
       iconColor: tokens.inkSecondary,
-      titleTextStyle: TextStyle(
-        color: tokens.ink,
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
+      titleTextStyle: type.subheading,
+      subtitleTextStyle: type.caption,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: ZaidangSpacing.lg,
+        vertical: ZaidangSpacing.sm,
       ),
-      subtitleTextStyle: TextStyle(color: tokens.inkSecondary, fontSize: 13),
+    ),
+    tabBarTheme: TabBarThemeData(
+      labelStyle: type.label,
+      unselectedLabelStyle: type.label,
     ),
     progressIndicatorTheme: ProgressIndicatorThemeData(color: tokens.accent),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: tokens.accent,
         disabledForegroundColor: tokens.inkSecondary,
+        textStyle: type.label,
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        textStyle: type.label,
+        shape: const RoundedRectangleBorder(borderRadius: ZaidangRadius.smAll),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        textStyle: type.label,
+        shape: const RoundedRectangleBorder(borderRadius: ZaidangRadius.smAll),
       ),
     ),
     textSelectionTheme: TextSelectionThemeData(
@@ -118,29 +146,23 @@ ThemeData zaidangTheme(ZaidangTokens tokens, {required Brightness brightness}) {
       filled: true,
       fillColor: tokens.surface,
       alignLabelWithHint: true,
-      labelStyle: TextStyle(color: tokens.inkSecondary, fontSize: 14),
-      floatingLabelStyle: TextStyle(color: tokens.ink, fontSize: 14),
-      hintStyle: TextStyle(color: tokens.inkSecondary, fontSize: 14),
-      errorStyle: TextStyle(color: tokens.ink, fontSize: 12),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: tokens.border),
+      labelStyle: type.bodyLarge.copyWith(color: tokens.inkSecondary),
+      floatingLabelStyle: type.caption.copyWith(color: tokens.ink),
+      hintStyle: type.bodyLarge.copyWith(color: tokens.inkSecondary),
+      errorStyle: type.micro.copyWith(color: tokens.ink),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: ZaidangSpacing.lg,
+        vertical: ZaidangSpacing.lg,
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: tokens.border),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+      border: inputBorder,
+      enabledBorder: inputBorder,
+      focusedBorder: inputBorder.copyWith(
         borderSide: BorderSide(color: tokens.accent, width: 1.5),
       ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+      errorBorder: inputBorder.copyWith(
         borderSide: BorderSide(color: tokens.ink),
       ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+      focusedErrorBorder: inputBorder.copyWith(
         borderSide: BorderSide(color: tokens.ink, width: 1.5),
       ),
     ),
