@@ -1,11 +1,10 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 
 import '../theme/zaidang_radius.dart';
 import '../theme/zaidang_spacing.dart';
 import '../theme/zaidang_tokens.dart';
 import '../theme/zaidang_type.dart';
+import '../utils/text_lines.dart';
 import 'archive_tag.dart';
 import 'cover_file_view.dart';
 
@@ -50,10 +49,6 @@ class ArchiveListCard extends StatelessWidget {
 
   /// 底部计数前的小图标尺寸。
   static const double _metaIconSize = 16;
-
-  /// 多行文本只取首行；兼容 `\r\n`，首尾空白一并去掉。
-  static String firstLine(String text) =>
-      LineSplitter.split(text.trim()).firstOrNull?.trim() ?? '';
 
   @override
   Widget build(BuildContext context) {

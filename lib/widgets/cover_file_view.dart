@@ -14,12 +14,16 @@ class CoverFileView extends StatelessWidget {
     required this.coverImg,
     required this.placeholder,
     this.fit = BoxFit.cover,
+    this.alignment = Alignment.center,
     this.supportDirectory,
   });
 
   final String coverImg;
   final Widget placeholder;
   final BoxFit fit;
+
+  /// 裁切时保留的那一侧；竖版立绘做头图时用 [Alignment.topCenter] 留住脸。
+  final Alignment alignment;
   final Future<Directory> Function()? supportDirectory;
 
   Future<Directory> _supportDir() {
@@ -80,7 +84,7 @@ class CoverFileView extends StatelessWidget {
         image: DecorationImage(
           image: FileImage(file),
           fit: fit,
-          alignment: Alignment.center,
+          alignment: alignment,
         ),
       ),
       child: const SizedBox.expand(),
