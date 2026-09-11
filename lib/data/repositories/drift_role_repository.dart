@@ -41,6 +41,7 @@ class DriftRoleRepository implements RoleRepository {
     required String desc,
     required String coverImg,
     List<RoleCustomAttribute> customAttributes = const [],
+    int? worldId,
   }) async {
     final encodedAttributes = _encodeAttributes(customAttributes);
     return _db.mutate(
@@ -59,6 +60,7 @@ class DriftRoleRepository implements RoleRepository {
                 desc: desc,
                 coverImg: coverImg,
                 customAttributes: Value(encodedAttributes),
+                worldId: Value(worldId),
               ),
             );
         await _appendDescRevision(roleId: row.id, previous: null, next: desc);
@@ -90,6 +92,7 @@ class DriftRoleRepository implements RoleRepository {
                 desc: Value(role.desc),
                 coverImg: Value(role.coverImg),
                 customAttributes: Value(encodedAttributes),
+                worldId: Value(role.worldId),
               ),
             );
         await _appendDescRevision(
@@ -118,6 +121,13 @@ class DriftRoleRepository implements RoleRepository {
   Stream<List<Role>> watchAll() {
     return _db
         .select(_db.roles)
+        .watch()
+        .map((rows) => rows.map(_toDomain).toList());
+  }
+
+  @override
+  Stream<List<Role>> watchByWorld(int worldId) {
+    return (_db.select(_db.roles)..where((t) => t.worldId.equals(worldId)))
         .watch()
         .map((rows) => rows.map(_toDomain).toList());
   }
@@ -167,6 +177,7 @@ class DriftRoleRepository implements RoleRepository {
             desc: row.content,
             coverImg: role.coverImg,
             customAttributes: role.customAttributes,
+            worldId: role.worldId,
           ),
         );
       }),
@@ -217,6 +228,7 @@ class DriftRoleRepository implements RoleRepository {
       desc: row.desc,
       coverImg: row.coverImg,
       customAttributes: _decodeAttributes(row.customAttributes),
+      worldId: row.worldId,
     );
   }
 

@@ -13,6 +13,8 @@ import 'role_desc_revisions_provider.dart';
 import 'role_relationships_provider.dart';
 import 'role_repository_provider.dart';
 import 'roles_provider.dart';
+import 'world_repository_provider.dart';
+import 'worlds_provider.dart';
 
 final backupTransportProvider = Provider<BackupTransport>((ref) {
   return MethodChannelBackupTransport();
@@ -39,6 +41,8 @@ final backupCoordinatorProvider = FutureProvider<BackupCoordinator>((
       ref.invalidate(roleAssetsProvider);
       ref.invalidate(roleDescRevisionsProvider);
       ref.invalidate(roleRelationshipsProvider);
+      ref.invalidate(worldsProvider);
+      ref.invalidate(rolesInWorldProvider);
       if (!storage.isRecoveryOnly) await ref.read(appDatabaseProvider).close();
     },
     reopenDatabase: () async {
@@ -46,7 +50,9 @@ final backupCoordinatorProvider = FutureProvider<BackupCoordinator>((
       ref.invalidate(roleRepositoryProvider);
       ref.invalidate(roleAssetRepositoryProvider);
       ref.invalidate(roleRelationshipRepositoryProvider);
+      ref.invalidate(worldRepositoryProvider);
       ref.invalidate(rolesProvider);
+      ref.invalidate(worldsProvider);
       await ref
           .read(appDatabaseProvider)
           .customSelect('SELECT id FROM role LIMIT 1')

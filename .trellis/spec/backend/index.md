@@ -23,7 +23,8 @@ relationships) carry the executable contracts for each area.
 | [Role Custom Attributes](./role-custom-attributes.md) | Ordered attributes, whole-role preservation, migration and backup contracts | Active |
 | [Backup and Restore](./backup-restore.md) | Account-wide snapshots, immutable media, recovery-only data switching and native contracts | Active |
 | [Role Assets](./role-assets.md) | Asset ownership, file import, schema v8 and backup/restore contracts | Active |
-| [Role Relationships](./role-relationships.md) | Directed single-row OC links, schema v9, perspective helpers and backup validation | Active |
+| [Role Relationships](./role-relationships.md) | Directed single-row OC links, unified in schema v10, perspective helpers and backup validation | Active |
+| [Worlds](./worlds.md) | World table, ordered entries JSON, `role.world_id` SET NULL, unified in schema v10 migration and backup | Active |
 | [Error Handling](./error-handling.md) | `FormatException` / `StateError` / `BackupFailure` taxonomy, platform error translation, UI reaction matrix | Active |
 | [Quality Guidelines](./quality-guidelines.md) | analyze/test/build_runner gate, forbidden and required data-layer patterns, review checklist | Active |
 | [Logging Guidelines](./logging-guidelines.md) | `debugPrint`-only policy, the three call sites, what never to log | Active |

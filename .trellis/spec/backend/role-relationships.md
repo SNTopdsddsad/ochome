@@ -6,7 +6,10 @@ Read before touching `role_relationship`, `RoleRelationshipRepository`, the
 relationship editor, or any code that enumerates business tables (backup
 inventory, health checks, migration fixtures).
 
-- Schema version **9** adds `role_relationship`: `id`, `from_role_id`,
+- Schema version **10** guarantees `role_relationship` (it was first added as
+  a v9 on a branch that ran in parallel with the worlds v9; v10 unifies both
+  and the `from < 10` block probes `sqlite_master` before creating indexes so
+  either v9 layout upgrades cleanly): `id`, `from_role_id`,
   `to_role_id`, `from_label`, `to_label`, `created_at`. Both role columns
   reference `role(id)` with `ON DELETE CASCADE` and have their own index
   (`role_relationship_from_role_id`, `role_relationship_to_role_id`).
@@ -83,8 +86,9 @@ watched query attached to the closing database.
 
 ## Backup and restore
 
-- Business schema is now **9**. `inspectBackupDatabase` validates
-  `role_relationship` when `userVersion >= 9`: both endpoints exist, differ,
+- Business schema is now **10**. `inspectBackupDatabase` validates
+  `role_relationship` when `userVersion >= 10` or the table exists (a v9
+  snapshot may come from the worlds branch and lack it): both endpoints exist, differ,
   labels are non-empty, `created_at` is an integer. A violation fails the
   backup/restore before review, matching custom attribute validation.
 - Legacy snapshots at schema 3–8 restore with an empty relationship set; the
@@ -103,10 +107,11 @@ with a "关系" entry that has no role id.
 
 `test/data/role_relationships_test.dart`: both perspectives from one row,
 multiple rows per pair, self-link/missing-role/empty-label rejection, update
-semantics, scoped delete, cascade on role delete, v8→9 migration preserving
+semantics, scoped delete, cascade on role delete, v8→current migration preserving
 roles/history/assets and creating both indexes.
-`test/features/backup/backup_core_test.dart`: legacy schema 3–9 fixtures
-migrate to `AppDatabase.currentSchemaVersion`; self-linked rows fail business
+`test/features/backup/backup_core_test.dart`: legacy schema 3–8 plus both v9
+layouts (`9-world`, `9-relationship`) migrate to
+`AppDatabase.currentSchemaVersion` with both indexes present; self-linked rows fail business
 validation.
 `test/pages/role_relationships_tab_test.dart`: tab visibility, add/edit/delete
 flows, perspective wording, busy gating and in-dialog failure.

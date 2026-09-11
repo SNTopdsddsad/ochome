@@ -1,0 +1,7 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/role-custom-attributes.md", "reason": "词条 JSON 列与 Role 重建保留字段的契约"}
+{"file": ".trellis/spec/frontend/navigation.md", "reason": "root 路由与 extra 传参规则"}
+{"file": ".trellis/spec/frontend/role-assets.md", "reason": "编辑页嵌套滚动与页签契约"}
+{"file": ".trellis/spec/frontend/theming.md", "reason": "语义色与 accent 使用边界"}
+{"file": ".trellis/spec/backend/worlds.md", "reason": "世界观数据契约（本任务新增）"}
+{"file": ".trellis/spec/frontend/worlds.md", "reason": "世界观界面契约（本任务新增）"}

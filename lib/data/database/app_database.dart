@@ -10,6 +10,7 @@ import 'tables/role.dart';
 import 'tables/role_asset.dart';
 import 'tables/role_desc_revision.dart';
 import 'tables/role_relationship.dart';
+import 'tables/world.dart';
 
 part 'app_database.g.dart';
 
@@ -17,7 +18,7 @@ part 'app_database.g.dart';
 ///
 /// 可选 [executor] 供测试注入内存库；正式运行走 [_openConnection]。
 @DriftDatabase(
-  tables: [Roles, RoleDescRevisions, RoleAssets, RoleRelationships],
+  tables: [Roles, RoleDescRevisions, RoleAssets, Worlds, RoleRelationships],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
@@ -39,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
       : storage!.mutate(action, expectedEpoch: storageEpoch);
 
   /// 表结构版本。增删列后必须递增并补 migration。
-  static const int currentSchemaVersion = 9;
+  static const int currentSchemaVersion = 10;
 
   static const String sqliteFileName = 'ochome.sqlite';
 
@@ -60,6 +61,8 @@ class AppDatabase extends _$AppDatabase {
       // v3 起 birthday 改为文本；更早的库直接按新表重建。
       if (from < 3) {
         await migrator.deleteTable('role');
+        // 最新 role 定义引用 world，先建被引用表。
+        await migrator.createTable(worlds);
         await migrator.createTable(roles);
       } else if (from < 4) {
         // 已有行需要空文本初值，SQLite 不允许直接添加无默认值的 NOT NULL 列。
@@ -90,16 +93,42 @@ class AppDatabase extends _$AppDatabase {
         await migrator.createTable(roleAssets);
         await migrator.createIndex(roleAssetRoleId);
       }
-      if (from < 9) {
+      // v9 曾被两条并行分支分别用于「世界观」和「OC 关系」，v10 合并两者。
+      // 每一步先查现状再执行，任一分支的 v9 库都能升到 v10。
+      // from < 3 的重建分支已经建了 world 且 role 自带 world_id。
+      if (from >= 3 && from < 10) {
+        await migrator.createTable(worlds);
+        if (!await _hasColumn('role', 'world_id')) {
+          await migrator.addColumn(roles, roles.worldId);
+        }
+      }
+      if (from < 10) {
         await migrator.createTable(roleRelationships);
-        await migrator.createIndex(roleRelationshipFromRoleId);
-        await migrator.createIndex(roleRelationshipToRoleId);
+        if (!await _hasIndex('role_relationship_from_role_id')) {
+          await migrator.createIndex(roleRelationshipFromRoleId);
+        }
+        if (!await _hasIndex('role_relationship_to_role_id')) {
+          await migrator.createIndex(roleRelationshipToRoleId);
+        }
       }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  Future<bool> _hasColumn(String table, String column) async {
+    final rows = await customSelect('PRAGMA table_info($table)').get();
+    return rows.any((row) => row.read<String>('name') == column);
+  }
+
+  Future<bool> _hasIndex(String name) async {
+    final rows = await customSelect(
+      "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?",
+      variables: [Variable<String>(name)],
+    ).get();
+    return rows.isNotEmpty;
+  }
 
   /// 把仍落在 `covers/` 目录下的绝对路径改成 `covers/<basename>`。
   /// 无法改写的绝对路径保留，展示层两种都认。

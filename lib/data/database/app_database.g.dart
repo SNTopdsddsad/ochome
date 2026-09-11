@@ -3,6 +3,353 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
+class $WorldsTable extends Worlds with TableInfo<$WorldsTable, World> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WorldsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _summaryMeta = const VerificationMeta(
+    'summary',
+  );
+  @override
+  late final GeneratedColumn<String> summary = GeneratedColumn<String>(
+    'summary',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _coverImgMeta = const VerificationMeta(
+    'coverImg',
+  );
+  @override
+  late final GeneratedColumn<String> coverImg = GeneratedColumn<String>(
+    'coverimg',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entriesMeta = const VerificationMeta(
+    'entries',
+  );
+  @override
+  late final GeneratedColumn<String> entries = GeneratedColumn<String>(
+    'entries',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, summary, coverImg, entries];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'world';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<World> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('summary')) {
+      context.handle(
+        _summaryMeta,
+        summary.isAcceptableOrUnknown(data['summary']!, _summaryMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_summaryMeta);
+    }
+    if (data.containsKey('coverimg')) {
+      context.handle(
+        _coverImgMeta,
+        coverImg.isAcceptableOrUnknown(data['coverimg']!, _coverImgMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_coverImgMeta);
+    }
+    if (data.containsKey('entries')) {
+      context.handle(
+        _entriesMeta,
+        entries.isAcceptableOrUnknown(data['entries']!, _entriesMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  World map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return World(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      summary: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}summary'],
+      )!,
+      coverImg: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}coverimg'],
+      )!,
+      entries: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entries'],
+      )!,
+    );
+  }
+
+  @override
+  $WorldsTable createAlias(String alias) {
+    return $WorldsTable(attachedDatabase, alias);
+  }
+}
+
+class World extends DataClass implements Insertable<World> {
+  final int id;
+  final String name;
+
+  /// 简介，允许空字符串。
+  final String summary;
+
+  /// 封面相对路径 `covers/<file>`，空字符串表示没有封面；列名与 role 表一致。
+  final String coverImg;
+
+  /// 有序词条 JSON `[{"title","content"}]`，由仓库负责编解码。
+  final String entries;
+  const World({
+    required this.id,
+    required this.name,
+    required this.summary,
+    required this.coverImg,
+    required this.entries,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['summary'] = Variable<String>(summary);
+    map['coverimg'] = Variable<String>(coverImg);
+    map['entries'] = Variable<String>(entries);
+    return map;
+  }
+
+  WorldsCompanion toCompanion(bool nullToAbsent) {
+    return WorldsCompanion(
+      id: Value(id),
+      name: Value(name),
+      summary: Value(summary),
+      coverImg: Value(coverImg),
+      entries: Value(entries),
+    );
+  }
+
+  factory World.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return World(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      summary: serializer.fromJson<String>(json['summary']),
+      coverImg: serializer.fromJson<String>(json['coverImg']),
+      entries: serializer.fromJson<String>(json['entries']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'summary': serializer.toJson<String>(summary),
+      'coverImg': serializer.toJson<String>(coverImg),
+      'entries': serializer.toJson<String>(entries),
+    };
+  }
+
+  World copyWith({
+    int? id,
+    String? name,
+    String? summary,
+    String? coverImg,
+    String? entries,
+  }) => World(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    summary: summary ?? this.summary,
+    coverImg: coverImg ?? this.coverImg,
+    entries: entries ?? this.entries,
+  );
+  World copyWithCompanion(WorldsCompanion data) {
+    return World(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      summary: data.summary.present ? data.summary.value : this.summary,
+      coverImg: data.coverImg.present ? data.coverImg.value : this.coverImg,
+      entries: data.entries.present ? data.entries.value : this.entries,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('World(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('summary: $summary, ')
+          ..write('coverImg: $coverImg, ')
+          ..write('entries: $entries')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, summary, coverImg, entries);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is World &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.summary == this.summary &&
+          other.coverImg == this.coverImg &&
+          other.entries == this.entries);
+}
+
+class WorldsCompanion extends UpdateCompanion<World> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String> summary;
+  final Value<String> coverImg;
+  final Value<String> entries;
+  const WorldsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.summary = const Value.absent(),
+    this.coverImg = const Value.absent(),
+    this.entries = const Value.absent(),
+  });
+  WorldsCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    required String summary,
+    required String coverImg,
+    this.entries = const Value.absent(),
+  }) : name = Value(name),
+       summary = Value(summary),
+       coverImg = Value(coverImg);
+  static Insertable<World> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? summary,
+    Expression<String>? coverImg,
+    Expression<String>? entries,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (summary != null) 'summary': summary,
+      if (coverImg != null) 'coverimg': coverImg,
+      if (entries != null) 'entries': entries,
+    });
+  }
+
+  WorldsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<String>? summary,
+    Value<String>? coverImg,
+    Value<String>? entries,
+  }) {
+    return WorldsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      summary: summary ?? this.summary,
+      coverImg: coverImg ?? this.coverImg,
+      entries: entries ?? this.entries,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (summary.present) {
+      map['summary'] = Variable<String>(summary.value);
+    }
+    if (coverImg.present) {
+      map['coverimg'] = Variable<String>(coverImg.value);
+    }
+    if (entries.present) {
+      map['entries'] = Variable<String>(entries.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorldsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('summary: $summary, ')
+          ..write('coverImg: $coverImg, ')
+          ..write('entries: $entries')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -111,6 +458,20 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
     requiredDuringInsert: false,
     defaultValue: const Constant('[]'),
   );
+  static const VerificationMeta _worldIdMeta = const VerificationMeta(
+    'worldId',
+  );
+  @override
+  late final GeneratedColumn<int> worldId = GeneratedColumn<int>(
+    'world_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES world (id) ON DELETE SET NULL',
+    ),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -123,6 +484,7 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
     desc,
     coverImg,
     customAttributes,
+    worldId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -212,6 +574,12 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
         ),
       );
     }
+    if (data.containsKey('world_id')) {
+      context.handle(
+        _worldIdMeta,
+        worldId.isAcceptableOrUnknown(data['world_id']!, _worldIdMeta),
+      );
+    }
     return context;
   }
 
@@ -261,6 +629,10 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
         DriftSqlType.string,
         data['${effectivePrefix}custom_attributes'],
       )!,
+      worldId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}world_id'],
+      ),
     );
   }
 
@@ -291,6 +663,9 @@ class Role extends DataClass implements Insertable<Role> {
 
   /// 按展示顺序存储名称和内容，由仓库负责 JSON 编解码。
   final String customAttributes;
+
+  /// 所属世界观；删除世界观时由数据库置空，角色本身保留。
+  final int? worldId;
   const Role({
     required this.id,
     required this.name,
@@ -302,6 +677,7 @@ class Role extends DataClass implements Insertable<Role> {
     required this.desc,
     required this.coverImg,
     required this.customAttributes,
+    this.worldId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -316,6 +692,9 @@ class Role extends DataClass implements Insertable<Role> {
     map['desc'] = Variable<String>(desc);
     map['coverimg'] = Variable<String>(coverImg);
     map['custom_attributes'] = Variable<String>(customAttributes);
+    if (!nullToAbsent || worldId != null) {
+      map['world_id'] = Variable<int>(worldId);
+    }
     return map;
   }
 
@@ -331,6 +710,9 @@ class Role extends DataClass implements Insertable<Role> {
       desc: Value(desc),
       coverImg: Value(coverImg),
       customAttributes: Value(customAttributes),
+      worldId: worldId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(worldId),
     );
   }
 
@@ -350,6 +732,7 @@ class Role extends DataClass implements Insertable<Role> {
       desc: serializer.fromJson<String>(json['desc']),
       coverImg: serializer.fromJson<String>(json['coverImg']),
       customAttributes: serializer.fromJson<String>(json['customAttributes']),
+      worldId: serializer.fromJson<int?>(json['worldId']),
     );
   }
   @override
@@ -366,6 +749,7 @@ class Role extends DataClass implements Insertable<Role> {
       'desc': serializer.toJson<String>(desc),
       'coverImg': serializer.toJson<String>(coverImg),
       'customAttributes': serializer.toJson<String>(customAttributes),
+      'worldId': serializer.toJson<int?>(worldId),
     };
   }
 
@@ -380,6 +764,7 @@ class Role extends DataClass implements Insertable<Role> {
     String? desc,
     String? coverImg,
     String? customAttributes,
+    Value<int?> worldId = const Value.absent(),
   }) => Role(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -391,6 +776,7 @@ class Role extends DataClass implements Insertable<Role> {
     desc: desc ?? this.desc,
     coverImg: coverImg ?? this.coverImg,
     customAttributes: customAttributes ?? this.customAttributes,
+    worldId: worldId.present ? worldId.value : this.worldId,
   );
   Role copyWithCompanion(RolesCompanion data) {
     return Role(
@@ -408,6 +794,7 @@ class Role extends DataClass implements Insertable<Role> {
       customAttributes: data.customAttributes.present
           ? data.customAttributes.value
           : this.customAttributes,
+      worldId: data.worldId.present ? data.worldId.value : this.worldId,
     );
   }
 
@@ -423,7 +810,8 @@ class Role extends DataClass implements Insertable<Role> {
           ..write('occupation: $occupation, ')
           ..write('desc: $desc, ')
           ..write('coverImg: $coverImg, ')
-          ..write('customAttributes: $customAttributes')
+          ..write('customAttributes: $customAttributes, ')
+          ..write('worldId: $worldId')
           ..write(')'))
         .toString();
   }
@@ -440,6 +828,7 @@ class Role extends DataClass implements Insertable<Role> {
     desc,
     coverImg,
     customAttributes,
+    worldId,
   );
   @override
   bool operator ==(Object other) =>
@@ -454,7 +843,8 @@ class Role extends DataClass implements Insertable<Role> {
           other.occupation == this.occupation &&
           other.desc == this.desc &&
           other.coverImg == this.coverImg &&
-          other.customAttributes == this.customAttributes);
+          other.customAttributes == this.customAttributes &&
+          other.worldId == this.worldId);
 }
 
 class RolesCompanion extends UpdateCompanion<Role> {
@@ -468,6 +858,7 @@ class RolesCompanion extends UpdateCompanion<Role> {
   final Value<String> desc;
   final Value<String> coverImg;
   final Value<String> customAttributes;
+  final Value<int?> worldId;
   const RolesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -479,6 +870,7 @@ class RolesCompanion extends UpdateCompanion<Role> {
     this.desc = const Value.absent(),
     this.coverImg = const Value.absent(),
     this.customAttributes = const Value.absent(),
+    this.worldId = const Value.absent(),
   });
   RolesCompanion.insert({
     this.id = const Value.absent(),
@@ -491,6 +883,7 @@ class RolesCompanion extends UpdateCompanion<Role> {
     required String desc,
     required String coverImg,
     this.customAttributes = const Value.absent(),
+    this.worldId = const Value.absent(),
   }) : name = Value(name),
        sex = Value(sex),
        age = Value(age),
@@ -510,6 +903,7 @@ class RolesCompanion extends UpdateCompanion<Role> {
     Expression<String>? desc,
     Expression<String>? coverImg,
     Expression<String>? customAttributes,
+    Expression<int>? worldId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -522,6 +916,7 @@ class RolesCompanion extends UpdateCompanion<Role> {
       if (desc != null) 'desc': desc,
       if (coverImg != null) 'coverimg': coverImg,
       if (customAttributes != null) 'custom_attributes': customAttributes,
+      if (worldId != null) 'world_id': worldId,
     });
   }
 
@@ -536,6 +931,7 @@ class RolesCompanion extends UpdateCompanion<Role> {
     Value<String>? desc,
     Value<String>? coverImg,
     Value<String>? customAttributes,
+    Value<int?>? worldId,
   }) {
     return RolesCompanion(
       id: id ?? this.id,
@@ -548,6 +944,7 @@ class RolesCompanion extends UpdateCompanion<Role> {
       desc: desc ?? this.desc,
       coverImg: coverImg ?? this.coverImg,
       customAttributes: customAttributes ?? this.customAttributes,
+      worldId: worldId ?? this.worldId,
     );
   }
 
@@ -584,6 +981,9 @@ class RolesCompanion extends UpdateCompanion<Role> {
     if (customAttributes.present) {
       map['custom_attributes'] = Variable<String>(customAttributes.value);
     }
+    if (worldId.present) {
+      map['world_id'] = Variable<int>(worldId.value);
+    }
     return map;
   }
 
@@ -599,7 +999,8 @@ class RolesCompanion extends UpdateCompanion<Role> {
           ..write('occupation: $occupation, ')
           ..write('desc: $desc, ')
           ..write('coverImg: $coverImg, ')
-          ..write('customAttributes: $customAttributes')
+          ..write('customAttributes: $customAttributes, ')
+          ..write('worldId: $worldId')
           ..write(')'))
         .toString();
   }
@@ -1774,6 +2175,7 @@ class RoleRelationshipsCompanion extends UpdateCompanion<RoleRelationship> {
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
+  late final $WorldsTable worlds = $WorldsTable(this);
   late final $RolesTable roles = $RolesTable(this);
   late final $RoleDescRevisionsTable roleDescRevisions =
       $RoleDescRevisionsTable(this);
@@ -1797,6 +2199,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
+    worlds,
     roles,
     roleDescRevisions,
     roleAssets,
@@ -1807,6 +2210,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'world',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('role', kind: UpdateKind.update)],
+    ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'role',
@@ -1838,6 +2248,291 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   ]);
 }
 
+typedef $$WorldsTableCreateCompanionBuilder = WorldsCompanion Function({
+  Value<int> id,
+  required String name,
+  required String summary,
+  required String coverImg,
+  Value<String> entries,
+});
+typedef $$WorldsTableUpdateCompanionBuilder = WorldsCompanion Function({
+  Value<int> id,
+  Value<String> name,
+  Value<String> summary,
+  Value<String> coverImg,
+  Value<String> entries,
+});
+
+final class $$WorldsTableReferences
+    extends BaseReferences<_$AppDatabase, $WorldsTable, World> {
+  $$WorldsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$RolesTable, List<Role>> _rolesRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.roles,
+    aliasName: 'world__id__role__world_id',
+  );
+
+  $$RolesTableProcessedTableManager get rolesRefs {
+    final manager = $$RolesTableTableManager(
+      $_db,
+      $_db.roles,
+    ).filter((f) => f.worldId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_rolesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$WorldsTableFilterComposer
+    extends Composer<_$AppDatabase, $WorldsTable> {
+  $$WorldsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get summary => $composableBuilder(
+    column: $table.summary,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get coverImg => $composableBuilder(
+    column: $table.coverImg,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entries => $composableBuilder(
+    column: $table.entries,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> rolesRefs(
+    Expression<bool> Function($$RolesTableFilterComposer f) f,
+  ) {
+    final $$RolesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.roles,
+      getReferencedColumn: (t) => t.worldId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RolesTableFilterComposer(
+            $db: $db,
+            $table: $db.roles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$WorldsTableOrderingComposer
+    extends Composer<_$AppDatabase, $WorldsTable> {
+  $$WorldsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get summary => $composableBuilder(
+    column: $table.summary,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get coverImg => $composableBuilder(
+    column: $table.coverImg,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entries => $composableBuilder(
+    column: $table.entries,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$WorldsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WorldsTable> {
+  $$WorldsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get summary =>
+      $composableBuilder(column: $table.summary, builder: (column) => column);
+
+  GeneratedColumn<String> get coverImg =>
+      $composableBuilder(column: $table.coverImg, builder: (column) => column);
+
+  GeneratedColumn<String> get entries =>
+      $composableBuilder(column: $table.entries, builder: (column) => column);
+
+  Expression<T> rolesRefs<T extends Object>(
+    Expression<T> Function($$RolesTableAnnotationComposer a) f,
+  ) {
+    final $$RolesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.roles,
+      getReferencedColumn: (t) => t.worldId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RolesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.roles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$WorldsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WorldsTable,
+          World,
+          $$WorldsTableFilterComposer,
+          $$WorldsTableOrderingComposer,
+          $$WorldsTableAnnotationComposer,
+          $$WorldsTableCreateCompanionBuilder,
+          $$WorldsTableUpdateCompanionBuilder,
+          (World, $$WorldsTableReferences),
+          World,
+          PrefetchHooks Function({bool rolesRefs})
+        > {
+  $$WorldsTableTableManager(_$AppDatabase db, $WorldsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WorldsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WorldsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WorldsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> summary = const Value.absent(),
+                Value<String> coverImg = const Value.absent(),
+                Value<String> entries = const Value.absent(),
+              }) => WorldsCompanion(
+                id: id,
+                name: name,
+                summary: summary,
+                coverImg: coverImg,
+                entries: entries,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                required String summary,
+                required String coverImg,
+                Value<String> entries = const Value.absent(),
+              }) => WorldsCompanion.insert(
+                id: id,
+                name: name,
+                summary: summary,
+                coverImg: coverImg,
+                entries: entries,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) =>
+                    (e.readTable(table), $$WorldsTableReferences(db, table, e)),
+              )
+              .toList(),
+          prefetchHooksCallback: ({rolesRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (rolesRefs) db.roles],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (rolesRefs)
+                    await $_getPrefetchedData<World, $WorldsTable, Role>(
+                      currentTable: table,
+                      referencedTable: $$WorldsTableReferences._rolesRefsTable(
+                        db,
+                      ),
+                      managerFromTypedResult: (p0) =>
+                          $$WorldsTableReferences(db, table, p0).rolesRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.worldId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$WorldsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WorldsTable,
+      World,
+      $$WorldsTableFilterComposer,
+      $$WorldsTableOrderingComposer,
+      $$WorldsTableAnnotationComposer,
+      $$WorldsTableCreateCompanionBuilder,
+      $$WorldsTableUpdateCompanionBuilder,
+      (World, $$WorldsTableReferences),
+      World,
+      PrefetchHooks Function({bool rolesRefs})
+    >;
 typedef $$RolesTableCreateCompanionBuilder = RolesCompanion Function({
   Value<int> id,
   required String name,
@@ -1849,6 +2544,7 @@ typedef $$RolesTableCreateCompanionBuilder = RolesCompanion Function({
   required String desc,
   required String coverImg,
   Value<String> customAttributes,
+  Value<int?> worldId,
 });
 typedef $$RolesTableUpdateCompanionBuilder = RolesCompanion Function({
   Value<int> id,
@@ -1861,11 +2557,29 @@ typedef $$RolesTableUpdateCompanionBuilder = RolesCompanion Function({
   Value<String> desc,
   Value<String> coverImg,
   Value<String> customAttributes,
+  Value<int?> worldId,
 });
 
 final class $$RolesTableReferences
     extends BaseReferences<_$AppDatabase, $RolesTable, Role> {
   $$RolesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $WorldsTable _worldIdTable(_$AppDatabase db) =>
+      db.worlds.createAlias('role__world_id__world__id');
+
+  $$WorldsTableProcessedTableManager? get worldId {
+    final $_column = $_itemColumn<int>('world_id');
+    if ($_column == null) return null;
+    final manager = $$WorldsTableTableManager(
+      $_db,
+      $_db.worlds,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_worldIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
 
   static MultiTypedResultKey<$RoleDescRevisionsTable, List<RoleDescRevision>>
   _roleDescRevisionsRefsTable(_$AppDatabase db) =>
@@ -2006,6 +2720,29 @@ class $$RolesTableFilterComposer extends Composer<_$AppDatabase, $RolesTable> {
     column: $table.customAttributes,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$WorldsTableFilterComposer get worldId {
+    final $$WorldsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.worldId,
+      referencedTable: $db.worlds,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorldsTableFilterComposer(
+            $db: $db,
+            $table: $db.worlds,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   Expression<bool> roleDescRevisionsRefs(
     Expression<bool> Function($$RoleDescRevisionsTableFilterComposer f) f,
@@ -2166,6 +2903,29 @@ class $$RolesTableOrderingComposer
     column: $table.customAttributes,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$WorldsTableOrderingComposer get worldId {
+    final $$WorldsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.worldId,
+      referencedTable: $db.worlds,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorldsTableOrderingComposer(
+            $db: $db,
+            $table: $db.worlds,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$RolesTableAnnotationComposer
@@ -2210,6 +2970,29 @@ class $$RolesTableAnnotationComposer
     column: $table.customAttributes,
     builder: (column) => column,
   );
+
+  $$WorldsTableAnnotationComposer get worldId {
+    final $$WorldsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.worldId,
+      referencedTable: $db.worlds,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorldsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.worlds,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   Expression<T> roleDescRevisionsRefs<T extends Object>(
     Expression<T> Function($$RoleDescRevisionsTableAnnotationComposer a) f,
@@ -2329,6 +3112,7 @@ class $$RolesTableTableManager
           (Role, $$RolesTableReferences),
           Role,
           PrefetchHooks Function({
+            bool worldId,
             bool roleDescRevisionsRefs,
             bool roleAssetsRefs,
             bool outgoingRelationships,
@@ -2358,6 +3142,7 @@ class $$RolesTableTableManager
                 Value<String> desc = const Value.absent(),
                 Value<String> coverImg = const Value.absent(),
                 Value<String> customAttributes = const Value.absent(),
+                Value<int?> worldId = const Value.absent(),
               }) => RolesCompanion(
                 id: id,
                 name: name,
@@ -2369,6 +3154,7 @@ class $$RolesTableTableManager
                 desc: desc,
                 coverImg: coverImg,
                 customAttributes: customAttributes,
+                worldId: worldId,
               ),
           createCompanionCallback:
               ({
@@ -2382,6 +3168,7 @@ class $$RolesTableTableManager
                 required String desc,
                 required String coverImg,
                 Value<String> customAttributes = const Value.absent(),
+                Value<int?> worldId = const Value.absent(),
               }) => RolesCompanion.insert(
                 id: id,
                 name: name,
@@ -2393,6 +3180,7 @@ class $$RolesTableTableManager
                 desc: desc,
                 coverImg: coverImg,
                 customAttributes: customAttributes,
+                worldId: worldId,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -2402,6 +3190,7 @@ class $$RolesTableTableManager
               .toList(),
           prefetchHooksCallback:
               ({
+                worldId = false,
                 roleDescRevisionsRefs = false,
                 roleAssetsRefs = false,
                 outgoingRelationships = false,
@@ -2415,7 +3204,36 @@ class $$RolesTableTableManager
                     if (outgoingRelationships) db.roleRelationships,
                     if (incomingRelationships) db.roleRelationships,
                   ],
-                  addJoins: null,
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (worldId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.worldId,
+                            referencedTable: $$RolesTableReferences
+                                ._worldIdTable(db),
+                            referencedColumn: $$RolesTableReferences
+                                ._worldIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+
+                        return state;
+                      },
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (roleDescRevisionsRefs)
@@ -2519,6 +3337,7 @@ typedef $$RolesTableProcessedTableManager =
       (Role, $$RolesTableReferences),
       Role,
       PrefetchHooks Function({
+        bool worldId,
         bool roleDescRevisionsRefs,
         bool roleAssetsRefs,
         bool outgoingRelationships,
@@ -3606,6 +4425,8 @@ typedef $$RoleRelationshipsTableProcessedTableManager =
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
+  $$WorldsTableTableManager get worlds =>
+      $$WorldsTableTableManager(_db, _db.worlds);
   $$RolesTableTableManager get roles =>
       $$RolesTableTableManager(_db, _db.roles);
   $$RoleDescRevisionsTableTableManager get roleDescRevisions =>

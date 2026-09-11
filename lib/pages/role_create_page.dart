@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui' as ui show ImageFilter, TileMode;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,9 +7,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/role.dart';
 import '../data/models/role_custom_attribute.dart';
 import '../data/providers/role_repository_provider.dart';
+import '../data/providers/world_repository_provider.dart';
+import '../data/providers/worlds_provider.dart';
 import '../data/services/cover_image_picker.dart';
 import '../theme/zaidang_tokens.dart';
+import '../widgets/archive_editor/archive_card.dart';
+import '../widgets/archive_editor/glass_buttons.dart';
+import '../widgets/archive_editor/immersive_cover.dart';
+import '../widgets/archive_editor/pinned_identity.dart';
 import '../widgets/cover_file_view.dart';
+import '../widgets/role_list_tile.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
 import '../widgets/zaidang_snack_bar.dart';
 import '../features/role_card/role_card_content.dart';
@@ -41,23 +47,6 @@ class RoleCreatePage extends ConsumerStatefulWidget {
   ConsumerState<RoleCreatePage> createState() => _RoleCreatePageState();
 }
 
-/// 表单栏上限。hero 全宽铺顶，不跟这个宽度走。
-const double _contentMaxWidth = 440;
-
-/// 卡片相对表单栏的左右留白。
-const double _cardInset = 20;
-
-/// 对齐 memory 详情页媒体头图（含顶部沉浸），约 352pt。
-const double _heroHeight = 352;
-
-const double _heroCapHeight = 18;
-
-const double _glassButtonSize = 44;
-
-/// 左下角名片立绘，3:4。
-const double _portraitWidth = 90;
-const double _portraitHeight = 120;
-
 class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
@@ -84,6 +73,9 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
   bool _validateAttributes = false;
 
   late String _coverImg;
+
+  /// 所属世界观；`null` 为未归属。提交前会核对该世界观仍然存在。
+  int? _worldId;
   bool _saving = false;
   bool _exportOpen = false;
 
@@ -149,6 +141,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
     _occupationController = TextEditingController(text: role?.occupation ?? '');
     _descController = TextEditingController(text: role?.desc ?? '');
     _coverImg = role?.coverImg ?? '';
+    _worldId = role?.worldId;
     _attributes.addAll(
       (role?.customAttributes ?? []).map(_CustomAttributeDraft.fromAttribute),
     );
@@ -267,6 +260,8 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
           ),
         ),
       );
+      // 编辑期间世界观可能已被删除；置空而不是让外键报错。
+      final worldId = await _resolveWorldId();
       if (_isEditing) {
         await repository.update(
           Role(
@@ -280,6 +275,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
             desc: desc,
             coverImg: _coverImg,
             customAttributes: customAttributes,
+            worldId: worldId,
           ),
         );
       } else {
@@ -293,6 +289,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
           desc: desc,
           coverImg: _coverImg,
           customAttributes: customAttributes,
+          worldId: worldId,
         );
       }
       if (mounted) {
@@ -313,6 +310,133 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
         });
       }
     }
+  }
+
+  Future<int?> _resolveWorldId() async {
+    final worldId = _worldId;
+    if (worldId == null) return null;
+    final exists = await ref.read(worldRepositoryProvider).getById(worldId);
+    if (exists == null && mounted) {
+      setState(() => _worldId = null);
+    }
+    return exists?.id;
+  }
+
+  Future<void> _pickWorld() async {
+    if (_saving) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    final worlds = await ref.read(worldRepositoryProvider).list();
+    if (!mounted) return;
+    final tokens = ZaidangTokens.of(context);
+    final picked = await showModalBottomSheet<_WorldChoice>(
+      context: context,
+      backgroundColor: tokens.surface,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) {
+        final maxHeight = MediaQuery.sizeOf(context).height * 0.7;
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: ListView(
+              key: const Key('role-world-picker'),
+              shrinkWrap: true,
+              children: [
+                ListTile(
+                  key: const Key('role-world-option-none'),
+                  leading: Icon(
+                    Icons.block_outlined,
+                    color: tokens.inkSecondary,
+                  ),
+                  title: Text('不归属', style: TextStyle(color: tokens.ink)),
+                  trailing: _worldId == null
+                      ? Icon(Icons.check, color: tokens.accent)
+                      : null,
+                  onTap: () =>
+                      Navigator.of(context).pop(const _WorldChoice(null)),
+                ),
+                if (worlds.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: Text(
+                      '还没有世界观',
+                      style: TextStyle(color: tokens.inkSecondary),
+                    ),
+                  ),
+                for (final world in worlds)
+                  ListTile(
+                    key: Key('role-world-option-${world.id}'),
+                    leading: SizedBox.square(
+                      dimension: 40,
+                      child: RoleCoverThumb(
+                        path: world.coverImg,
+                        placeholderIcon: Icons.public_outlined,
+                      ),
+                    ),
+                    title: Text(
+                      world.name,
+                      style: TextStyle(color: tokens.ink),
+                    ),
+                    trailing: _worldId == world.id
+                        ? Icon(Icons.check, color: tokens.accent)
+                        : null,
+                    onTap: () =>
+                        Navigator.of(context).pop(_WorldChoice(world.id)),
+                  ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (picked == null || !mounted || _saving) return;
+    setState(() => _worldId = picked.worldId);
+  }
+
+  Widget _buildWorldRow() {
+    final tokens = ZaidangTokens.of(context);
+    final worldId = _worldId;
+    String label;
+    if (worldId == null) {
+      label = '未归属';
+    } else {
+      // 只有真的有归属才订阅世界观列表，未归属的表单不碰世界观仓库。
+      final worlds = ref.watch(worldsProvider).value;
+      if (worlds == null) {
+        label = '…';
+      } else {
+        final match = worlds.where((world) => world.id == worldId);
+        label = match.isEmpty ? '未归属' : match.first.name;
+      }
+    }
+    final assigned = worldId != null && label != '未归属';
+    return Semantics(
+      button: true,
+      enabled: !_saving,
+      label: '世界观：$label',
+      child: InkWell(
+        key: const Key('role-world-row'),
+        onTap: _saving ? null : _pickWorld,
+        borderRadius: BorderRadius.circular(8),
+        child: InputDecorator(
+          decoration: const InputDecoration(
+            labelText: '世界观',
+            suffixIcon: Icon(Icons.expand_more),
+          ),
+          isEmpty: false,
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: assigned ? tokens.ink : tokens.inkSecondary,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _openDescHistory() async {
@@ -381,11 +505,11 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                   left: 16,
                   right: 16,
                   child: SizedBox(
-                    height: _glassButtonSize,
+                    height: glassButtonSize,
                     child: NavigationToolbar(
                       centerMiddle: true,
                       middleSpacing: 12,
-                      leading: _GlassIconButton(
+                      leading: GlassIconButton(
                         icon: Icons.arrow_back_ios_new,
                         iconSize: 16,
                         tooltip: '返回',
@@ -397,7 +521,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                               animation: _scrollController,
                               builder: (context, child) {
                                 final collapseOffset =
-                                    _heroHeight - topInset - 60;
+                                    immersiveCoverHeight - topInset - 60;
                                 final offset = _scrollController.hasClients
                                     ? _scrollController.offset
                                     : 0.0;
@@ -416,14 +540,14 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                                   ),
                                 );
                               },
-                              child: _PinnedRoleIdentity(
+                              child: PinnedIdentity(
                                 name: _nameController.text.trim(),
                                 coverImg: _coverImg,
                                 supportDirectory: widget.supportDirectory,
                               ),
                             )
                           : null,
-                      trailing: _GlassSaveButton(
+                      trailing: GlassSaveButton(
                         saving: _saving,
                         onPhoto: _coverImg.isNotEmpty,
                         onPressed: _tabBusy ? null : _submit,
@@ -442,23 +566,9 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
   Widget _buildDetailsSliver(BuildContext context) {
     final tokens = ZaidangTokens.of(context);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final horizontal = archiveEditorHorizontalPadding(context);
     return SliverPadding(
-      padding: EdgeInsets.fromLTRB(
-        _cardInset +
-            ((MediaQuery.sizeOf(context).width - _contentMaxWidth).clamp(
-                  0,
-                  double.infinity,
-                ) /
-                2),
-        8,
-        _cardInset +
-            ((MediaQuery.sizeOf(context).width - _contentMaxWidth).clamp(
-                  0,
-                  double.infinity,
-                ) /
-                2),
-        32 + bottomInset,
-      ),
+      padding: EdgeInsets.fromLTRB(horizontal, 8, horizontal, 32 + bottomInset),
       sliver: SliverMainAxisGroup(
         slivers: [
           SliverToBoxAdapter(
@@ -511,11 +621,13 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
     SystemUiOverlayStyle overlayStyle,
     double topInset,
   ) {
-    Widget cover({PreferredSizeWidget? tabs}) => _ImmersiveCover(
+    Widget cover({PreferredSizeWidget? tabs}) => ImmersiveCover(
       path: _coverImg,
-      name: _nameController.text.trim(),
-      race: _raceController.text.trim(),
-      occupation: _occupationController.text.trim(),
+      title: _nameController.text.trim(),
+      subtitle: [
+        _raceController.text.trim(),
+        _occupationController.text.trim(),
+      ].where((text) => text.isNotEmpty).join(' · '),
       overlayStyle: overlayStyle,
       hasCover: _coverReadable,
       supportDirectory: widget.supportDirectory,
@@ -583,7 +695,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
             child: TabBarView(
               controller: _detailTabs,
               children: [
-                _KeepAliveDetails(
+                KeepAliveDetails(
                   child: CustomScrollView(
                     key: const PageStorageKey('role-details-scroll'),
                     keyboardDismissBehavior:
@@ -627,13 +739,13 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
     );
   }
 
-  Widget _buildBasicCard() => _ArchiveCard(
+  Widget _buildBasicCard() => ArchiveCard(
     key: const Key('role-create-basic-card'),
     child: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _SectionLabel('基本信息'),
+        const SectionLabel('基本信息'),
         _field(
           controller: _nameController,
           label: '名字',
@@ -646,7 +758,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
           },
         ),
         const SizedBox(height: 12),
-        _FieldRow(
+        FieldRow(
           left: _field(
             controller: _sexController,
             label: '性别',
@@ -665,7 +777,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
           hint: '三月三日、第三历春、未知',
         ),
         const SizedBox(height: 12),
-        _FieldRow(
+        FieldRow(
           left: _field(
             controller: _raceController,
             label: '种族',
@@ -677,11 +789,13 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
             hint: '学生、骑士、无所属',
           ),
         ),
+        const SizedBox(height: 12),
+        _buildWorldRow(),
       ],
     ),
   );
 
-  Widget _buildDescCard() => _ArchiveCard(
+  Widget _buildDescCard() => ArchiveCard(
     key: const Key('role-create-desc-card'),
     child: Column(
       mainAxisSize: MainAxisSize.min,
@@ -778,12 +892,12 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
     }
     return DecoratedSliver(
       key: const Key('role-create-custom-attributes-card'),
-      decoration: _archiveCardDecoration(tokens),
+      decoration: archiveCardDecoration(tokens),
       sliver: SliverPadding(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
         sliver: SliverMainAxisGroup(
           slivers: [
-            const SliverToBoxAdapter(child: _SectionLabel('自定义属性')),
+            const SliverToBoxAdapter(child: SectionLabel('自定义属性')),
             SliverReorderableList(
               key: _attributesKey,
               itemCount: _attributes.length,
@@ -955,575 +1069,6 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
   }
 }
 
-/// 钉在滚动层下面的模糊头图。下拉回弹时露出的是这张图，不是画布白边。
-class _HeroBackdrop extends StatelessWidget {
-  const _HeroBackdrop({required this.path, this.supportDirectory});
-
-  final String path;
-  final Future<Directory> Function()? supportDirectory;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = ZaidangTokens.of(context);
-    final hasCover = path.isNotEmpty;
-    final fill = ColoredBox(color: tokens.surface);
-    return Stack(
-      fit: StackFit.expand,
-      clipBehavior: Clip.hardEdge,
-      children: [
-        hasCover
-            ? ImageFiltered(
-                imageFilter: ui.ImageFilter.blur(
-                  sigmaX: 6,
-                  sigmaY: 6,
-                  tileMode: ui.TileMode.clamp,
-                ),
-                child: Transform.scale(
-                  scale: 1.04,
-                  child: CoverFileView(
-                    coverImg: path,
-                    placeholder: fill,
-                    supportDirectory: supportDirectory,
-                  ),
-                ),
-              )
-            : fill,
-        IgnorePointer(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: hasCover
-                    ? [
-                        ZaidangTokens.dark.bg.withValues(alpha: 0.22),
-                        ZaidangTokens.dark.bg.withValues(alpha: 0.08),
-                        ZaidangTokens.dark.bg.withValues(alpha: 0.48),
-                      ]
-                    : [
-                        tokens.bg.withValues(alpha: 0.08),
-                        tokens.bg.withValues(alpha: 0),
-                        tokens.bg.withValues(alpha: 0.16),
-                      ],
-                stops: const [0, 0.42, 1],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// 吸顶时保留角色识别信息，长名字截断，不挤占两侧操作按钮。
-class _PinnedRoleIdentity extends StatelessWidget {
-  const _PinnedRoleIdentity({
-    required this.name,
-    required this.coverImg,
-    this.supportDirectory,
-  });
-
-  final String name;
-  final String coverImg;
-  final Future<Directory> Function()? supportDirectory;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = ZaidangTokens.of(context);
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 280),
-      child: DecoratedBox(
-        key: const Key('role-pinned-identity'),
-        decoration: BoxDecoration(
-          color: tokens.bg.withValues(alpha: 0.94),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ClipOval(
-                child: SizedBox.square(
-                  dimension: 32,
-                  child: CoverFileView(
-                    key: const Key('role-pinned-portrait'),
-                    coverImg: coverImg,
-                    supportDirectory: supportDirectory,
-                    placeholder: ColoredBox(
-                      color: tokens.surface,
-                      child: Icon(
-                        Icons.person_outline,
-                        size: 20,
-                        color: tokens.inkSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  name.isEmpty ? '未命名角色' : name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: tokens.ink,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 沉浸式头图：高斯模糊背景 + 左下角立绘名片。
-class _ImmersiveCover extends StatelessWidget {
-  const _ImmersiveCover({
-    required this.path,
-    required this.name,
-    required this.race,
-    required this.occupation,
-    required this.overlayStyle,
-    required this.hasCover,
-    required this.onPick,
-    required this.onPreview,
-    this.supportDirectory,
-    this.bottom,
-    this.toolbarHeight = 60,
-  });
-
-  final String path;
-  final String name;
-  final String race;
-  final String occupation;
-  final SystemUiOverlayStyle overlayStyle;
-  final bool hasCover;
-  final VoidCallback onPick;
-  final VoidCallback? onPreview;
-  final Future<Directory> Function()? supportDirectory;
-  final PreferredSizeWidget? bottom;
-  final double toolbarHeight;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = ZaidangTokens.of(context);
-
-    return SliverAppBar(
-      primary: false,
-      pinned: bottom != null,
-      floating: false,
-      stretch: true,
-      automaticallyImplyLeading: false,
-      toolbarHeight: bottom == null ? 0 : toolbarHeight,
-      collapsedHeight: bottom == null ? _heroHeight : toolbarHeight,
-      expandedHeight: _heroHeight + (bottom?.preferredSize.height ?? 0),
-      bottom: bottom,
-      systemOverlayStyle: overlayStyle,
-      // 吸顶后 FlexibleSpaceBar 会淡出头图，必须由 Material 遮住下方滚动内容。
-      backgroundColor: bottom == null ? Colors.transparent : tokens.bg,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      forceMaterialTransparency: bottom == null,
-      clipBehavior: Clip.hardEdge,
-      flexibleSpace: Padding(
-        padding: EdgeInsets.only(bottom: bottom?.preferredSize.height ?? 0),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final visible = bottom == null
-                ? 1.0
-                : ((constraints.maxHeight - toolbarHeight - 60) / 100).clamp(
-                    0.0,
-                    1.0,
-                  );
-            final onPaper =
-                bottom != null && constraints.maxHeight <= toolbarHeight + 24;
-            final paperStyle = Theme.of(context).brightness == Brightness.dark
-                ? SystemUiOverlayStyle.light
-                : SystemUiOverlayStyle.dark;
-            return AnnotatedRegion<SystemUiOverlayStyle>(
-              value: onPaper
-                  ? paperStyle.copyWith(
-                      statusBarColor: Colors.transparent,
-                      systemNavigationBarColor: tokens.bg,
-                    )
-                  : overlayStyle,
-              child: Stack(
-                key: const Key('role-create-cover-hero'),
-                fit: StackFit.expand,
-                children: [
-                  Positioned.fill(
-                    child: FlexibleSpaceBar(
-                      collapseMode: CollapseMode.none,
-                      stretchModes: const [StretchMode.zoomBackground],
-                      background: _HeroBackdrop(
-                        path: path,
-                        supportDirectory: supportDirectory,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 16,
-                    right: 16,
-                    bottom: _heroCapHeight + 12,
-                    child: IgnorePointer(
-                      ignoring: visible < 1,
-                      child: Opacity(
-                        opacity: visible,
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: _CallingCard(
-                            path: path,
-                            name: name,
-                            race: race,
-                            occupation: occupation,
-                            hasCover: hasCover,
-                            supportDirectory: supportDirectory,
-                            onPick: onPick,
-                            onPreview: onPreview,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: -1,
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: tokens.bg,
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(20),
-                          ),
-                        ),
-                        child: const SizedBox(height: _heroCapHeight),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _KeepAliveDetails extends StatefulWidget {
-  const _KeepAliveDetails({required this.child});
-  final Widget child;
-
-  @override
-  State<_KeepAliveDetails> createState() => _KeepAliveDetailsState();
-}
-
-class _KeepAliveDetailsState extends State<_KeepAliveDetails>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    return widget.child;
-  }
-}
-
-class _CallingCard extends StatelessWidget {
-  const _CallingCard({
-    required this.path,
-    required this.name,
-    required this.race,
-    required this.occupation,
-    required this.hasCover,
-    required this.onPick,
-    required this.onPreview,
-    this.supportDirectory,
-  });
-
-  final String path;
-  final String name;
-  final String race;
-  final String occupation;
-  final bool hasCover;
-  final VoidCallback onPick;
-  final VoidCallback? onPreview;
-  final Future<Directory> Function()? supportDirectory;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = ZaidangTokens.of(context);
-    final subtitle = [
-      race,
-      occupation,
-    ].where((text) => text.isNotEmpty).join(' · ');
-    final portrait = hasCover
-        ? CoverFileView(
-            coverImg: path,
-            placeholder: _PortraitPlaceholder(tokens: tokens, compact: true),
-            supportDirectory: supportDirectory,
-          )
-        : _PortraitPlaceholder(tokens: tokens, compact: false);
-    final portraitLabel = hasCover ? '查看立绘' : '添加立绘';
-    final onPortraitTap = hasCover ? onPreview : onPick;
-
-    return Material(
-      color: tokens.surface,
-      elevation: 2,
-      shadowColor: tokens.ink.withValues(alpha: 0.18),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.all(6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Semantics(
-              button: true,
-              enabled: onPortraitTap != null,
-              label: portraitLabel,
-              child: InkWell(
-                onTap: onPortraitTap,
-                borderRadius: BorderRadius.circular(6),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: SizedBox(
-                    key: const Key('role-create-cover-portrait'),
-                    width: _portraitWidth,
-                    height: _portraitHeight,
-                    child: portrait,
-                  ),
-                ),
-              ),
-            ),
-            if (name.isNotEmpty || subtitle.isNotEmpty || hasCover) ...[
-              const SizedBox(width: 12),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 168),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (name.isNotEmpty)
-                      Text(
-                        name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: tokens.ink,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          height: 1.25,
-                        ),
-                      ),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: tokens.inkSecondary,
-                          fontSize: 12,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                    if (hasCover) ...[
-                      const SizedBox(height: 4),
-                      Tooltip(
-                        message: '更换立绘',
-                        excludeFromSemantics: true,
-                        child: TextButton(
-                          onPressed: onPick,
-                          style: TextButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                            minimumSize: const Size(0, 32),
-                            padding: EdgeInsets.zero,
-                            alignment: Alignment.centerLeft,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: const Text('更换', semanticsLabel: '更换立绘'),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PortraitPlaceholder extends StatelessWidget {
-  const _PortraitPlaceholder({required this.tokens, required this.compact});
-
-  final ZaidangTokens tokens;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: tokens.bg,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.add_photo_alternate_outlined,
-            size: compact ? 22 : 28,
-            color: tokens.inkSecondary,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '添加立绘',
-            style: TextStyle(
-              color: tokens.inkSecondary,
-              fontSize: compact ? 11 : 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GlassIconButton extends StatelessWidget {
-  const _GlassIconButton({
-    required this.icon,
-    required this.iconSize,
-    required this.tooltip,
-    required this.onPhoto,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final double iconSize;
-  final String tooltip;
-  final bool onPhoto;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = ZaidangTokens.of(context);
-    final fillAlpha = onPhoto ? 0.34 : 0.72;
-    return Tooltip(
-      message: tooltip,
-      child: ClipOval(
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Material(
-            color: tokens.ink.withValues(alpha: fillAlpha),
-            shape: CircleBorder(
-              side: BorderSide(
-                color: ZaidangTokens.light.surface.withValues(alpha: 0.18),
-              ),
-            ),
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: onTap,
-              child: SizedBox.square(
-                dimension: _glassButtonSize,
-                child: Icon(
-                  icon,
-                  size: iconSize,
-                  color: ZaidangTokens.light.surface,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GlassSaveButton extends StatelessWidget {
-  const _GlassSaveButton({
-    required this.saving,
-    required this.onPhoto,
-    required this.onPressed,
-  });
-
-  final bool saving;
-  final bool onPhoto;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = ZaidangTokens.of(context);
-    final fillAlpha = onPhoto ? 0.34 : 0.72;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: tokens.ink.withValues(alpha: fillAlpha),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: ZaidangTokens.light.surface.withValues(alpha: 0.18),
-            ),
-          ),
-          child: TextButton(
-            onPressed: saving ? null : onPressed,
-            style: TextButton.styleFrom(
-              foregroundColor: tokens.accent,
-              disabledForegroundColor: tokens.inkSecondary,
-              minimumSize: const Size(44, _glassButtonSize),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-            ),
-            child: saving
-                ? const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                      SizedBox(width: 8),
-                      Text('保存中…'),
-                    ],
-                  )
-                : const Text('保存'),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 档案分组：纸面填充 + 描边，圆角与输入框一致。
-class _ArchiveCard extends StatelessWidget {
-  const _ArchiveCard({super.key, required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = ZaidangTokens.of(context);
-    return DecoratedBox(
-      decoration: _archiveCardDecoration(tokens),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-        child: child,
-      ),
-    );
-  }
-}
-
 class _DescSectionHeader extends StatelessWidget {
   const _DescSectionHeader({
     required this.showHistory,
@@ -1565,52 +1110,11 @@ class _DescSectionHeader extends StatelessWidget {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = ZaidangTokens.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: tokens.inkSecondary,
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
+/// 底部弹层的选择结果；包一层是为了把「选了不归属」与「直接关掉弹层」区分开。
+class _WorldChoice {
+  const _WorldChoice(this.worldId);
+  final int? worldId;
 }
-
-class _FieldRow extends StatelessWidget {
-  const _FieldRow({required this.left, required this.right});
-
-  final Widget left;
-  final Widget right;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: left),
-        const SizedBox(width: 12),
-        Expanded(child: right),
-      ],
-    );
-  }
-}
-
-BoxDecoration _archiveCardDecoration(ZaidangTokens tokens) => BoxDecoration(
-  color: tokens.surface,
-  borderRadius: BorderRadius.circular(8),
-  border: Border.all(color: tokens.border),
-);
 
 class _CustomAttributeDraft {
   _CustomAttributeDraft({String name = '', String content = ''})

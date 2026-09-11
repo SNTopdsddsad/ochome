@@ -10,7 +10,7 @@
   `build_runner`. Generated `app_database.g.dart` is committed.
 - One database class, `AppDatabase` in `lib/data/database/app_database.dart`,
   registers every table: `Roles`, `RoleDescRevisions`, `RoleAssets`,
-  `RoleRelationships`.
+  `Worlds`, `RoleRelationships`.
 - The live file is `ochome.sqlite` inside the active dataset directory chosen
   by `DataStorage` (`lib/data/services/data_storage.dart`). Opening is refused
   with `StateError('本地资料不可用，请先完成恢复')` when storage is
@@ -18,7 +18,7 @@
 - `PRAGMA foreign_keys = ON` runs in `beforeOpen`; all child tables declare
   `onDelete: KeyAction.cascade`, so deleting a role removes its revisions,
   assets and relationships at the SQL level.
-- `currentSchemaVersion` is `9`. The doc comment on it is the rule:
+- `currentSchemaVersion` is `10`. The doc comment on it is the rule:
   "增删列后必须递增并补 migration".
 
 Regenerate after any table or `@riverpod` change:
@@ -92,17 +92,24 @@ if (from < 8) {
   await m.createTable(roleAssets);
   await m.createIndex(roleAssetRoleId);
 }
-if (from < 9) {
+if (from < 10) {
   await m.createTable(roleRelationships);
-  await m.createIndex(roleRelationshipFromRoleId);
-  await m.createIndex(roleRelationshipToRoleId);
+  if (!await _hasIndex('role_relationship_from_role_id')) {
+    await m.createIndex(roleRelationshipFromRoleId);
+  }
+  ...
 }
 ```
 
-Rules that the existing blocks (v3…v9) follow:
+Rules that the existing blocks (v3…v10) follow:
 
 - Never rewrite an earlier block; append a new `if (from < N)` and bump
   `currentSchemaVersion` to `N`.
+- Never let two branches claim the same version number. v9 was assigned to
+  both the worlds and the relationships branches; the v10 block therefore
+  probes `PRAGMA table_info` / `sqlite_master` before `addColumn` /
+  `createIndex` (Drift's `createTable` is already `IF NOT EXISTS`, the other
+  two are not). Coordinate the next version before starting a schema branch.
 - Adding a NOT NULL column to an existing table needs a DEFAULT; v4 does this
   with `customStatement('ALTER TABLE role ADD COLUMN age TEXT NOT NULL DEFAULT \'\'')`.
 - Data backfills happen in the same block as the schema change (v5 seeds the

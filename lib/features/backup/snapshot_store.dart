@@ -163,7 +163,15 @@ Future<DatabaseInventory> inspectBackupDatabase(File file) {
           );
         }
       }
-      if (db.userVersion >= 9) {
+      // v9 had two parallel layouts (world / relationship); only v10 guarantees
+      // the relationship table, so probe the schema instead of the version.
+      final hasRelationships = db.userVersion >= 10 ||
+          db
+              .select(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'role_relationship'",
+              )
+              .isNotEmpty;
+      if (hasRelationships) {
         final rows = db.select('SELECT * FROM role_relationship ORDER BY id');
         if (rows.length > BackupJson.maxEntries) {
           throw const FormatException('关系数量超出支持范围');

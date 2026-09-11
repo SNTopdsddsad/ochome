@@ -745,14 +745,33 @@ void main() {
     },
   );
 
-  for (final version in [3, 4, 5, 6, 7, 8, 9]) {
-    test('legacy schema $version migrates in staging while retaining original fields', () async {
-      final directory = Directory(p.join(root.path, 'legacy-$version'))
+  // v9 曾同时存在「世界观」和「OC 关系」两种库；两种都必须升到当前版本。
+  for (final fixture in [
+    (label: '3', version: 3, world: false, relationship: false),
+    (label: '4', version: 4, world: false, relationship: false),
+    (label: '5', version: 5, world: false, relationship: false),
+    (label: '6', version: 6, world: false, relationship: false),
+    (label: '7', version: 7, world: false, relationship: false),
+    (label: '8', version: 8, world: false, relationship: false),
+    (label: '9-world', version: 9, world: true, relationship: false),
+    (label: '9-relationship', version: 9, world: false, relationship: true),
+  ]) {
+    final version = fixture.version;
+    test('legacy schema ${fixture.label} migrates in staging while retaining original fields', () async {
+      final directory = Directory(p.join(root.path, 'legacy-${fixture.label}'))
         ..createSync();
       final path = p.join(directory.path, 'ochome.sqlite');
       final database = sqlite3.open(path);
+      if (fixture.world) {
+        database.execute(
+          "CREATE TABLE world (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, summary TEXT NOT NULL, coverimg TEXT NOT NULL, entries TEXT NOT NULL DEFAULT '[]')",
+        );
+        database.execute(
+          "INSERT INTO world (name, summary, coverimg) VALUES ('旧世界', '', '')",
+        );
+      }
       database.execute(
-        "CREATE TABLE role (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, sex TEXT NOT NULL, birthday TEXT NOT NULL, occupation TEXT NOT NULL, desc TEXT NOT NULL, coverimg TEXT NOT NULL${version >= 4 ? ", age TEXT NOT NULL, race TEXT NOT NULL" : ""}${version >= 7 ? ", custom_attributes TEXT NOT NULL DEFAULT '[]'" : ""})",
+        "CREATE TABLE role (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, sex TEXT NOT NULL, birthday TEXT NOT NULL, occupation TEXT NOT NULL, desc TEXT NOT NULL, coverimg TEXT NOT NULL${version >= 4 ? ", age TEXT NOT NULL, race TEXT NOT NULL" : ""}${version >= 7 ? ", custom_attributes TEXT NOT NULL DEFAULT '[]'" : ""}${fixture.world ? ", world_id INTEGER NULL REFERENCES world(id) ON DELETE SET NULL" : ""})",
       );
       database.execute(
         "INSERT INTO role (name,sex,birthday,occupation,desc,coverimg${version >= 4 ? ",age,race" : ""}) VALUES ('旧版白鸦','','','','设定内容',''${version >= 4 ? ",'十七','人类'" : ""})",
@@ -773,7 +792,10 @@ void main() {
           'CREATE INDEX role_asset_role_id ON role_asset(role_id)',
         );
       }
-      if (version >= 9) {
+      if (fixture.world) {
+        database.execute('UPDATE role SET world_id = 1 WHERE id = 1');
+      }
+      if (fixture.relationship) {
         database.execute(
           "INSERT INTO role (name,sex,birthday,occupation,desc,coverimg,age,race) VALUES ('旧版徒弟','','','','','','','')",
         );
@@ -812,7 +834,23 @@ void main() {
         );
         expect(
           migrated.select('SELECT * FROM role_relationship'),
-          hasLength(version >= 9 ? 1 : 0),
+          hasLength(fixture.relationship ? 1 : 0),
+        );
+        expect(
+          migrated
+              .select('SELECT world_id FROM role WHERE id = 1')
+              .single['world_id'],
+          fixture.world ? 1 : isNull,
+        );
+        expect(
+          migrated.select('SELECT * FROM world'),
+          hasLength(fixture.world ? 1 : 0),
+        );
+        expect(
+          migrated.select(
+            "SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'role_relationship_%'",
+          ),
+          hasLength(2),
         );
         expect(
           migrated

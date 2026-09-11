@@ -58,8 +58,8 @@ Rules embodied by that shape:
 
 **Dataset switch contract.** `backupCoordinatorProvider` builds the
 `BackupCoordinator` with two callbacks. `closeDatabase` sets the switch,
-invalidates `rolesProvider`, `roleAssetsProvider`, `roleDescRevisionsProvider`
-and `roleRelationshipsProvider` (Drift `close()` waits for stream
+invalidates `rolesProvider`, `roleAssetsProvider`, `roleDescRevisionsProvider`,
+`roleRelationshipsProvider`, `worldsProvider` and `rolesInWorldProvider` (Drift `close()` waits for stream
 subscriptions to cancel), then closes the database. `reopenDatabase`
 invalidates `appDatabaseProvider` and every repository provider, forces the
 new connection open with a raw `SELECT`, clears `imageCache`, then calls
