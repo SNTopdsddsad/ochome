@@ -6,33 +6,80 @@
 
 ## Overview
 
-<!--
-Document your project's component conventions here.
+Widgets in 崽档 are plain Flutter classes; there is no component library
+beyond Material widgets restyled through `lib/theme/`. The conventions are:
 
-Questions to answer:
-- What component patterns do you use?
-- How are props defined?
-- How do you handle composition?
-- What accessibility standards apply?
--->
-
-(To be filled by the team)
+- Screens are `ConsumerStatefulWidget`/`ConsumerWidget` in `lib/pages/`;
+  reusable chrome is in `lib/widgets/`; feature-only UI stays in
+  `lib/features/<name>/`. See `directory-structure.md`.
+- Modals are exposed as `show*` functions that return a typed `Future`
+  (`showZaidangConfirmDialog` → `bool`, `showRoleRelationshipEditor` →
+  `bool?`), with the widget class kept public for tests.
+- Copy is Chinese, terse, and only explains decisions or consequences (see
+  "Visible copy" below). Ellipsis is `…`, quotes are `「」`.
+- Colour comes from `ZaidangTokens.of(context)`; borders keep a constant
+  width across states and change only colour, so layouts never shift.
+- Accessibility is part of the definition of done: stable `Key`s, semantic
+  labels for abbreviated buttons, `liveRegion` for inline hints, ≥3:1 contrast
+  for controls over user images, ≥4.5:1 for text.
+- The reference implementations for a new interactive widget are
+  `lib/widgets/role_relationship_editor_sheet.dart` (sheet with validation,
+  busy state and semantics) and `lib/widgets/zaidang_confirm_dialog.dart`
+  (modal with typed result and double-pop guard).
 
 ---
 
 ## Component Structure
 
-<!-- Standard structure of a component file -->
+A widget file is laid out top to bottom as:
 
-(To be filled by the team)
+1. Imports, then an optional file doc comment (`///`) in Chinese describing
+   the product behaviour (the relationship sheet carries its Hallmark design
+   stamp here).
+2. Public constants or small data classes the caller needs
+   (`RoleRelationshipDraft`, `ZaidangSnackBarTone`).
+3. The public `show*` function that configures the route
+   (`showModalBottomSheet<bool>(isScrollControlled: true, useSafeArea: true,
+   isDismissible: true, enableDrag: false, constraints: maxWidth 560, ...)`)
+   and returns the typed result.
+4. The public widget class with a `const` constructor and `final` fields.
+5. Its `State`: controllers and flags first, lifecycle (`initState`,
+   `dispose`), then action methods (`_select`, `_swap`, `_submit`,
+   `_resolve`), then `build`, then small `_build*` helpers.
+6. Private helper widgets (`_SectionLabel`, `_CandidateStrip`,
+   `_SentenceRow`, `_Blank`, `_NotebookMark`) at the bottom of the same file.
+   They are promoted to their own file only when a second page needs them.
+
+`build` wraps the content in this order when the widget can be dismissed
+while writing: `PopScope(canPop: !_saving)` → `KeyedSubtree(key:)` →
+`AnimatedPadding(bottom: viewInsets)` → `SingleChildScrollView`. Do not use
+`Semantics(scopesRoute: true)` without `explicitChildNodes`; it asserts in
+tests.
 
 ---
 
 ## Props Conventions
 
-<!-- How props should be defined and typed -->
-
-(To be filled by the team)
+- Constructors are `const` with named parameters; `required` for anything
+  without a sensible default, `super.key` first.
+- Data in, callbacks out. Widgets receive domain models
+  (`Role self`, `List<Role> candidates`, `RoleRelationship? initial`) and
+  emit through typed callbacks (`Future<void> Function(RoleRelationshipDraft)
+  onSave`, `ValueChanged<bool> onBusyChanged`). Shared widgets never read a
+  provider for a specific entity; the page does and passes values down.
+- Predicates that must be re-evaluated after an `await` are functions, not
+  booleans: `bool Function() canSave`, `bool Function() isEnabled`. A plain
+  `bool enabled` is fine only for immediate rendering.
+- Test/injection seams are optional constructor parameters with production
+  defaults: `RoleCreatePage(picker:, supportDirectory:)`,
+  `RoleAssetOpener(channel:)`, `supportDirectory` threaded into
+  `CoverFileView` so tests can point at a temp directory.
+- Copy is passed as `String` (`title`, `body`, `consequence`, `confirmLabel`)
+  and never as a `Widget` tree, so the dialog controls typography and
+  semantics. Optional labels default in the constructor
+  (`cancelLabel = '取消'`).
+- Return values of modals are documented on the `show*` function:
+  `true` = wrote, `false`/`null` = cancelled or unchanged.
 
 ---
 
@@ -61,8 +108,6 @@ compositing with both image extremes in light and dark themes; see
 
 ## Accessibility
 
-<!-- A11y requirements and patterns -->
-
 For abbreviated button copy, set the accessible name independently of the
 visible text while retaining the stock button's role, enabled state and tap
 action. A `Tooltip` is not the button's semantic label:
@@ -84,8 +129,6 @@ action), not only `find.byTooltip`.
 ---
 
 ## Common Mistakes
-
-<!-- Component-related mistakes your team has made -->
 
 ### Opening a preview while a form save is pending
 

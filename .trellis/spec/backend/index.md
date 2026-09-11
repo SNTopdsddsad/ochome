@@ -6,7 +6,11 @@
 
 ## Overview
 
-This directory contains guidelines for backend development. Fill in each file with your project's specific conventions.
+崽档 has no server. "Backend" means the data layer of the Flutter app:
+`lib/data/` (Drift database, models, repositories, providers, services) and the
+non-widget half of `lib/features/backup/`. Base guidelines describe the
+repeated patterns; feature specs (custom attributes, backup, assets,
+relationships) carry the executable contracts for each area.
 
 ---
 
@@ -14,28 +18,25 @@ This directory contains guidelines for backend development. Fill in each file wi
 
 | Guide | Description | Status |
 |-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | To fill |
+| [Directory Structure](./directory-structure.md) | `lib/data/` folders, what each may import, how a new entity spreads across them | Active |
+| [Database Guidelines](./database-guidelines.md) | Drift tables, `currentSchemaVersion` + staged `onUpgrade`, `mutate()` epoch gate, raw SQL boundaries | Active |
 | [Role Custom Attributes](./role-custom-attributes.md) | Ordered attributes, whole-role preservation, migration and backup contracts | Active |
 | [Backup and Restore](./backup-restore.md) | Account-wide snapshots, immutable media, recovery-only data switching and native contracts | Active |
 | [Role Assets](./role-assets.md) | Asset ownership, file import, schema v8 and backup/restore contracts | Active |
 | [Role Relationships](./role-relationships.md) | Directed single-row OC links, schema v9, perspective helpers and backup validation | Active |
-| [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |
+| [Error Handling](./error-handling.md) | `FormatException` / `StateError` / `BackupFailure` taxonomy, platform error translation, UI reaction matrix | Active |
+| [Quality Guidelines](./quality-guidelines.md) | analyze/test/build_runner gate, forbidden and required data-layer patterns, review checklist | Active |
+| [Logging Guidelines](./logging-guidelines.md) | `debugPrint`-only policy, the three call sites, what never to log | Active |
 
 ---
 
-## How to Fill These Guidelines
+## Maintaining These Guidelines
 
-For each guideline file:
-
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
-
-The goal is to help AI assistants and new team members understand how YOUR project works.
+- Document **actual conventions**; when the code changes, change the spec in
+  the same commit (`Trellis:` module).
+- Every rule points at a real file under `lib/` or `test/`.
+- New data-layer features get a feature spec here with signatures, validation
+  matrix and test points, following `role-relationships.md`.
 
 ---
 
