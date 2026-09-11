@@ -39,10 +39,10 @@ void main() {
       final repository = _RecordingRepository([role]);
       await _openEditor(tester, repository, role);
       final nameController = tester
-          .widget<TextFormField>(find.widgetWithText(TextFormField, '名字'))
+          .widget<TextFormField>(find.byKey(const Key('role-field-name')))
           .controller;
       await tester.enterText(
-        find.widgetWithText(TextFormField, '名字'),
+        find.byKey(const Key('role-field-name')),
         ' 未保存名字 ',
       );
       await _reveal(tester, _input('第一份内容'));
@@ -59,7 +59,7 @@ void main() {
           .controller;
       await tester.enterText(_input('原始设定'), '尚未保存的设定\n保留换行');
       await _reveal(tester, find.byKey(_entry));
-      final open = tester.widget<TextButton>(find.byKey(_entry)).onPressed!;
+      final open = tester.widget<OutlinedButton>(find.byKey(_entry)).onPressed!;
       // Keep a callback from the enabled frame to exercise the synchronous guard.
       open();
       open();
@@ -82,7 +82,7 @@ void main() {
       expect(find.byType(RoleCardExportPage), findsNothing);
       expect(
         tester
-            .widget<TextFormField>(find.widgetWithText(TextFormField, '名字'))
+            .widget<TextFormField>(find.byKey(const Key('role-field-name')))
             .controller,
         same(nameController),
       );
@@ -117,16 +117,19 @@ void main() {
           ..saveGate = completed.future;
         await _openEditor(tester, repository, role);
         await tester.enterText(
-          find.widgetWithText(TextFormField, '名字'),
+          find.byKey(const Key('role-field-name')),
           '只保存一次',
         );
         final oldCallback = tester
-            .widget<TextButton>(find.byKey(_entry))
+            .widget<OutlinedButton>(find.byKey(_entry))
             .onPressed!;
         await tester.tap(find.widgetWithText(TextButton, '保存'));
         oldCallback();
         await tester.pump();
-        expect(tester.widget<TextButton>(find.byKey(_entry)).onPressed, isNull);
+        expect(
+          tester.widget<OutlinedButton>(find.byKey(_entry)).onPressed,
+          isNull,
+        );
         oldCallback();
         await tester.pump();
         expect(find.byType(RoleCardExportPage), findsNothing);

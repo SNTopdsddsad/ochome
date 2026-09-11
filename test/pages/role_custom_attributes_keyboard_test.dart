@@ -38,7 +38,7 @@ void main() {
       );
       await tester.tap(find.text('新建角色'));
       await tester.pumpAndSettle();
-      await tester.enterText(find.widgetWithText(TextFormField, '名字'), '白鸦');
+      await tester.enterText(find.byKey(const Key('role-field-name')), '白鸦');
       tester.view.viewInsets = const FakeViewPadding(bottom: 300);
       await tester.pumpAndSettle();
 

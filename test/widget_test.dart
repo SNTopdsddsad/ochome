@@ -8,8 +8,11 @@ import 'package:ochome/data/providers/role_assets_provider.dart';
 import 'package:ochome/data/providers/role_repository_provider.dart';
 import 'package:ochome/data/providers/world_repository_provider.dart';
 import 'package:ochome/pages/archive_page.dart';
+import 'package:ochome/pages/role_create_page.dart';
 import 'package:ochome/pages/role_list_page.dart';
 import 'package:ochome/theme/zaidang_tokens.dart';
+import 'package:ochome/widgets/archive_editor/immersive_cover.dart';
+import 'package:ochome/widgets/archive_editor/role_identity_header.dart';
 import 'package:ochome/widgets/archive_list_card.dart';
 
 import 'fakes/fake_role_asset_repository.dart';
@@ -200,9 +203,11 @@ void main() {
     expect(find.byType(CircleAvatar), findsNothing);
     expect(find.text('添加立绘'), findsOneWidget);
     expect(find.byKey(const Key('role-create-cover-portrait')), findsOneWidget);
-    expect(find.text('基本信息'), findsOneWidget);
-    expect(find.text('设定'), findsOneWidget);
+    expect(find.text('基础设定'), findsOneWidget);
+    expect(find.text('角色简介'), findsOneWidget);
     expect(find.text('名字'), findsWidgets);
+    expect(find.byKey(const Key('role-field-name')), findsOneWidget);
+    expect(find.byKey(const Key('role-card-export')), findsOneWidget);
 
     final hero = tester.getRect(
       find.byKey(const Key('role-create-cover-hero')),
@@ -213,11 +218,18 @@ void main() {
     final descCard = tester.getRect(
       find.byKey(const Key('role-create-desc-card')),
     );
+    final portrait = tester.getRect(
+      find.byKey(const Key('role-create-cover-portrait')),
+    );
     expect(hero.width, 390);
-    expect(hero.height, 352);
+    expect(hero.height, _heroHeight(tester));
     expect(hero.width, isNot(140));
     expect(hero.left, 0);
     expect(hero.top, 0);
+    // 大头像骑在立绘与纸面的交界上。
+    expect(portrait.top, lessThan(immersiveCoverHeight));
+    expect(portrait.bottom, greaterThan(immersiveCoverHeight));
+    expect(basicCard.top, greaterThan(hero.bottom));
     expect(basicCard.left, greaterThan(hero.left));
     expect(basicCard.right, lessThan(hero.right));
     expect(basicCard.width, lessThan(hero.width));
@@ -226,10 +238,12 @@ void main() {
     expect(descCard.top, greaterThan(basicCard.bottom));
 
     final cardBox = tester.widget<DecoratedBox>(
-      find.descendant(
-        of: find.byKey(const Key('role-create-basic-card')),
-        matching: find.byType(DecoratedBox),
-      ),
+      find
+          .descendant(
+            of: find.byKey(const Key('role-create-basic-card')),
+            matching: find.byType(DecoratedBox),
+          )
+          .first,
     );
     final decoration = cardBox.decoration as BoxDecoration;
     expect(decoration.color, ZaidangTokens.light.surface);
@@ -251,11 +265,16 @@ void main() {
     expect(find.text('请填写名字'), findsOneWidget);
     expect(find.text('新建角色'), findsOneWidget);
 
-    await tester.enterText(find.widgetWithText(TextFormField, '名字'), 'Nana');
+    await tester.enterText(find.byKey(const Key('role-field-name')), 'Nana');
+    await tester.pump();
+    // 身份头跟着草稿名字刷新，回退文案退场。
+    expect(find.text('新建角色'), findsNothing);
+    expect(find.text('Nana'), findsNWidgets(2));
+
     await tester.tap(find.widgetWithText(TextButton, '保存'));
     await tester.pumpAndSettle();
 
-    expect(find.text('新建角色'), findsNothing);
+    expect(find.byType(RoleCreatePage), findsNothing);
     expect(find.text('Nana'), findsOneWidget);
   });
 
@@ -270,7 +289,7 @@ void main() {
       find.byKey(const Key('role-create-cover-hero')),
     );
     expect(hero.width, 800);
-    expect(hero.height, 352);
+    expect(hero.height, _heroHeight(tester));
     expect(hero.left, 0);
     expect(hero.top, 0);
   });
@@ -360,9 +379,18 @@ void main() {
     await tester.tap(find.text('Ada'));
     await tester.pumpAndSettle();
 
-    expect(find.text('编辑角色'), findsOneWidget);
+    expect(find.byKey(const Key('role-detail-nested-scroll')), findsOneWidget);
     expect(find.widgetWithText(TextFormField, 'Ada'), findsOneWidget);
     expect(find.text('修改历史'), findsOneWidget);
+    // 身份头：名字、标签与设定首行。
+    final header = find.byType(RoleIdentityHeader);
+    expect(header, findsOneWidget);
+    for (final text in ['Ada', 'human', 'engineer', 'female', '「sample」']) {
+      expect(
+        find.descendant(of: header, matching: find.text(text)),
+        findsOneWidget,
+      );
+    }
 
     final nameField = find.widgetWithText(TextFormField, 'Ada');
     await tester.ensureVisible(nameField);
@@ -370,12 +398,55 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, '保存'));
     await tester.pumpAndSettle();
 
-    expect(find.text('编辑角色'), findsNothing);
+    expect(find.byType(RoleCreatePage), findsNothing);
     expect(find.text('Ada L'), findsOneWidget);
     expect(find.text('human'), findsOneWidget);
     expect(find.text('engineer'), findsOneWidget);
     expect(find.text('female'), findsOneWidget);
   });
+
+  testWidgets(
+    'collapsing shortens the photo first and keeps the header whole',
+    (tester) async {
+      _usePhoneView(tester);
+      await _pumpApp(tester, roles: [_sampleRole()]);
+      await tester.tap(find.text('Ada'));
+      await tester.pumpAndSettle();
+
+      final header = find.byType(RoleIdentityHeader);
+      final nested = tester.state<NestedScrollViewState>(
+        find.byKey(const Key('role-detail-nested-scroll')),
+      );
+      final expandedHeader = tester.getRect(header);
+      final heroHeight = _heroHeight(tester);
+      // 展开时身份头底边就是立绘 + 身份头的总高度。
+      expect(expandedHeader.bottom, closeTo(heroHeight, 0.5));
+
+      // 上滑 120：身份头整体上移 120 且仍完全可见（未被裁、未淡出），立绘从底部裁短。
+      nested.outerController.jumpTo(120);
+      await tester.pump();
+      final movedHeader = tester.getRect(header);
+      expect(movedHeader.top, closeTo(expandedHeader.top - 120, 0.5));
+      expect(movedHeader.height, closeTo(expandedHeader.height, 0.5));
+      final opacity = tester.widget<Opacity>(
+        find.ancestor(of: header, matching: find.byType(Opacity)).first,
+      );
+      expect(opacity.opacity, 1);
+      expect(
+        tester.getRect(find.byKey(const Key('role-create-cover-portrait'))).top,
+        greaterThan(0),
+      );
+
+      // 收到只剩 60 时身份头已淡出，让位给吸顶身份。
+      final max = nested.outerController.position.maxScrollExtent;
+      nested.outerController.jumpTo(max - 60);
+      await tester.pump();
+      final faded = tester.widget<Opacity>(
+        find.ancestor(of: header, matching: find.byType(Opacity)).first,
+      );
+      expect(faded.opacity, 0);
+    },
+  );
 
   testWidgets('edit page can open 设定 history', (tester) async {
     _usePhoneView(tester);
@@ -386,7 +457,7 @@ void main() {
 
     expect(find.text('修改历史'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('修改历史'));
+    await _revealAtBottom(tester, find.text('修改历史'));
     await tester.tap(find.text('修改历史'));
     await tester.pumpAndSettle();
 
@@ -394,6 +465,22 @@ void main() {
     expect(find.text('当前'), findsOneWidget);
     expect(find.text('sample'), findsOneWidget);
   });
+}
+
+/// 立绘 + 纸面身份头的总高度（身份头随字号缩放）。
+double _heroHeight(WidgetTester tester) {
+  final scaler = MediaQuery.textScalerOf(
+    tester.element(find.byType(RoleCreatePage)),
+  );
+  return immersiveCoverHeight +
+      RoleIdentityHeader.heightFor(scaler) -
+      RoleIdentityHeader.portraitOverlap;
+}
+
+/// 把目标滚到视口底边：默认的 ensureVisible 会把它顶到吸顶头图之下而点不到。
+Future<void> _revealAtBottom(WidgetTester tester, Finder finder) async {
+  await Scrollable.ensureVisible(tester.element(finder), alignment: 1);
+  await tester.pumpAndSettle();
 }
 
 Future<void> _pumpApp(

@@ -9,6 +9,7 @@ import 'package:ochome/data/providers/backup_coordinator_provider.dart';
 import 'package:ochome/data/providers/world_repository_provider.dart';
 import 'package:ochome/features/backup/backup_models.dart';
 import 'package:ochome/pages/archive_page.dart';
+import 'package:ochome/pages/role_create_page.dart';
 import 'package:ochome/pages/role_list_page.dart';
 import 'package:ochome/theme/zaidang_tokens.dart';
 
@@ -137,11 +138,11 @@ void main() {
     expect(find.text('新建角色'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
 
-    await tester.enterText(find.widgetWithText(TextFormField, '名字'), 'Nana');
+    await tester.enterText(find.byKey(const Key('role-field-name')), 'Nana');
     await tester.tap(find.widgetWithText(TextButton, '保存'));
     await tester.pumpAndSettle();
 
-    expect(find.text('新建角色'), findsNothing);
+    expect(find.byType(RoleCreatePage), findsNothing);
     expect(find.text('我的 OC'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('Nana'), findsOneWidget);
@@ -156,7 +157,7 @@ void main() {
     await tester.tap(find.text('Ada'));
     await tester.pumpAndSettle();
 
-    expect(find.text('编辑角色'), findsOneWidget);
+    expect(find.byKey(const Key('role-detail-nested-scroll')), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
 
     final nameField = find.widgetWithText(TextFormField, 'Ada');
@@ -165,7 +166,7 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, '保存'));
     await tester.pumpAndSettle();
 
-    expect(find.text('编辑角色'), findsNothing);
+    expect(find.byType(RoleCreatePage), findsNothing);
     expect(find.text('我的 OC'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('Ada L'), findsOneWidget);

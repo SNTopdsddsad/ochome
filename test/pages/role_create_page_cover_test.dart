@@ -110,9 +110,9 @@ void main() {
       await tester.pumpWidget(_wrap(role, picker, tempDir));
       await _pump(tester);
 
-      // 可读 → 出现「更换」，不再显示「添加立绘」。
+      // 可读 → 出现更换角标，不再显示「添加立绘」。
       expect(find.byTooltip('更换立绘'), findsOneWidget);
-      expect(find.text('更换'), findsOneWidget);
+      expect(find.byKey(const Key('role-cover-change')), findsOneWidget);
       expect(find.text('添加立绘'), findsNothing);
 
       // 点立绘槽 → 打开预览，而不是选图。
@@ -139,12 +139,12 @@ void main() {
     await tester.pumpWidget(_wrap(role, picker, tempDir));
     await _pump(tester);
 
-    // 只有点「更换」才调相册。
-    await tester.tap(find.text('更换'));
+    // 只有点更换角标才调相册。
+    await tester.tap(find.byKey(const Key('role-cover-change')));
     await _pump(tester);
     expect(picker.pickCalls, 1);
 
-    // 取消后画面不变：仍显示「更换」、没进预览。
+    // 取消后画面不变：仍显示更换角标、没进预览。
     expect(find.byTooltip('更换立绘'), findsOneWidget);
     expect(find.byType(CoverPreviewPage), findsNothing);
   });
@@ -212,16 +212,15 @@ void main() {
       );
       await _pump(tester);
 
-      final data = tester
-          .getSemantics(find.widgetWithText(TextButton, '更换'))
-          .getSemanticsData();
+      final change = find.byKey(const Key('role-cover-change'));
+      final data = tester.getSemantics(change).getSemanticsData();
       expect(data.label, '更换立绘');
       expect(data.flagsCollection.isButton, isTrue);
       expect(data.flagsCollection.isEnabled.toBoolOrNull(), isTrue);
       expect(data.hasAction(SemanticsAction.tap), isTrue);
       expect(find.bySemanticsLabel('更换立绘'), findsOneWidget);
 
-      await tester.tap(find.text('更换'));
+      await tester.tap(change);
       await _pump(tester);
       expect(picker.pickCalls, 1);
     } finally {
@@ -271,7 +270,7 @@ void main() {
           await _pump(tester);
         }
         await tester.enterText(
-          find.widgetWithText(TextFormField, '名字'),
+          find.byKey(const Key('role-field-name')),
           'Saved once',
         );
         await _pump(tester);

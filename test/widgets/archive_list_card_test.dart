@@ -6,13 +6,6 @@ import 'package:ochome/widgets/archive_list_card.dart';
 import 'package:ochome/widgets/archive_tag.dart';
 
 void main() {
-  test('firstLine keeps only the trimmed first line and accepts CRLF', () {
-    expect(ArchiveListCard.firstLine('  第一行  \r\n第二行'), '第一行');
-    expect(ArchiveListCard.firstLine('\n\n第三行\n'), '第三行');
-    expect(ArchiveListCard.firstLine(''), '');
-    expect(ArchiveListCard.firstLine(' \n \n '), '');
-  });
-
   testWidgets('shows title, tags, quoted first line and meta with icon', (
     tester,
   ) async {

@@ -50,7 +50,7 @@ void main() {
     expect(find.byKey(const Key('role-world-picker')), findsNothing);
     expect(find.descendant(of: row, matching: find.text('雾都')), findsOneWidget);
 
-    await tester.enterText(find.widgetWithText(TextFormField, '名字'), 'Nana');
+    await tester.enterText(find.byKey(const Key('role-field-name')), 'Nana');
     await tester.tap(find.widgetWithText(TextButton, '保存'));
     await tester.pumpAndSettle();
 

@@ -28,7 +28,7 @@ void main() {
         find.byKey(const Key('role-create-custom-attributes-card')),
         findsNothing,
       );
-      await tester.enterText(find.widgetWithText(TextFormField, '名字'), '白鸦');
+      await tester.enterText(find.byKey(const Key('role-field-name')), '白鸦');
       await _reveal(tester, find.byKey(const Key('role-custom-attribute-add')));
       final basicBottom = tester
           .getBottomLeft(find.byKey(const Key('role-create-basic-card')))
@@ -217,7 +217,7 @@ void main() {
         await _open(tester, repository);
         if (!editing) {
           await tester.enterText(
-            find.widgetWithText(TextFormField, '名字'),
+            find.byKey(const Key('role-field-name')),
             '白鸦',
           );
           await _reveal(

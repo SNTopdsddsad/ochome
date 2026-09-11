@@ -262,7 +262,7 @@ void main() {
         addTearDown(assets.dispose);
         final opener = _Opener();
         await _open(tester, assets, opener: opener);
-        await _assets(tester);
+        await _assetsCollapsed(tester);
         var currentName = originalName;
         for (final baseName in ['白鸦·参考', '白鸦·新参考']) {
           await _assetAction(tester, currentName, '重命名');
@@ -296,7 +296,7 @@ void main() {
       final opener = _Opener()..pending = Completer<void>();
       final roles = _PendingRoles();
       await _open(tester, assets, opener: opener, roles: roles);
-      await _assets(tester);
+      await _assetsCollapsed(tester);
       final row = find.widgetWithText(ListTile, 'clip.mp4');
       final open = tester.widget<ListTile>(row).onTap!;
       final roleSave = tester.widget<TextButton>(_roleSave()).onPressed!;
@@ -511,7 +511,7 @@ void main() {
         ];
       final opener = _Opener();
       await _open(tester, assets, picker: picker, opener: opener);
-      await _assets(tester);
+      await _assetsCollapsed(tester);
       await _addFiles(tester);
       expect(assets.importCalls, 1);
       expect(find.text('4 份资产'), findsOneWidget);
@@ -543,7 +543,7 @@ void main() {
       addTearDown(assets.dispose);
       final opener = _Opener();
       await _open(tester, assets, opener: opener);
-      await _assets(tester);
+      await _assetsCollapsed(tester);
       await tester.tap(find.widgetWithText(ListTile, 'README'));
       await tester.pumpAndSettle();
       expect(opener.opened, hasLength(1));
@@ -681,7 +681,7 @@ void main() {
     addTearDown(assets.dispose);
     final opener = _Opener()..fail = true;
     await _open(tester, assets, opener: opener);
-    await _assets(tester);
+    await _assetsCollapsed(tester);
     await tester.tap(find.widgetWithText(ListTile, 'notes.pdf'));
     await tester.pumpAndSettle();
     expect(find.textContaining('没有可打开此文件的应用'), findsOneWidget);
@@ -823,6 +823,19 @@ Future<void> _open(
 
 Future<void> _assets(WidgetTester tester) async {
   await tester.tap(find.widgetWithText(Tab, '资产'));
+  await tester.pumpAndSettle();
+}
+
+/// 切到资产页并把立绘 + 身份头滚走：这些用例要点列表行与浮动通知同屏，
+/// 头图展开时行会落到通知底下。
+Future<void> _assetsCollapsed(WidgetTester tester) async {
+  await _assets(tester);
+  final nested = tester.state<NestedScrollViewState>(
+    find.byKey(const Key('role-detail-nested-scroll')),
+  );
+  nested.outerController.jumpTo(
+    nested.outerController.position.maxScrollExtent,
+  );
   await tester.pumpAndSettle();
 }
 
