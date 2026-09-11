@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "禁用模式、必需模式、测试与评审清单"}
+{"file": ".trellis/spec/frontend/theming.md", "reason": "Token 使用与字面量守卫校验矩阵"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "共享组件与无障碍契约"}
+{"file": ".trellis/spec/frontend/role-assets.md", "reason": "滚动契约与吸顶回归要求"}
+{"file": ".trellis/spec/frontend/worlds.md", "reason": "世界观页不得被共享组件改动波及"}
+{"file": ".trellis/spec/frontend/git-commit.md", "reason": "提交拆分与文案"}

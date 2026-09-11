@@ -58,9 +58,12 @@ lib/
   features/
     backup/widgets/         BackupJobPanel, backup_shared.dart (BackupBody, notices)
     role_card/              export pipeline + RoleCardFieldPicker sheet (no widgets/ subfolder)
+  utils/                    pure Dart helpers with no Flutter/data imports; one concern per file
+    text_lines.dart         firstLine(): trimmed first line, CRLF-safe (list cards + identity header)
 test/
   pages/                    one *_test.dart per page/tab
   widgets/                  one per shared widget
+  utils/                    one per utils/ file
   theme/zaidang_tokens_test.dart
   widget_test.dart          full-app smoke through MyApp + fake repository
   fakes/                    shared with data tests

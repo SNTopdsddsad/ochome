@@ -14,15 +14,28 @@ WorldCreatePage({World? world, CoverImagePicker? picker,
 // lib/widgets/archive_editor/ — shared by role and world editors
 ImmersiveCover({path, title, subtitle = '', coverNoun = '立绘', overlayStyle,
                 hasCover, onPick, onPreview, supportDirectory, bottom,
-                toolbarHeight, heroKey, portraitKey})
+                toolbarHeight, heroKey, portraitKey,
+                PreferredSizeWidget? paperHeader,      // role editor only
+                double paperHeaderOverlap = 0,
+                double backdropBlur = ImmersiveCover.defaultBackdropBlur}) // 6; 0 = crisp photo
+ImmersiveCover.paperHeaderExtent                   // header height − overlap
+PortraitPlaceholder({compact, label})              // 纸色占位，名片与身份头共用
 PinnedIdentity({name, coverImg, supportDirectory, emptyName, placeholderIcon,
                 boxKey, portraitKey})
 GlassIconButton({icon, iconSize, tooltip, onPhoto, VoidCallback? onTap})
-GlassSaveButton({saving, onPhoto, onPressed})
+GlassSaveButton({saving, onPressed})                // accent 实心药丸, onAccent 文字; no onPhoto — solid fill reads on both
 ArchiveCard / archiveCardDecoration / FieldRow / KeepAliveDetails
+ArchiveCardHeader({icon, title, caption, trailing})
+ArchiveFieldCell({icon, label, child}) / archiveCellInputDecoration(context, {hint})
 archiveEditorHorizontalPadding(context)
 
-// lib/widgets/archive_tag.dart — 纸底细描边标签, used by the home list card
+// lib/widgets/archive_editor/role_identity_header.dart — role editor only
+RoleIdentityHeader({name, emptyName, tags, quote, coverImg, hasCover,
+                    onPortraitTap, onChangeCover, onExport, height,
+                    supportDirectory, portraitKey, changeKey, exportKey})
+RoleIdentityHeader.heightFor(TextScaler) / portraitSize = 112 / portraitOverlap = 56
+
+// lib/widgets/archive_tag.dart — 纸底细描边标签, list card + identity header
 ArchiveTag(label)
 
 // lib/widgets/section_label.dart — shared 分区标签 (sectionLabel role)
@@ -35,7 +48,7 @@ ArchiveListView.bottomInset                        // 96, FAB clearance
 // lib/widgets/archive_list_card.dart — home list card shared by OC and 世界观
 ArchiveListCard({coverImg, title, onTap, placeholderIcon = Icons.person_outline,
                  tags = const [], summary = '', String? meta})
-ArchiveListCard.firstLine(String text)             // trimmed first line, CRLF-safe
+String firstLine(String text)                      // lib/utils/text_lines.dart — trimmed first line, CRLF-safe
 
 // lib/widgets/role_list_tile.dart — compact row, still used by the world editor's 角色 tab
 RoleListTile({role})                               // pushes /roles/:id with extra
@@ -49,14 +62,15 @@ Providers: `worldRepositoryProvider` (keepAlive), `worldsProvider` (stream, gate
 ### List (`WorldViewPage`)
 
 - Mirrors `RoleListPage`: `ConsumerStatefulWidget` + keep-alive whose `data:` branch is an `ArchiveListView<World>`. The list view owns the empty / no-match hints (`body` in `inkSecondary`), the `ListView.separated` chrome (`ZaidangSpacing.page` sides, `ZaidangSpacing.sm` top, `ZaidangSpacing.md` gaps, `ArchiveListView.bottomInset` = 96 px for the FAB) and `keyboardDismissBehavior: onDrag`. Pages only supply `items`, `query`, `searchFields`, the two hints and an `itemBuilder`; do not re-implement padding or hints per page.
-- Cards are `ArchiveListCard`s; the item root (`_WorldCard` / `_RoleCard`) carries `Key('world-card-<id>')` / `Key('role-card-<id>')` so element reuse during filtering follows the entity, not the index. Card = 120 px wide cover column (`Icons.public_outlined` placeholder on `bg`) + `heading` name + first line of 简介 wrapped in `「」` (`caption` size but **`ink`** colour — `inkSecondary` on `surface` is only 3.8:1; omitted when blank) + `micro` meta `N 个词条` with a trailing chevron. Pages pass the raw multi-line text; `ArchiveListCard.firstLine` trims, splits on `\r\n` / `\n` and takes the first non-empty-after-trim line. Empty copy is `还没有世界观`; FAB tooltip `添加世界观`.
+- Cards are `ArchiveListCard`s; the item root (`_WorldCard` / `_RoleCard`) carries `Key('world-card-<id>')` / `Key('role-card-<id>')` so element reuse during filtering follows the entity, not the index. Card = 120 px wide cover column (`Icons.public_outlined` placeholder on `bg`) + `heading` name + first line of 简介 wrapped in `「」` (`caption` size but **`ink`** colour — `inkSecondary` on `surface` is only 3.8:1; omitted when blank) + `micro` meta `N 个词条` with a trailing chevron. Pages pass the raw multi-line text; `firstLine` (`lib/utils/text_lines.dart`, shared with the role identity header) trims, splits on `\r\n` / `\n` and takes the first non-empty-after-trim line. Empty copy is `还没有世界观`; FAB tooltip `添加世界观`.
 - `RoleListPage` renders the same card with `tags` = non-empty 种族 / 身份 / 性别, `summary` = raw 设定, and `meta` = `N 份资产`. The page watches `roleAssetCountsProvider` **once** and passes `counts[role.id] ?? 0` into each `_RoleCard` (a plain `StatelessWidget`); while the map is still `null` the card shows only the chevron. Never subscribe per card (`roleAssetsProvider(role.id)` in a list is an N+1 of full asset rows). Tests that render roles on the home must still override `roleAssetRepositoryProvider` with `FakeRoleAssetRepository()`.
 - `query` is the raw search text; `ArchiveListView` trims and lower-cases it once and matches case-insensitively by substring against `searchFields(item)`: worlds match on name, 简介 and every entry title / content; roles match on name, 种族, 身份, 性别, 设定 and custom attribute name / content. Whitespace-only queries do not filter. An empty repository shows `还没有世界观` / `还没有角色`; a non-empty repository with no match shows `没有匹配的世界观` / `没有匹配的角色`.
 - Tap pushes `/worlds/:id` with the `World` as `extra`; FAB pushes `/worlds/new`. Each archive tab owns its own FAB — never two on screen.
 
 ### Editor (`WorldCreatePage`)
 
-- Same chrome as the role editor: no AppBar, `ImmersiveCover` with `coverNoun: '封面'` (copy becomes 添加封面 / 查看封面 / 更换封面), glass back button, glass 保存, and — edit only — a glass `更多` button (`Key('world-more-action')`) left of 保存. Pinned identity uses `未命名世界观` and the globe icon.
+- Same chrome as the role editor's cover: no AppBar, `ImmersiveCover` with `coverNoun: '封面'` (copy becomes 添加封面 / 查看封面 / 更换封面), glass back button, accent 保存, and — edit only — a glass `更多` button (`Key('world-more-action')`) left of 保存. Pinned identity uses `未命名世界观` and the globe icon.
+- The world editor does **not** pass `paperHeader`; it keeps the bottom-left calling card, `immersiveCoverHeight` (352) expanded height and `collapseOffset = immersiveCoverHeight - topInset - 60`. Only the role editor uses the paper identity header (see [Role Assets](./role-assets.md#identity-header)). Any change to `ImmersiveCover` must keep `world_create_page_test.dart` pixel-identical apart from the save button.
 - Create = single `CustomScrollView`. Edit = `NestedScrollView` with pinned tabs `详情 / 角色`, `SliverOverlapAbsorber/Injector`, `PageStorageKey`s and `KeepAliveDetails`, following the [Role Assets](./role-assets.md) scroll contract.
 - 详情: title `新建世界观` / `编辑世界观`, 基本信息 card (名称, required, error `请填写名称`), 简介 card (multiline), then a 词条 `SliverReorderableList` in a `DecoratedSliver` using the same interactions as custom attributes: `词条 N` header, drag handle, up/down, delete via `showZaidangConfirmDialog` (`要删掉这条词条吗？` / consequence `保存世界观后生效。` / confirm `删除词条`), `添加词条` button (`Key('world-entry-add')`), title validator `请填写词条标题`, snack `请填写每条词条的标题` when an offscreen title is blank.
 - 角色: read-only `rolesInWorldProvider(world.id)` list rendered with `RoleListTile`; empty copy `还没有角色归属这个世界观`. Tapping a role opens the role editor; membership is edited from the role side only.
@@ -66,7 +80,7 @@ Providers: `worldRepositoryProvider` (keepAlive), `worldsProvider` (stream, gate
 
 ### Role editor selector (`RoleCreatePage`)
 
-- Last row of the 基本信息 card: an `InputDecorator` labelled `世界观` (`Key('role-world-row')`) showing the world name (ink) or `未归属` (inkSecondary) with an expand chevron. It only `ref.watch`es `worldsProvider` when `_worldId != null`, so unassigned forms (and existing tests) never touch the world repository.
+- Last row of the 基础设定 card: an `InkWell` (`Key('role-world-row')`) around a full-width `ArchiveFieldCell(icon: Icons.public_outlined, label: '世界观')` showing the world name (ink) or `未归属` (inkSecondary) with a trailing `chevron_right`. It only `ref.watch`es `worldsProvider` when `_worldId != null`, so unassigned forms (and existing tests) never touch the world repository.
 - Tap → `showModalBottomSheet` (`Key('role-world-picker')`): first item `不归属` (`role-world-option-none`), then one `ListTile` per world (`role-world-option-<id>`, cover thumb + name), selected item marked with an accent check; `还没有世界观` hint when the list is empty. Dismissing without a choice keeps the current value (`_WorldChoice` wrapper distinguishes "chose none" from "closed").
 - Before saving, `_resolveWorldId()` calls `WorldRepository.getById`; a vanished world is written as `null` and the row falls back to `未归属`. The export snapshot (`RoleCardSnapshot`) does not include the world.
 
@@ -94,7 +108,7 @@ Providers: `worldRepositoryProvider` (keepAlive), `worldsProvider` (stream, gate
 ## 6. Tests Required
 
 - `test/pages/world_view_page_test.dart`: empty state, card copy (`「简介」`, `N 个词条`), route + extra, stream refresh, `query` matching on name / summary / entries and the `没有匹配的世界观` copy.
-- `test/widgets/archive_list_card_test.dart`: `firstLine` (CRLF, blank, surrounding spaces), full card copy + icons, omitted tags / summary / meta, `onTap`, quote colour `ink` in light and dark.
+- `test/utils/text_lines_test.dart`: `firstLine` (CRLF, blank, surrounding spaces). `test/widgets/archive_list_card_test.dart`: full card copy + icons, omitted tags / summary / meta, `onTap`, quote colour `ink` in light and dark.
 - `test/widgets/archive_list_view_test.dart`: empty hint colour, padding / gap / `bottomInset` / `onDrag`, query trim + case + any-field matching, no-match hint.
 - `test/widget_test.dart`: home header follows the selected tab, role card copy + `0 份资产`, search filter / clear through `archive-search` and `archive-search-clear` (incl. whitespace-only), landscape + keyboard without overflow, header scroll-away + keyboard dismissal, `AnnotatedRegion` icon brightness.
 - `test/data/role_assets_test.dart` covers `watchAssetCounts`; `test/data/backup_provider_integration_test.dart` listens to `roleAssetCountsProvider` across a restore.

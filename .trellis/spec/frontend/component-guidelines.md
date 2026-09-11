@@ -76,6 +76,10 @@ tests.
   defaults: `RoleCreatePage(picker:, supportDirectory:)`,
   `RoleAssetOpener(channel:)`, `supportDirectory` threaded into
   `CoverFileView` so tests can point at a temp directory.
+- `CoverFileView(coverImg, placeholder, fit = cover, alignment = center,
+  supportDirectory)`: pass `Alignment.topCenter` wherever a tall 立绘 is
+  cropped into a wide or square box that should keep the face (role hero,
+  identity-header portrait); list thumbnails and world covers stay centered.
 - Copy is passed as `String` (`title`, `body`, `consequence`, `confirmLabel`)
   and never as a `Widget` tree, so the dialog controls typography and
   semantics. Optional labels default in the constructor
@@ -112,23 +116,44 @@ compositing with both image extremes in light and dark themes; see
 
 ## Accessibility
 
-For abbreviated button copy, set the accessible name independently of the
-visible text while retaining the stock button's role, enabled state and tap
+For abbreviated or icon-only controls, set the accessible name independently
+of the visible content while retaining a button role, enabled state and tap
 action. A `Tooltip` is not the button's semantic label:
 
 ```dart
 Tooltip(
   message: '更换立绘',
   excludeFromSemantics: true,
-  child: TextButton(
-    onPressed: onPick,
-    child: const Text('更换', semanticsLabel: '更换立绘'),
+  child: Semantics(
+    button: true,
+    enabled: onChange != null,
+    label: '更换立绘',
+    child: Material(
+      key: const Key('role-cover-change'),
+      type: MaterialType.transparency,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onChange,
+        // 命中区 48，视觉圆 28 贴右下角
+        child: SizedBox.square(
+          dimension: kMinInteractiveDimension,
+          child: Align(
+            alignment: Alignment.bottomRight,
+            child: ExcludeSemantics(child: /* 28px circle + icon */),
+          ),
+        ),
+      ),
+    ),
   ),
 )
 ```
 
 Verify the actual button semantics (`label`, `isButton`, `isEnabled`, and tap
-action), not only `find.byTooltip`.
+action), not only `find.byTooltip`. Text-labelled buttons can use
+`Text(..., semanticsLabel: ...)` instead of the `Semantics` wrapper. Small
+visuals still need a `kMinInteractiveDimension` hit box, and that box must lie
+inside its parent's bounds — `RenderBox.hitTest` rejects points outside the
+parent even with `Clip.none`. Assert the size with `tester.getSize(...)`.
 
 ---
 
@@ -224,19 +249,44 @@ and `onTapUp`, leaving its existing gesture recognizers in charge.
 
 ## Shared Archive Editor Widgets
 
-The create/edit chrome (immersive blurred cover with calling card, pinned
-identity, glass back/save buttons, paper `ArchiveCard`, `FieldRow`,
+The create/edit chrome (immersive blurred cover with calling card or paper
+identity header, pinned identity, glass back button, accent save pill, paper
+`ArchiveCard`, `ArchiveCardHeader`, `ArchiveFieldCell`, `FieldRow`,
 `KeepAliveDetails`, content-width padding) lives in
 `lib/widgets/archive_editor/`; the shared `SectionLabel` (`sectionLabel` role,
 default `ZaidangSpacing.sm` bottom padding) lives one level up in
-`lib/widgets/section_label.dart` because sheets and pickers use it too. Both
-`RoleCreatePage` and `WorldCreatePage` compose these widgets; do not copy
-private variants back into a page. `archiveEditorCardInset` is
+`lib/widgets/section_label.dart` because sheets and pickers use it too, and
+`ArchiveTag` (paper chip: `bg` fill, `border` hairline, `micro` ink) lives in
+`lib/widgets/archive_tag.dart` because list cards and the identity header both
+use it. Both `RoleCreatePage` and `WorldCreatePage` compose these widgets; do
+not copy private variants back into a page. `archiveEditorCardInset` is
 `ZaidangSpacing.page`, `ArchiveCard` pads `ZaidangSpacing.card` and rounds
 `ZaidangRadius.smAll`; the hero paper cap uses `ZaidangRadius.lgTop`. Pages pass
 their own test keys (`heroKey`, `portraitKey`, `boxKey`) and copy nouns
 (`coverNoun`, `emptyName`) so finders remain page-specific. See
 [Worlds UI](./worlds.md).
+
+- `ArchiveCardHeader({icon, title, caption, trailing})`: 32px accent-10% tinted
+  `smAll` square with an 18px accent icon, `subheading` title, optional `caption`
+  right-aligned and/or a `trailing` widget; `md` bottom padding replaces the
+  `SectionLabel` inside redesigned cards. Captions are one short Chinese phrase
+  (`关于这个角色`, `性格、外貌、背景`), never pronouns or English. With a caption
+  the title is a plain (non-flex) `Text` and the caption is the only `Expanded`
+  child: a loose `Flexible` next to an `Expanded` leaves its unused share as
+  trailing free space, so the caption would float mid-row instead of hugging
+  the edge (`archive_card_test.dart` asserts `caption.right == header.right`).
+- `ArchiveFieldCell({icon, label, child})`: `bg` fill, `smAll`, 1px border that
+  is `bg` (invisible) at rest and `accent` while any descendant has focus
+  (`Focus(canRequestFocus: false, skipTraversal: true, onFocusChange)`); header
+  row = 16px accent icon + `micro` label. Inner `TextFormField`s use
+  `archiveCellInputDecoration(context, hint: …)` — `filled: false`, `isDense`,
+  `UnderlineInputBorder(BorderSide.none)` at rest, an `ink` underline on error;
+  the error text comes from the theme's `micro` ink `errorStyle`. Cells are
+  inline editors: they never open a dialog to edit a value.
+- `RoleIdentityHeader` is role-only; see [Role Assets](./role-assets.md#identity-header)
+  for its layout, callbacks and height contract. `ImmersiveCover.paperHeader`
+  is the only way to put content between the photo and the tabs — do not add a
+  second sliver above the tabs, it breaks the overlap-absorber contract.
 
 ## Editable Custom-Attribute Slivers
 

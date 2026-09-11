@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "UI 层规范入口与检查清单"}
+{"file": ".trellis/spec/frontend/theming.md", "reason": "Token、字号/间距/圆角规则与字面量守卫"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "共享 archive_editor 组件、文案、无障碍与自定义属性 sliver 约束"}
+{"file": ".trellis/spec/frontend/role-assets.md", "reason": "角色详情页 NestedScrollView / pinned 头图滚动契约"}
+{"file": ".trellis/spec/frontend/worlds.md", "reason": "ImmersiveCover / GlassSaveButton 等共享组件签名与世界观页兼容要求"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "保存 / busy 门禁与 mounted 纪律"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "禁用模式、测试 harness 与评审清单"}

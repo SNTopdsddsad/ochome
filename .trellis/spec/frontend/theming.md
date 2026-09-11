@@ -170,7 +170,8 @@ Brand extras that ship with A (do not invent a second accent):
 |---------|--------|
 | Scaffold | `bg` |
 | Card / dialog / input fill | `surface` + `border` |
-| AppBar | Settings/backup: `bg` or `surface`, title `ink`, **no** `inversePrimary`. Archive home: **no AppBar** — `hero` header `我的` + accent ` OC` / `世界观` (the one sanctioned accent word in a title, a brand moment like the sparkle), `caption` subtitle, `surface` search field and segmented control with `ZaidangRadius.mdAll`. On scroll the hero title shrinks to `heading` size and pins under the status bar on a frosted strip (`BackdropFilter` blur 12 + `bg` at 0.72 + hairline `border`) — the same glass recipe as the editor buttons; the scale comes from `heading.fontSize / hero.fontSize`, never a literal. Create/edit: **no AppBar** — blurred full-bleed cover, glass back/save, bottom-left 3:4 calling-card portrait, paper cap into the form. |
+| AppBar | Settings/backup: `bg` or `surface`, title `ink`, **no** `inversePrimary`. Archive home: **no AppBar** — `hero` header `我的` + accent ` OC` / `世界观` (the one sanctioned accent word in a title, a brand moment like the sparkle), `caption` subtitle, `surface` search field and segmented control with `ZaidangRadius.mdAll`. On scroll the hero title shrinks to `heading` size and pins under the status bar on a frosted strip (`BackdropFilter` blur 12 + `bg` at 0.72 + hairline `border`) — the same glass recipe as the editor buttons; the scale comes from `heading.fontSize / hero.fontSize`, never a literal. Create/edit: **no AppBar** — full-bleed cover, glass back button, accent-filled 保存 pill (`GlassSaveButton`: `accent` + `onAccent`, 0.55 alpha when disabled/saving). World editor: blur 6, bottom-left 3:4 calling-card portrait, paper cap into the form. Role editor: the 立绘 itself is the hero — `backdropBlur: 0` (no `ImageFiltered`), `Alignment.topCenter` so a tall portrait keeps the face, no dark tint; only a thin top veil (`dark.bg` 0.18→0 by 30%) for the status bar / glass buttons and a fade into `bg` (0→0.55 from 62%) above the paper cap. Then a paper identity header (`RoleIdentityHeader`) under the photo — 112px `mdAll` portrait with `surface` frame riding the paper edge, `title` name + one accent `Icons.auto_awesome` sparkle (a brand moment), `ArchiveTag` paper chips, `「设定首行」` in `caption` ink, outlined accent `导出角色卡`. |
+| Editor cards (role) | `ArchiveCard` (`surface` + `border`, `smAll`) headed by `ArchiveCardHeader`: 32px square in `accent` at 10% alpha (the same tint as the success snack check) holding an 18px accent icon, `subheading` title, `caption` note. Fields are `ArchiveFieldCell`s: `bg` fill, `smAll`, 1px border `bg`→`accent` on focus (colour only, width never changes), 16px accent icon + `micro` label, borderless `bodyLarge` input; validation draws an `ink` underline + `micro` ink error. Decorative `Icons.format_quote` in the 简介 box is `accent` at 0.3 alpha and excluded from semantics / pointer. No other accent fills inside cards. |
 | Home list card (`ArchiveListCard`) | `surface` fill + `border` hairline, `ZaidangRadius.mdAll`; cover `ZaidangRadius.smAll`; name `heading`, summary `caption` **in `ink`** (it is the card's body copy; `inkSecondary` on `surface` is 3.8:1 in light) wrapped in `「」`, meta `micro` in `inkSecondary`. Tags are paper chips (`bg` fill, `border`, `micro` ink text) — no per-category hues. |
 | Home background | Light: `assets/images/role_bg.webp` (WebP q85, ~33 KB) under a transparent Scaffold. Dark: plain `bg`, no image. Bundle decorative art as WebP, not multi-MB PNG. |
 | System UI overlay | Every page without an `AppBar` wraps its `Scaffold` in `AnnotatedRegion<SystemUiOverlayStyle>` with `zaidangSystemUiOverlayStyle(context, onDarkBackdrop: …)` from `lib/theme/zaidang_system_ui.dart`: transparent status bar, dark icons on light paper, light icons in dark mode or when `onDarkBackdrop` (a cover under the status bar) is true, system nav bar = `bg` with icons following the theme. Do not hand-roll the `copyWith` chain again — the home, role editor and world editor all call this helper. |
@@ -241,17 +242,19 @@ Rounding rule when migrating a literal: nearest step, ties round up
 stays `0`. A `SizedBox` with a single dimension and no `child` is a gap and must
 use a token; a `SizedBox` with a `child`, or with both `width` and `height`, is a
 size and may keep a **named** constant (`_compactPreviewMaxHeight`,
-`glassButtonSize`, `_fieldScrollInset`). Bare magic numbers are not allowed even
-for sizes.
+`glassButtonSize`, `_fieldScrollInset`, `RoleIdentityHeader.portraitSize`).
+Bare magic numbers are not allowed even for sizes. Heights that depend on the
+user's font size are computed from a named nominal block through
+`TextScaler.scale` (`RoleIdentityHeader.heightFor`), never hard-coded per scale.
 
 ### Radius scale
 
 | Token | Value | Use for |
 |-------|-------|---------|
-| `ZaidangRadius.sm` / `smAll` | 8 | Cards, inputs, thumbnails, buttons, tab indicator |
-| `ZaidangRadius.md` / `mdAll` | 16 | SnackBar, dialog action buttons, candidate strip cells |
+| `ZaidangRadius.sm` / `smAll` | 8 | Cards, inputs, thumbnails, buttons, tab indicator, field cells, card-header icon tile, identity portrait inner clip |
+| `ZaidangRadius.md` / `mdAll` | 16 | SnackBar, dialog action buttons, candidate strip cells, identity portrait frame |
 | `ZaidangRadius.lg` / `lgAll` / `lgTop` | 26 | Dialogs, bottom sheets, hero paper cap |
-| `ZaidangRadius.pill` | `StadiumBorder` | Glass save button |
+| `ZaidangRadius.pill` | `StadiumBorder` | Accent save button |
 
 ### Type (prep checklist, UI-related)
 
