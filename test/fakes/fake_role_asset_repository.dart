@@ -33,6 +33,22 @@ class FakeRoleAssetRepository implements RoleAssetRepository {
     }
   }
 
+  Map<int, int> _counts() {
+    final counts = <int, int>{};
+    for (final item in items) {
+      counts.update(item.roleId, (count) => count + 1, ifAbsent: () => 1);
+    }
+    return counts;
+  }
+
+  @override
+  Stream<Map<int, int>> watchAssetCounts() async* {
+    yield _counts();
+    await for (final _ in changes.stream) {
+      yield _counts();
+    }
+  }
+
   @override
   Future<void> importFiles(int roleId, List<XFile> files) async {
     importCalls++;

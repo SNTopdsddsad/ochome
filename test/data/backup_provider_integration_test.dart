@@ -112,13 +112,16 @@ void main() {
         final service = coordinator!;
         final roles = owner.listen(rolesProvider, (_, _) {});
         final assets = owner.listen(roleAssetsProvider(1), (_, _) {});
+        final counts = owner.listen(roleAssetCountsProvider, (_, _) {});
         final revisions = owner.listen(roleDescRevisionsProvider(1), (_, _) {});
         final original = (await owner.read(rolesProvider.future)).first;
         await owner.read(roleAssetsProvider(1).future);
+        await owner.read(roleAssetCountsProvider.future);
         await owner.read(roleDescRevisionsProvider(1).future);
         if (paused) {
           roles.pause();
           assets.pause();
+          counts.pause();
           revisions.pause();
         }
         await service.startBackup();
@@ -141,6 +144,7 @@ void main() {
           if (paused) {
             roles.resume();
             assets.resume();
+            counts.resume();
             revisions.resume();
           }
           expect(
@@ -148,10 +152,12 @@ void main() {
             original.name,
           );
           await owner.read(roleAssetsProvider(1).future);
+          await owner.read(roleAssetCountsProvider.future);
           await owner.read(roleDescRevisionsProvider(1).future);
         } finally {
           roles.close();
           assets.close();
+          counts.close();
           revisions.close();
           await activation;
         }

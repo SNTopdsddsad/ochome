@@ -3,13 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ochome/app.dart';
 import 'package:ochome/data/models/role.dart';
+import 'package:ochome/data/providers/role_assets_provider.dart';
 import 'package:ochome/data/providers/role_repository_provider.dart';
 import 'package:ochome/data/providers/backup_coordinator_provider.dart';
 import 'package:ochome/data/providers/world_repository_provider.dart';
 import 'package:ochome/features/backup/backup_models.dart';
+import 'package:ochome/pages/archive_page.dart';
 import 'package:ochome/pages/role_list_page.dart';
 import 'package:ochome/theme/zaidang_tokens.dart';
 
+import '../fakes/fake_role_asset_repository.dart';
 import '../fakes/fake_role_repository.dart';
 import '../fakes/fake_world_repository.dart';
 
@@ -17,10 +20,12 @@ void main() {
   testWidgets('cold start shows 档案 with both tabs', (tester) async {
     await _pumpApp(tester);
 
-    expect(find.widgetWithText(AppBar, 'OC'), findsOneWidget);
+    expect(find.text('我的 OC'), findsOneWidget);
+    expect(find.byType(AppBar), findsNothing);
     expect(find.byType(RoleListPage), findsOneWidget);
     expect(find.widgetWithText(Tab, 'OC'), findsOneWidget);
     expect(find.widgetWithText(Tab, '世界观'), findsOneWidget);
+    expect(find.byTooltip('备份与恢复'), findsOneWidget);
     expect(find.text('还没有角色'), findsOneWidget);
     expect(find.byType(FloatingActionButton), findsOneWidget);
     expect(_tab('档案'), findsOneWidget);
@@ -54,7 +59,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(AppBar, '我的'), findsOneWidget);
-    expect(find.widgetWithText(AppBar, 'OC'), findsNothing);
+    expect(find.text('我的 OC'), findsNothing);
     expect(find.text('Ada'), findsNothing);
     expect(find.text('还没有角色'), findsNothing);
     expect(find.byType(FloatingActionButton), findsNothing);
@@ -66,7 +71,7 @@ void main() {
     await tester.tap(_tab('档案'));
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(AppBar, 'OC'), findsOneWidget);
+    expect(find.text('我的 OC'), findsOneWidget);
     expect(find.text('Ada'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(tester.element(find.byType(RoleListPage)), same(listElement));
@@ -87,6 +92,11 @@ void main() {
     final listElement = tester.element(find.byType(RoleListPage));
     await tester.drag(find.byType(ListView), const Offset(0, -500));
     await tester.pumpAndSettle();
+    // 头部随列表滚走后页签不可点；往回拖一段，浮动头部先回来，列表位置只小幅回退。
+    expect(find.widgetWithText(Tab, '世界观'), findsNothing);
+    await tester.drag(find.byType(ListView), const Offset(0, 300));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(Tab, '世界观'), findsOneWidget);
     final scrollable = tester.state<ScrollableState>(
       find.descendant(
         of: find.byType(ListView),
@@ -132,7 +142,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('新建角色'), findsNothing);
-    expect(find.widgetWithText(AppBar, 'OC'), findsOneWidget);
+    expect(find.text('我的 OC'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('Nana'), findsOneWidget);
   });
@@ -156,7 +166,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('编辑角色'), findsNothing);
-    expect(find.widgetWithText(AppBar, 'OC'), findsOneWidget);
+    expect(find.text('我的 OC'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('Ada L'), findsOneWidget);
   });
@@ -173,7 +183,7 @@ void main() {
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(AppBar, 'OC'), findsOneWidget);
+    expect(find.text('我的 OC'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
   });
 
@@ -206,6 +216,49 @@ void main() {
     },
   );
 
+  testWidgets(
+    'keyboard shrinks the archive body but not its paper background',
+    (tester) async {
+      _useView(tester, const Size(390, 844));
+      addTearDown(tester.view.resetViewInsets);
+      await _pumpApp(tester, roles: [_sampleRole()]);
+
+      final paper = find.byWidgetPredicate(
+        (widget) =>
+            widget is DecoratedBox &&
+            widget.decoration is BoxDecoration &&
+            (widget.decoration as BoxDecoration).image?.image ==
+                const AssetImage(ArchivePage.backgroundAsset),
+      );
+      final shellBody = tester.getRect(find.byType(ArchivePage));
+      final paperBefore = tester.getRect(paper);
+      final listBefore = tester.getRect(find.byType(RoleListPage));
+      expect(paperBefore, shellBody);
+
+      const keyboardTop = 844.0 - 300;
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
+
+      expect(tester.getRect(paper), paperBefore);
+      expect(tester.getRect(find.byType(ArchivePage)), shellBody);
+      final listAfter = tester.getRect(find.byType(RoleListPage));
+      expect(listAfter.top, listBefore.top);
+      // The tab bar is already under the keyboard, so the branch must not
+      // subtract it again: the list ends on the keyboard edge, not above a gap.
+      expect(listAfter.bottom, keyboardTop);
+      final fab = tester.getRect(find.byType(FloatingActionButton));
+      expect(fab.bottom, keyboardTop - kFloatingActionButtonMargin);
+      expect(tester.takeException(), isNull);
+
+      tester.view.viewInsets = const FakeViewPadding(bottom: 20);
+      await tester.pumpAndSettle();
+
+      // An inset shorter than the tab bar never reaches the branch page.
+      expect(tester.getRect(find.byType(RoleListPage)), listBefore);
+      expect(tester.getRect(paper), paperBefore);
+    },
+  );
+
   testWidgets('system back from 我的 returns to 档案', (tester) async {
     await _pumpApp(tester);
 
@@ -218,7 +271,7 @@ void main() {
 
     expect(handled, isTrue);
     expect(find.byType(MyApp), findsOneWidget);
-    expect(find.widgetWithText(AppBar, 'OC'), findsOneWidget);
+    expect(find.text('我的 OC'), findsOneWidget);
     expect(find.text('还没有角色'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
   });
@@ -239,6 +292,9 @@ Future<void> _pumpApp(
     ProviderScope(
       overrides: [
         roleRepositoryProvider.overrideWithValue(FakeRoleRepository(roles)),
+        roleAssetRepositoryProvider.overrideWithValue(
+          FakeRoleAssetRepository(),
+        ),
         worldRepositoryProvider.overrideWithValue(FakeWorldRepository()),
         // This suite tests routing, not disk bootstrap or iCloud availability.
         backupCoordinatorProvider.overrideWith((ref) async {

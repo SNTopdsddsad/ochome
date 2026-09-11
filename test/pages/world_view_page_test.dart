@@ -8,6 +8,7 @@ import 'package:ochome/data/providers/world_repository_provider.dart';
 import 'package:ochome/pages/world_view_page.dart';
 import 'package:ochome/theme/zaidang_theme.dart';
 import 'package:ochome/theme/zaidang_tokens.dart';
+import 'package:ochome/widgets/archive_list_card.dart';
 
 import '../fakes/fake_world_repository.dart';
 
@@ -21,7 +22,7 @@ void main() {
     expect(placeholder.style!.color, ZaidangTokens.light.inkSecondary);
   });
 
-  testWidgets('rows show name, first summary line and route with extra', (
+  testWidgets('cards show name, first summary line and route with extra', (
     tester,
   ) async {
     final worlds = [
@@ -35,10 +36,12 @@ void main() {
       onPush: pushed.add,
     );
 
+    expect(find.byType(ArchiveListCard), findsNWidgets(2));
     expect(find.text('艾尔登'), findsOneWidget);
-    expect(find.text('被火漆封印的大陆'), findsOneWidget);
+    expect(find.text('「被火漆封印的大陆」'), findsOneWidget);
     expect(find.textContaining('第二行'), findsNothing);
     expect(find.text('雾都'), findsOneWidget);
+    expect(find.text('1 个词条'), findsNWidgets(2));
     expect(find.byIcon(Icons.public_outlined), findsNWidgets(2));
 
     await tester.tap(find.text('雾都'));
@@ -65,19 +68,39 @@ void main() {
     expect(find.text('新世界'), findsOneWidget);
     expect(find.text('还没有世界观'), findsNothing);
   });
+
+  testWidgets('query matches name, summary and entries', (tester) async {
+    final worlds = [
+      _world(id: 1, name: '艾尔登', summary: '被火漆封印的大陆'),
+      _world(id: 2, name: '雾都', summary: ''),
+    ];
+
+    await _pump(tester, FakeWorldRepository(worlds), query: '封印');
+    expect(find.byKey(const Key('world-card-1')), findsOneWidget);
+    expect(find.byKey(const Key('world-card-2')), findsNothing);
+
+    await _pump(tester, FakeWorldRepository(worlds), query: '地理');
+    expect(find.byType(ArchiveListCard), findsNWidgets(2));
+
+    await _pump(tester, FakeWorldRepository(worlds), query: '不存在');
+    expect(find.byType(ArchiveListCard), findsNothing);
+    expect(find.text('没有匹配的世界观'), findsOneWidget);
+    expect(find.text('还没有世界观'), findsNothing);
+  });
 }
 
 Future<GoRouter> _pump(
   WidgetTester tester,
   FakeWorldRepository repository, {
   void Function((String, Object?) push)? onPush,
+  String query = '',
 }) async {
   final router = GoRouter(
     initialLocation: '/archive',
     routes: [
       GoRoute(
         path: '/archive',
-        builder: (context, state) => const WorldViewPage(),
+        builder: (context, state) => WorldViewPage(query: query),
       ),
       GoRoute(
         path: '/worlds/new',

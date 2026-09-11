@@ -68,6 +68,42 @@ void main() {
     },
   );
 
+  test(
+    'watchAssetCounts groups by role, omits empty roles and follows changes',
+    () async {
+      final other = await _createRole(roles, '第二个 OC');
+      final empty = await _createRole(roles, '没有资产');
+      final counts = assets.watchAssetCounts();
+
+      expect(await counts.first, isEmpty);
+
+      await assets.importFiles(role.id, [
+        _file('a.png', [1]),
+        _file('b.pdf', [2]),
+      ]);
+      await assets.importFiles(other.id, [
+        _file('c.mp3', [3]),
+      ]);
+      final afterImport = await counts.firstWhere(
+        (map) => map[role.id] == 2 && map[other.id] == 1,
+      );
+      expect(afterImport.containsKey(empty.id), isFalse);
+      expect(() => afterImport[empty.id] = 1, throwsUnsupportedError);
+
+      final asset = (await assets.listForRole(role.id)).first;
+      await assets.delete(roleId: role.id, assetId: asset.id);
+      expect(await counts.firstWhere((map) => map[role.id] == 1), {
+        role.id: 1,
+        other.id: 1,
+      });
+
+      await roles.delete(other.id);
+      expect(await counts.firstWhere((map) => !map.containsKey(other.id)), {
+        role.id: 1,
+      });
+    },
+  );
+
   test('same filename never overwrites an earlier asset and temp source may disappear', () async {
     final source = File(p.join(support.path, 'notes.txt'));
     await source.writeAsString('first');
