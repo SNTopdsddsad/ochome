@@ -10,6 +10,8 @@ import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 
 import '../data/services/cover_path.dart';
+import '../theme/zaidang_radius.dart';
+import '../theme/zaidang_spacing.dart';
 import '../theme/zaidang_tokens.dart';
 
 /// 全屏浏览本地原图，支持左右切换、双指及双击缩放，单击退出。
@@ -172,16 +174,16 @@ class _CoverPreviewPageState extends State<CoverPreviewPage> {
                 child: Align(
                   alignment: Alignment.bottomCenter,
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(ZaidangSpacing.lg),
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         color: ZaidangTokens.dark.bg.withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: ZaidangRadius.mdAll,
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                          horizontal: ZaidangSpacing.md,
+                          vertical: ZaidangSpacing.sm,
                         ),
                         child: Text(
                           '${_currentIndex + 1} / ${_coverImages.length}',
@@ -197,7 +199,7 @@ class _CoverPreviewPageState extends State<CoverPreviewPage> {
             child: Align(
               alignment: Alignment.topRight,
               child: Padding(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(ZaidangSpacing.sm),
                 child: IconButton(
                   tooltip: '关闭',
                   onPressed: _close,

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/zaidang_radius.dart';
+import '../../theme/zaidang_spacing.dart';
 import '../../theme/zaidang_tokens.dart';
 
 /// 档案编辑页的表单栏上限。hero 全宽铺顶，不跟这个宽度走。
 const double archiveEditorContentMaxWidth = 440;
 
 /// 卡片相对表单栏的左右留白。
-const double archiveEditorCardInset = 20;
+const double archiveEditorCardInset = ZaidangSpacing.page;
 
 /// 档案分组：纸面填充 + 描边，圆角与输入框一致。
 class ArchiveCard extends StatelessWidget {
@@ -20,7 +22,7 @@ class ArchiveCard extends StatelessWidget {
     return DecoratedBox(
       decoration: archiveCardDecoration(tokens),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        padding: const EdgeInsets.all(ZaidangSpacing.card),
         child: child,
       ),
     );
@@ -29,31 +31,9 @@ class ArchiveCard extends StatelessWidget {
 
 BoxDecoration archiveCardDecoration(ZaidangTokens tokens) => BoxDecoration(
   color: tokens.surface,
-  borderRadius: BorderRadius.circular(8),
+  borderRadius: ZaidangRadius.smAll,
   border: Border.all(color: tokens.border),
 );
-
-class SectionLabel extends StatelessWidget {
-  const SectionLabel(this.text, {super.key});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = ZaidangTokens.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: tokens.inkSecondary,
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
 
 class FieldRow extends StatelessWidget {
   const FieldRow({super.key, required this.left, required this.right});
@@ -67,7 +47,7 @@ class FieldRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(child: left),
-        const SizedBox(width: 12),
+        const SizedBox(width: ZaidangSpacing.md),
         Expanded(child: right),
       ],
     );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../theme/zaidang_radius.dart';
+import '../theme/zaidang_spacing.dart';
 import '../theme/zaidang_tokens.dart';
 import 'role_list_page.dart';
 import 'world_view_page.dart';
@@ -18,27 +20,25 @@ class ArchivePage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           centerTitle: false,
-          titleSpacing: 12,
+          titleSpacing: ZaidangSpacing.md,
           title: TabBar(
             isScrollable: true,
             tabAlignment: TabAlignment.start,
-            labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+            labelPadding: const EdgeInsets.symmetric(
+              horizontal: ZaidangSpacing.xs,
+            ),
             labelColor: tokens.accent,
             unselectedLabelColor: tokens.inkSecondary,
-            labelStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
             dividerHeight: 0,
             indicatorSize: TabBarIndicatorSize.tab,
             indicatorPadding: const EdgeInsets.symmetric(
-              horizontal: 4,
-              vertical: 8,
+              horizontal: ZaidangSpacing.xs,
+              vertical: ZaidangSpacing.sm,
             ),
-            splashBorderRadius: BorderRadius.circular(6),
+            splashBorderRadius: ZaidangRadius.smAll,
             indicator: BoxDecoration(
               color: tokens.accent.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: ZaidangRadius.smAll,
             ),
             tabs: const [
               _ArchiveTab(label: 'OC'),
@@ -69,11 +69,11 @@ class _ArchiveTab extends StatelessWidget {
       height: 48,
       child: Container(
         height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: ZaidangSpacing.md),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           border: Border.all(color: ZaidangTokens.of(context).border),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: ZaidangRadius.smAll,
         ),
         child: Text(label, maxLines: 1),
       ),

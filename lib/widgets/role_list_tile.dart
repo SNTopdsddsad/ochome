@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/models/role.dart';
+import '../theme/zaidang_radius.dart';
 import '../theme/zaidang_tokens.dart';
 import 'cover_file_view.dart';
 
@@ -20,7 +21,6 @@ class RoleListTile extends StatelessWidget {
     ].where((text) => text.isNotEmpty).join(' · ');
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       leading: RoleCoverThumb(path: role.coverImg),
       title: Text(role.name),
       subtitle: subtitle.isEmpty ? null : Text(subtitle),
@@ -53,7 +53,7 @@ class RoleCoverThumb extends StatelessWidget {
     );
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: ZaidangRadius.smAll,
       child: SizedBox(
         width: size,
         height: size,

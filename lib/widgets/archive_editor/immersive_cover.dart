@@ -4,7 +4,10 @@ import 'dart:ui' as ui show ImageFilter, TileMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../theme/zaidang_radius.dart';
+import '../../theme/zaidang_spacing.dart';
 import '../../theme/zaidang_tokens.dart';
+import '../../theme/zaidang_type.dart';
 import '../cover_file_view.dart';
 
 /// 对齐 memory 详情页媒体头图（含顶部沉浸），约 352pt。
@@ -113,9 +116,9 @@ class ImmersiveCover extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    left: 16,
-                    right: 16,
-                    bottom: _heroCapHeight + 12,
+                    left: ZaidangSpacing.lg,
+                    right: ZaidangSpacing.lg,
+                    bottom: _heroCapHeight + ZaidangSpacing.md,
                     child: IgnorePointer(
                       ignoring: visible < 1,
                       child: Opacity(
@@ -145,9 +148,7 @@ class ImmersiveCover extends StatelessWidget {
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: tokens.bg,
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(20),
-                          ),
+                          borderRadius: ZaidangRadius.lgTop,
                         ),
                         child: const SizedBox(height: _heroCapHeight),
                       ),
@@ -249,6 +250,7 @@ class _CallingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = ZaidangTokens.of(context);
+    final type = ZaidangType.of(context);
     final addLabel = '添加$coverNoun';
     final portrait = hasCover
         ? CoverFileView(
@@ -269,9 +271,9 @@ class _CallingCard extends StatelessWidget {
       color: tokens.surface,
       elevation: 2,
       shadowColor: tokens.ink.withValues(alpha: 0.18),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: ZaidangRadius.smAll,
       child: Padding(
-        padding: const EdgeInsets.all(6),
+        padding: const EdgeInsets.all(ZaidangSpacing.sm),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -281,9 +283,9 @@ class _CallingCard extends StatelessWidget {
               label: portraitLabel,
               child: InkWell(
                 onTap: onPortraitTap,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: ZaidangRadius.smAll,
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: ZaidangRadius.smAll,
                   child: SizedBox(
                     key: portraitKey,
                     width: _portraitWidth,
@@ -294,7 +296,7 @@ class _CallingCard extends StatelessWidget {
               ),
             ),
             if (title.isNotEmpty || subtitle.isNotEmpty || hasCover) ...[
-              const SizedBox(width: 12),
+              const SizedBox(width: ZaidangSpacing.md),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 168),
                 child: Column(
@@ -306,28 +308,19 @@ class _CallingCard extends StatelessWidget {
                         title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: tokens.ink,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          height: 1.25,
-                        ),
+                        style: type.subheading,
                       ),
                     if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: ZaidangSpacing.xs),
                       Text(
                         subtitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: tokens.inkSecondary,
-                          fontSize: 12,
-                          height: 1.3,
-                        ),
+                        style: type.micro,
                       ),
                     ],
                     if (hasCover) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: ZaidangSpacing.xs),
                       Tooltip(
                         message: changeLabel,
                         excludeFromSemantics: true,
@@ -347,7 +340,7 @@ class _CallingCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: ZaidangSpacing.sm),
             ],
           ],
         ),
@@ -379,14 +372,8 @@ class _PortraitPlaceholder extends StatelessWidget {
             size: compact ? 22 : 28,
             color: tokens.inkSecondary,
           ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: tokens.inkSecondary,
-              fontSize: compact ? 11 : 12,
-            ),
-          ),
+          const SizedBox(height: ZaidangSpacing.sm),
+          Text(label, style: ZaidangType.of(context).micro),
         ],
       ),
     );

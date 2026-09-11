@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../data/models/role_asset_name.dart';
+import '../theme/zaidang_spacing.dart';
 import '../theme/zaidang_tokens.dart';
+import '../theme/zaidang_type.dart';
 
 class RoleAssetRenameDialog extends StatefulWidget {
   const RoleAssetRenameDialog({
@@ -80,6 +82,7 @@ class _RoleAssetRenameDialogState extends State<RoleAssetRenameDialog> {
   @override
   Widget build(BuildContext context) {
     final tokens = ZaidangTokens.of(context);
+    final type = ZaidangType.of(context);
     return PopScope(
       canPop: !_saving,
       onPopInvokedWithResult: (didPop, _) {
@@ -88,7 +91,7 @@ class _RoleAssetRenameDialogState extends State<RoleAssetRenameDialog> {
       child: AlertDialog(
         key: const Key('role-asset-rename-dialog'),
         scrollable: true,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        insetPadding: const EdgeInsets.all(ZaidangSpacing.xxl),
         title: const Text('重命名资产'),
         content: Form(
           key: _formKey,
@@ -107,18 +110,18 @@ class _RoleAssetRenameDialogState extends State<RoleAssetRenameDialog> {
                 onFieldSubmitted: (_) => _submit(),
               ),
               if (_name.extension.isNotEmpty) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: ZaidangSpacing.md),
                 Text(
                   '文件格式 ${_name.extension}（保留）',
                   key: const Key('role-asset-rename-extension'),
-                  style: TextStyle(color: tokens.inkSecondary),
+                  style: type.caption,
                 ),
               ],
               if (_saveError != null) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: ZaidangSpacing.md),
                 Semantics(
                   liveRegion: true,
-                  child: Text(_saveError!, style: TextStyle(color: tokens.ink)),
+                  child: Text(_saveError!, style: type.body),
                 ),
               ],
             ],

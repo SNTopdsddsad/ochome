@@ -7,7 +7,10 @@ import '../data/models/role.dart';
 import '../data/models/role_relationship.dart';
 import '../data/providers/role_relationships_provider.dart';
 import '../data/providers/roles_provider.dart';
+import '../theme/zaidang_radius.dart';
+import '../theme/zaidang_spacing.dart';
 import '../theme/zaidang_tokens.dart';
+import '../theme/zaidang_type.dart';
 import '../widgets/cover_file_view.dart';
 import '../widgets/role_relationship_editor_sheet.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
@@ -150,7 +153,7 @@ class _RoleRelationshipsTabState extends ConsumerState<RoleRelationshipsTab>
             child: Row(
               children: [
                 Icon(Icons.edit_outlined, size: 20),
-                SizedBox(width: 12),
+                SizedBox(width: ZaidangSpacing.md),
                 Text('修改'),
               ],
             ),
@@ -160,7 +163,7 @@ class _RoleRelationshipsTabState extends ConsumerState<RoleRelationshipsTab>
             child: Row(
               children: [
                 Icon(Icons.delete_outline, size: 20),
-                SizedBox(width: 12),
+                SizedBox(width: ZaidangSpacing.md),
                 Text('删除'),
               ],
             ),
@@ -218,8 +221,9 @@ class _RoleRelationshipsTabState extends ConsumerState<RoleRelationshipsTab>
       for (final role in roles.asData?.value ?? const <Role>[]) role.id: role,
     };
     final tokens = ZaidangTokens.of(context);
+    final type = ZaidangType.of(context);
     final inset =
-        20 +
+        ZaidangSpacing.page +
         ((MediaQuery.sizeOf(context).width - 600).clamp(0, double.infinity) /
             2);
     return CustomScrollView(
@@ -228,18 +232,20 @@ class _RoleRelationshipsTabState extends ConsumerState<RoleRelationshipsTab>
       slivers: [
         SliverOverlapInjector(handle: widget.overlapHandle),
         SliverPadding(
-          padding: EdgeInsets.fromLTRB(inset, 12, inset, 8),
+          padding: EdgeInsets.fromLTRB(
+            inset,
+            ZaidangSpacing.md,
+            inset,
+            ZaidangSpacing.sm,
+          ),
           sliver: SliverToBoxAdapter(
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    switch (relationships.asData) {
-                      AsyncData(:final value) => '${value.length} 条关系',
-                      _ => '',
-                    },
-                    style: TextStyle(color: tokens.inkSecondary, fontSize: 13),
-                  ),
+                  child: Text(switch (relationships.asData) {
+                    AsyncData(:final value) => '${value.length} 条关系',
+                    _ => '',
+                  }, style: type.caption),
                 ),
                 TextButton.icon(
                   key: const Key('role-relationship-add'),
@@ -258,7 +264,7 @@ class _RoleRelationshipsTabState extends ConsumerState<RoleRelationshipsTab>
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(ZaidangSpacing.xxl),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -267,16 +273,13 @@ class _RoleRelationshipsTabState extends ConsumerState<RoleRelationshipsTab>
                           size: 40,
                           color: tokens.inkSecondary,
                         ),
-                        const SizedBox(height: 12),
-                        Text('还没有关系', style: TextStyle(color: tokens.ink)),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: ZaidangSpacing.md),
+                        Text('还没有关系', style: type.body),
+                        const SizedBox(height: ZaidangSpacing.sm),
                         Text(
                           '记录这个 OC 与其他 OC 之间的关系，比如师徒、挚友、宿敌',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: tokens.inkSecondary,
-                            fontSize: 13,
-                          ),
+                          style: type.caption,
                         ),
                       ],
                     ),
@@ -288,17 +291,16 @@ class _RoleRelationshipsTabState extends ConsumerState<RoleRelationshipsTab>
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(
                   inset,
-                  8,
+                  ZaidangSpacing.sm,
                   inset,
-                  24 + MediaQuery.paddingOf(context).bottom,
+                  ZaidangSpacing.xxl + MediaQuery.paddingOf(context).bottom,
                 ),
                 sliver: SliverList.builder(
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final relationship = items[index];
-                    final other = rolesById[relationship.otherRoleId(
-                      widget.roleId,
-                    )];
+                    final other =
+                        rolesById[relationship.otherRoleId(widget.roleId)];
                     final otherName = other == null
                         ? '已删除的 OC'
                         : other.name.trim().isEmpty
@@ -306,7 +308,9 @@ class _RoleRelationshipsTabState extends ConsumerState<RoleRelationshipsTab>
                         : other.name;
                     return ListTile(
                       key: ValueKey('role-relationship-${relationship.id}'),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: ZaidangSpacing.sm,
+                      ),
                       leading: _OtherPortrait(
                         role: other,
                         name: otherName,
@@ -399,12 +403,13 @@ class _OtherPortrait extends StatelessWidget {
       child: Center(
         child: Text(
           name.characters.first,
-          style: TextStyle(color: tokens.inkSecondary, fontSize: 18),
+          style: ZaidangType.of(context).subheading
+              .copyWith(color: tokens.inkSecondary),
         ),
       ),
     );
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: ZaidangRadius.smAll,
       child: SizedBox(
         width: 44,
         height: 52,

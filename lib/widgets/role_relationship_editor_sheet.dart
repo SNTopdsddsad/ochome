@@ -8,8 +8,12 @@ import 'package:flutter/material.dart';
 
 import '../data/models/role.dart';
 import '../data/models/role_relationship.dart';
+import '../theme/zaidang_radius.dart';
+import '../theme/zaidang_spacing.dart';
 import '../theme/zaidang_tokens.dart';
+import '../theme/zaidang_type.dart';
 import 'cover_file_view.dart';
+import 'section_label.dart';
 
 /// 编辑器产出：始终以当前角色为 `from` 视角描述。
 class RoleRelationshipDraft {
@@ -49,7 +53,7 @@ Future<bool?> showRoleRelationshipEditor({
     backgroundColor: ZaidangTokens.of(context).surface,
     constraints: const BoxConstraints(maxWidth: 560),
     shape: RoundedRectangleBorder(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+      borderRadius: ZaidangRadius.lgTop,
       side: BorderSide(color: ZaidangTokens.of(context).border),
     ),
     builder: (_) => RoleRelationshipEditorSheet(
@@ -251,7 +255,7 @@ class _RoleRelationshipEditorSheetState
   @override
   Widget build(BuildContext context) {
     final tokens = ZaidangTokens.of(context);
-    final theme = Theme.of(context);
+    final type = ZaidangType.of(context);
     final other = _other;
     final otherName = other == null ? null : _displayName(other);
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
@@ -267,7 +271,12 @@ class _RoleRelationshipEditorSheetState
           curve: Curves.easeOutCubic,
           padding: EdgeInsets.only(bottom: bottomInset),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            padding: const EdgeInsets.fromLTRB(
+              ZaidangSpacing.page,
+              ZaidangSpacing.sm,
+              ZaidangSpacing.page,
+              ZaidangSpacing.xl,
+            ),
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -278,13 +287,7 @@ class _RoleRelationshipEditorSheetState
                     Expanded(
                       child: Text(
                         _isEditing ? '修改关系' : '添加关系',
-                        style: theme.textTheme.titleMedium!.copyWith(
-                          color: tokens.ink,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w500,
-                          height: 1.4,
-                          letterSpacing: 0,
-                        ),
+                        style: type.pageTitle,
                       ),
                     ),
                     IconButton(
@@ -295,9 +298,8 @@ class _RoleRelationshipEditorSheetState
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                _SectionLabel('对方', tokens: tokens),
-                const SizedBox(height: 10),
+                const SizedBox(height: ZaidangSpacing.md),
+                const SectionLabel('对方'),
                 _CandidateStrip(
                   candidates: widget.candidates,
                   selectedId: _otherRoleId,
@@ -306,9 +308,8 @@ class _RoleRelationshipEditorSheetState
                   onSelect: _select,
                   supportDirectory: widget.supportDirectory,
                 ),
-                const SizedBox(height: 24),
-                _SectionLabel('关系', tokens: tokens),
-                const SizedBox(height: 6),
+                const SizedBox(height: ZaidangSpacing.xxl),
+                const SectionLabel('关系'),
                 _SentenceRow(
                   key: const Key('role-relationship-sentence-self'),
                   subject: _displayName(widget.self),
@@ -339,7 +340,7 @@ class _RoleRelationshipEditorSheetState
                     onSubmitted: (_) => _submit(),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: ZaidangSpacing.xs),
                 Row(
                   children: [
                     Expanded(
@@ -348,11 +349,7 @@ class _RoleRelationshipEditorSheetState
                         child: Text(
                           _hint ?? '',
                           key: const Key('role-relationship-hint'),
-                          style: TextStyle(
-                            color: tokens.ink,
-                            fontSize: 13,
-                            height: 1.4,
-                          ),
+                          style: type.caption.copyWith(color: tokens.ink),
                         ),
                       ),
                     ),
@@ -361,18 +358,17 @@ class _RoleRelationshipEditorSheetState
                       onPressed: _saving ? null : _swap,
                       style: TextButton.styleFrom(
                         foregroundColor: tokens.inkSecondary,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: ZaidangSpacing.sm,
+                        ),
                         minimumSize: const Size(44, 36),
                       ),
                       icon: const Icon(Icons.swap_vert, size: 18),
-                      label: const Text(
-                        '交换',
-                        semanticsLabel: '交换两句里的称呼',
-                      ),
+                      label: const Text('交换', semanticsLabel: '交换两句里的称呼'),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: ZaidangSpacing.lg),
                 FilledButton(
                   key: const Key('role-relationship-save'),
                   onPressed: _saving ? null : _submit,
@@ -383,13 +379,10 @@ class _RoleRelationshipEditorSheetState
                     disabledBackgroundColor: tokens.accent,
                     disabledForegroundColor: tokens.onAccent,
                     minimumSize: const Size.fromHeight(48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: ZaidangRadius.mdAll,
                     ),
-                    textStyle: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    textStyle: type.label,
                   ),
                   child: _saving
                       ? Row(
@@ -402,7 +395,7 @@ class _RoleRelationshipEditorSheetState
                                 color: tokens.onAccent,
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: ZaidangSpacing.md),
                             const Text('保存中…'),
                           ],
                         )
@@ -415,18 +408,6 @@ class _RoleRelationshipEditorSheetState
       ),
     );
   }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text, {required this.tokens});
-  final String text;
-  final ZaidangTokens tokens;
-
-  @override
-  Widget build(BuildContext context) => Text(
-    text,
-    style: TextStyle(color: tokens.inkSecondary, fontSize: 13, height: 1.4),
-  );
 }
 
 /// 横向立绘小卡。选中态只改描边色与名字色，描边宽度恒定，不发生布局跳动。
@@ -450,13 +431,14 @@ class _CandidateStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = ZaidangTokens.of(context);
+    final type = ZaidangType.of(context);
     return SizedBox(
       height: 100,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
         itemCount: candidates.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        separatorBuilder: (_, _) => const SizedBox(width: ZaidangSpacing.md),
         itemBuilder: (context, index) {
           final role = candidates[index];
           final selected = role.id == selectedId;
@@ -474,7 +456,7 @@ class _CandidateStrip extends StatelessWidget {
             child: InkWell(
               key: Key('role-relationship-candidate-${role.id}'),
               onTap: enabled ? () => onSelect(role.id) : null,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: ZaidangRadius.mdAll,
               focusColor: tokens.accent.withValues(alpha: 0.12),
               child: Opacity(
                 opacity: enabled ? 1 : 0.55,
@@ -487,7 +469,7 @@ class _CandidateStrip extends StatelessWidget {
                         height: 74,
                         decoration: BoxDecoration(
                           color: tokens.bg,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: ZaidangRadius.smAll,
                           border: Border.all(color: borderColor, width: 1.5),
                         ),
                         clipBehavior: Clip.antiAlias,
@@ -497,30 +479,23 @@ class _CandidateStrip extends StatelessWidget {
                           placeholder: Center(
                             child: Text(
                               name.characters.first,
-                              style: TextStyle(
+                              style: type.subheading.copyWith(
                                 color: selected
                                     ? tokens.accent
                                     : tokens.inkSecondary,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: ZaidangSpacing.sm),
                       Text(
                         name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: type.micro.copyWith(
                           color: selected ? tokens.ink : tokens.inkSecondary,
-                          fontSize: 12,
-                          fontWeight: selected
-                              ? FontWeight.w500
-                              : FontWeight.w400,
-                          height: 1.3,
                         ),
                       ),
                     ],
@@ -551,18 +526,17 @@ class _SentenceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = ZaidangTokens.of(context);
-    final particle = TextStyle(color: tokens.ink, fontSize: 17, height: 1.5);
+    final particle = ZaidangType.of(context).bodyLarge;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: ZaidangSpacing.sm),
       child: Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 8,
-        runSpacing: 4,
+        spacing: ZaidangSpacing.sm,
+        runSpacing: ZaidangSpacing.xs,
         children: [
-          _Name(subject, tokens: tokens),
+          _Name(subject),
           Text('是', style: particle),
-          _Name(object, tokens: tokens),
+          _Name(object),
           Text('的', style: particle),
           blank,
         ],
@@ -572,25 +546,23 @@ class _SentenceRow extends StatelessWidget {
 }
 
 class _Name extends StatelessWidget {
-  const _Name(this.name, {required this.tokens});
+  const _Name(this.name);
   final String? name;
-  final ZaidangTokens tokens;
 
   @override
-  Widget build(BuildContext context) => ConstrainedBox(
-    constraints: const BoxConstraints(maxWidth: 150),
-    child: Text(
-      name ?? '对方',
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: TextStyle(
-        color: name == null ? tokens.inkSecondary : tokens.ink,
-        fontSize: 17,
-        fontWeight: FontWeight.w500,
-        height: 1.5,
+  Widget build(BuildContext context) {
+    final tokens = ZaidangTokens.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 150),
+      child: Text(
+        name ?? '对方',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: ZaidangType.of(context).subheading
+            .copyWith(color: name == null ? tokens.inkSecondary : tokens.ink),
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// 填空：只有一条下划线。所有状态下线宽恒定，靠颜色区分焦点与错误。
@@ -618,9 +590,9 @@ class _Blank extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = ZaidangTokens.of(context);
-    UnderlineInputBorder line(Color color) => UnderlineInputBorder(
-      borderSide: BorderSide(color: color, width: 1.5),
-    );
+    final type = ZaidangType.of(context);
+    UnderlineInputBorder line(Color color) =>
+        UnderlineInputBorder(borderSide: BorderSide(color: color, width: 1.5));
     final restColor = invalid ? tokens.ink : tokens.border;
     return IntrinsicWidth(
       child: ConstrainedBox(
@@ -635,24 +607,19 @@ class _Blank extends StatelessWidget {
           maxLength: relationshipLabelMaxLength,
           maxLines: 1,
           cursorColor: tokens.accent,
-          style: TextStyle(
-            color: tokens.ink,
-            fontSize: 17,
-            fontWeight: FontWeight.w500,
-            height: 1.5,
-          ),
+          style: type.subheading,
           decoration: InputDecoration(
             isDense: true,
             filled: false,
             counterText: '',
             hintText: hint,
-            hintStyle: TextStyle(
-              color: tokens.inkSecondary,
-              fontSize: 17,
-              fontWeight: FontWeight.w400,
-              height: 1.5,
+            hintStyle: type.bodyLarge.copyWith(color: tokens.inkSecondary),
+            contentPadding: const EdgeInsets.fromLTRB(
+              ZaidangSpacing.xs,
+              ZaidangSpacing.sm,
+              ZaidangSpacing.xs,
+              ZaidangSpacing.sm,
             ),
-            contentPadding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
             border: line(restColor),
             enabledBorder: line(restColor),
             disabledBorder: line(tokens.border.withValues(alpha: 0.6)),

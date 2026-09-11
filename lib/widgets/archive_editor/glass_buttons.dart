@@ -2,6 +2,8 @@ import 'dart:ui' as ui show ImageFilter;
 
 import 'package:flutter/material.dart';
 
+import '../../theme/zaidang_radius.dart';
+import '../../theme/zaidang_spacing.dart';
 import '../../theme/zaidang_tokens.dart';
 
 /// 头图上玻璃按钮的边长，也是编辑页顶部工具栏的高度。
@@ -77,16 +79,17 @@ class GlassSaveButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = ZaidangTokens.of(context);
     final fillAlpha = onPhoto ? 0.34 : 0.72;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
+    return ClipPath(
+      clipper: const ShapeBorderClipper(shape: ZaidangRadius.pill),
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: ShapeDecoration(
             color: tokens.ink.withValues(alpha: fillAlpha),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: ZaidangTokens.light.surface.withValues(alpha: 0.18),
+            shape: StadiumBorder(
+              side: BorderSide(
+                color: ZaidangTokens.light.surface.withValues(alpha: 0.18),
+              ),
             ),
           ),
           child: TextButton(
@@ -95,7 +98,9 @@ class GlassSaveButton extends StatelessWidget {
               foregroundColor: tokens.accent,
               disabledForegroundColor: tokens.inkSecondary,
               minimumSize: const Size(44, glassButtonSize),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: ZaidangSpacing.lg,
+              ),
             ),
             child: saving
                 ? const Row(
@@ -106,7 +111,7 @@ class GlassSaveButton extends StatelessWidget {
                         height: 14,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
-                      SizedBox(width: 8),
+                      SizedBox(width: ZaidangSpacing.sm),
                       Text('保存中…'),
                     ],
                   )

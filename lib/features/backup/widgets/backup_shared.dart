@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../theme/zaidang_radius.dart';
+import '../../../theme/zaidang_spacing.dart';
 import '../../../theme/zaidang_tokens.dart';
+import '../../../theme/zaidang_type.dart';
 import '../backup_models.dart';
 import '../backup_protocol.dart';
 
@@ -21,9 +24,12 @@ String backupDateLabel(DateTime time, {bool includeYear = false}) {
 
 ButtonStyle backupPrimaryStyle(BuildContext context) => FilledButton.styleFrom(
   minimumSize: const Size(double.infinity, 52),
-  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+  padding: const EdgeInsets.symmetric(
+    horizontal: ZaidangSpacing.lg,
+    vertical: ZaidangSpacing.md,
+  ),
+  shape: const RoundedRectangleBorder(borderRadius: ZaidangRadius.smAll),
+  textStyle: ZaidangType.of(context).label,
 );
 
 class BackupDisclosure extends StatefulWidget {
@@ -53,10 +59,14 @@ class _BackupDisclosureState extends State<BackupDisclosure> {
             style: TextButton.styleFrom(
               foregroundColor: backupSecondaryColor(context),
               minimumSize: const Size(44, 44),
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: ZaidangSpacing.sm),
             ),
             icon: Icon(_expanded ? Icons.remove : Icons.add, size: 18),
-            label: Text(widget.title, style: const TextStyle(fontSize: 13)),
+            label: Text(
+              widget.title,
+              style: ZaidangType.of(context).caption
+                  .copyWith(color: backupSecondaryColor(context)),
+            ),
           ),
         ),
       ),
@@ -128,10 +138,10 @@ class BackupPaperCard extends StatelessWidget {
     final tokens = ZaidangTokens.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(ZaidangSpacing.card),
       decoration: BoxDecoration(
         color: tokens.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: ZaidangRadius.mdAll,
         border: Border.all(color: tokens.border),
       ),
       child: child,
@@ -145,7 +155,7 @@ class BackupKeyValue extends StatelessWidget {
   final String value;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 7),
+    padding: const EdgeInsets.symmetric(vertical: ZaidangSpacing.sm),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -153,10 +163,11 @@ class BackupKeyValue extends StatelessWidget {
           flex: 4,
           child: Text(
             label,
-            style: TextStyle(color: backupSecondaryColor(context)),
+            style: ZaidangType.of(context).body
+                .copyWith(color: backupSecondaryColor(context)),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: ZaidangSpacing.md),
         Expanded(flex: 6, child: Text(value, textAlign: TextAlign.end)),
       ],
     ),
@@ -169,16 +180,17 @@ class BackupNotice extends StatelessWidget {
   final IconData icon;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 12),
+    padding: const EdgeInsets.symmetric(vertical: ZaidangSpacing.md),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 19, color: backupSecondaryColor(context)),
-        const SizedBox(width: 9),
+        const SizedBox(width: ZaidangSpacing.sm),
         Expanded(
           child: Text(
             message,
-            style: TextStyle(color: backupSecondaryColor(context), height: 1.5),
+            style: ZaidangType.of(context).body
+                .copyWith(color: backupSecondaryColor(context)),
           ),
         ),
       ],
@@ -195,68 +207,64 @@ class BackupSummaryView extends StatelessWidget {
   final SnapshotSummary summary;
   final String title;
   @override
-  Widget build(BuildContext context) => BackupPaperCard(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-        const SizedBox(height: 6),
-        Text(
-          summary.knownLogicalDataBytes == null
-              ? '总量待检查'
-              : backupBytes(summary.knownLogicalDataBytes),
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w500),
-        ),
-        const Divider(height: 28),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final labels = [
-              ('${summary.roleCount}', '位角色'),
-              ('${summary.revisionCount}', '版设定历史'),
-              ('${summary.originalFileCount}', '份原文件'),
-            ];
-            return Wrap(
-              spacing: 8,
-              runSpacing: 12,
-              children: [
-                for (final pair in labels)
-                  SizedBox(
-                    width: MediaQuery.textScalerOf(context).scale(14) > 24
-                        ? constraints.maxWidth
-                        : (constraints.maxWidth - 16) / 3,
-                    child: Column(
-                      children: [
-                        Text(
-                          pair.$1,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w500,
+  Widget build(BuildContext context) {
+    final type = ZaidangType.of(context);
+    final secondary = backupSecondaryColor(context);
+    return BackupPaperCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: type.subheading),
+          const SizedBox(height: ZaidangSpacing.sm),
+          Text(
+            summary.knownLogicalDataBytes == null
+                ? '总量待检查'
+                : backupBytes(summary.knownLogicalDataBytes),
+            style: type.hero,
+          ),
+          const Divider(height: ZaidangSpacing.xxxl),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final labels = [
+                ('${summary.roleCount}', '位角色'),
+                ('${summary.revisionCount}', '版设定历史'),
+                ('${summary.originalFileCount}', '份原文件'),
+              ];
+              const gap = ZaidangSpacing.sm;
+              return Wrap(
+                spacing: gap,
+                runSpacing: ZaidangSpacing.md,
+                children: [
+                  for (final pair in labels)
+                    SizedBox(
+                      width: MediaQuery.textScalerOf(context).scale(14) > 24
+                          ? constraints.maxWidth
+                          : (constraints.maxWidth - gap * 2) / 3,
+                      child: Column(
+                        children: [
+                          Text(pair.$1, style: type.heading),
+                          const SizedBox(height: ZaidangSpacing.xs),
+                          Text(
+                            pair.$2,
+                            textAlign: TextAlign.center,
+                            style: type.micro.copyWith(color: secondary),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          pair.$2,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: backupSecondaryColor(context),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: 14),
-        Text(
-          '含 ${summary.customAttributeCount} 项自定义属性、${summary.coverCount} 张立绘原图',
-          style: TextStyle(fontSize: 12, color: backupSecondaryColor(context)),
-        ),
-      ],
-    ),
-  );
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: ZaidangSpacing.lg),
+          Text(
+            '含 ${summary.customAttributeCount} 项自定义属性、${summary.coverCount} 张立绘原图',
+            style: type.micro.copyWith(color: secondary),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class BackupBody extends StatelessWidget {
@@ -268,14 +276,14 @@ class BackupBody extends StatelessWidget {
     builder: (context, constraints) {
       final horizontal = constraints.maxWidth > 640
           ? (constraints.maxWidth - 600) / 2
-          : 24.0;
+          : ZaidangSpacing.xxl;
       return ListView(
         controller: controller,
         padding: EdgeInsets.fromLTRB(
           horizontal,
-          32,
+          ZaidangSpacing.xxxl,
           horizontal,
-          MediaQuery.paddingOf(context).bottom + 24,
+          MediaQuery.paddingOf(context).bottom + ZaidangSpacing.xxl,
         ),
         children: children,
       );

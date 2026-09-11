@@ -9,7 +9,10 @@ import '../data/providers/role_assets_provider.dart';
 import '../data/repositories/role_asset_repository.dart';
 import '../data/services/video_thumbnail_service.dart';
 import '../data/services/data_storage.dart';
+import '../theme/zaidang_radius.dart';
+import '../theme/zaidang_spacing.dart';
 import '../theme/zaidang_tokens.dart';
+import '../theme/zaidang_type.dart';
 import '../widgets/role_asset_rename_dialog.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
 import '../widgets/zaidang_snack_bar.dart';
@@ -83,7 +86,7 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
                 subtitle: const Text('图片、视频、音频和文档'),
                 onTap: () => Navigator.pop(context, false),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: ZaidangSpacing.md),
             ],
           ),
         ),
@@ -198,7 +201,7 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
             child: Row(
               children: [
                 Icon(Icons.edit_outlined, size: 20),
-                SizedBox(width: 12),
+                SizedBox(width: ZaidangSpacing.md),
                 Text('重命名'),
               ],
             ),
@@ -208,7 +211,7 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
             child: Row(
               children: [
                 Icon(Icons.delete_outline, size: 20),
-                SizedBox(width: 12),
+                SizedBox(width: ZaidangSpacing.md),
                 Text('删除'),
               ],
             ),
@@ -278,8 +281,9 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
     super.build(context);
     final assets = ref.watch(roleAssetsProvider(widget.roleId));
     final tokens = ZaidangTokens.of(context);
+    final type = ZaidangType.of(context);
     final inset =
-        20 +
+        ZaidangSpacing.page +
         ((MediaQuery.sizeOf(context).width - 600).clamp(0, double.infinity) /
             2);
     return CustomScrollView(
@@ -288,7 +292,12 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
       slivers: [
         SliverOverlapInjector(handle: widget.overlapHandle),
         SliverPadding(
-          padding: EdgeInsets.fromLTRB(inset, 12, inset, 8),
+          padding: EdgeInsets.fromLTRB(
+            inset,
+            ZaidangSpacing.md,
+            inset,
+            ZaidangSpacing.sm,
+          ),
           sliver: SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,10 +309,7 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
                         _importing
                             ? '正在保存文件…'
                             : '${assets.asData?.value.length ?? 0} 份资产',
-                        style: TextStyle(
-                          color: tokens.inkSecondary,
-                          fontSize: 13,
-                        ),
+                        style: type.caption,
                       ),
                     ),
                     TextButton.icon(
@@ -316,12 +322,12 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
                 ),
                 if (_importing)
                   const Padding(
-                    padding: EdgeInsets.only(bottom: 12),
+                    padding: EdgeInsets.only(bottom: ZaidangSpacing.md),
                     child: LinearProgressIndicator(),
                   ),
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
+                  spacing: ZaidangSpacing.sm,
+                  runSpacing: ZaidangSpacing.xs,
                   children: [
                     for (final kind in [null, ...RoleAssetKind.values])
                       ChoiceChip(
@@ -360,7 +366,7 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(ZaidangSpacing.xxl),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -369,19 +375,16 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
                           size: 40,
                           color: tokens.inkSecondary,
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: ZaidangSpacing.md),
                         Text(
                           _filter == null ? '还没有资产' : '暂无${_filter!.label}',
-                          style: TextStyle(color: tokens.ink),
+                          style: type.body,
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: ZaidangSpacing.sm),
                         Text(
                           '保存属于这个 OC 的图片、视频、音频和文档',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: tokens.inkSecondary,
-                            fontSize: 13,
-                          ),
+                          style: type.caption,
                         ),
                       ],
                     ),
@@ -393,9 +396,9 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(
                   inset,
-                  8,
+                  ZaidangSpacing.sm,
                   inset,
-                  24 + MediaQuery.paddingOf(context).bottom,
+                  ZaidangSpacing.xxl + MediaQuery.paddingOf(context).bottom,
                 ),
                 sliver: SliverList.builder(
                   itemCount: items.length,
@@ -403,7 +406,9 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
                     final asset = items[index];
                     return ListTile(
                       key: ValueKey('role-asset-${asset.id}'),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: ZaidangSpacing.sm,
+                      ),
                       leading: _AssetThumbnail(
                         asset: asset,
                         repository: ref.read(roleAssetRepositoryProvider),
@@ -519,7 +524,7 @@ class _AssetThumbnailState extends State<_AssetThumbnail> {
       ),
     );
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: ZaidangRadius.smAll,
       child: SizedBox.square(
         dimension: 52,
         child: _file == null
@@ -548,7 +553,7 @@ class _AssetThumbnailState extends State<_AssetThumbnail> {
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Padding(
-                                  padding: EdgeInsets.all(2),
+                                  padding: EdgeInsets.all(ZaidangSpacing.xxs),
                                   child: Icon(
                                     Icons.play_arrow,
                                     size: 14,

@@ -9,13 +9,17 @@ import '../data/models/world_entry.dart';
 import '../data/providers/world_repository_provider.dart';
 import '../data/providers/worlds_provider.dart';
 import '../data/services/cover_image_picker.dart';
+import '../theme/zaidang_radius.dart';
+import '../theme/zaidang_spacing.dart';
 import '../theme/zaidang_tokens.dart';
+import '../theme/zaidang_type.dart';
 import '../widgets/archive_editor/archive_card.dart';
 import '../widgets/archive_editor/glass_buttons.dart';
 import '../widgets/archive_editor/immersive_cover.dart';
 import '../widgets/archive_editor/pinned_identity.dart';
 import '../widgets/cover_file_view.dart';
 import '../widgets/role_list_tile.dart';
+import '../widgets/section_label.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
 import '../widgets/zaidang_snack_bar.dart';
 import 'cover_preview_page.dart';
@@ -67,11 +71,17 @@ class _WorldCreatePageState extends ConsumerState<WorldCreatePage>
 
   bool get _isEditing => widget.world != null;
 
+  /// 聚焦字段时滚动到可见区所留的余量；编辑态顶部还要让开吸顶工具栏。
+  static const double _fieldScrollInset = 80;
+  static const double _fieldScrollTopInset = 128;
+
   EdgeInsets get _fieldScrollPadding => EdgeInsets.fromLTRB(
-    80,
-    _isEditing ? MediaQuery.viewPaddingOf(context).top + 128 : 80,
-    80,
-    80,
+    _fieldScrollInset,
+    _isEditing
+        ? MediaQuery.viewPaddingOf(context).top + _fieldScrollTopInset
+        : _fieldScrollInset,
+    _fieldScrollInset,
+    _fieldScrollInset,
   );
 
   @override
@@ -243,7 +253,7 @@ class _WorldCreatePageState extends ConsumerState<WorldCreatePage>
               title: Text('删除世界观', style: TextStyle(color: tokens.ink)),
               onTap: () => Navigator.of(context).pop(_MoreAction.delete),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: ZaidangSpacing.sm),
           ],
         ),
       ),
@@ -331,14 +341,14 @@ class _WorldCreatePageState extends ConsumerState<WorldCreatePage>
                   ),
                 ),
                 Positioned(
-                  top: topInset + 8,
-                  left: 16,
-                  right: 16,
+                  top: topInset + ZaidangSpacing.sm,
+                  left: ZaidangSpacing.lg,
+                  right: ZaidangSpacing.lg,
                   child: SizedBox(
                     height: glassButtonSize,
                     child: NavigationToolbar(
                       centerMiddle: true,
-                      middleSpacing: 12,
+                      middleSpacing: ZaidangSpacing.md,
                       leading: GlassIconButton(
                         icon: Icons.arrow_back_ios_new,
                         iconSize: 16,
@@ -393,7 +403,7 @@ class _WorldCreatePageState extends ConsumerState<WorldCreatePage>
                               onPhoto: _coverImg.isNotEmpty,
                               onTap: _busy ? null : _openMoreActions,
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: ZaidangSpacing.sm),
                           ],
                           GlassSaveButton(
                             saving: _saving,
@@ -462,7 +472,9 @@ class _WorldCreatePageState extends ConsumerState<WorldCreatePage>
                   unselectedLabelColor: tokens.inkSecondary,
                   indicatorColor: tokens.accent,
                   dividerColor: tokens.border,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: ZaidangSpacing.sm,
+                  ),
                   tabs: const [
                     Tab(text: '详情'),
                     Tab(text: '角色'),
@@ -524,7 +536,12 @@ class _WorldCreatePageState extends ConsumerState<WorldCreatePage>
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final horizontal = archiveEditorHorizontalPadding(context);
     return SliverPadding(
-      padding: EdgeInsets.fromLTRB(horizontal, 8, horizontal, 32 + bottomInset),
+      padding: EdgeInsets.fromLTRB(
+        horizontal,
+        ZaidangSpacing.sm,
+        horizontal,
+        ZaidangSpacing.xxxl + bottomInset,
+      ),
       sliver: SliverMainAxisGroup(
         slivers: [
           SliverToBoxAdapter(
@@ -533,17 +550,13 @@ class _WorldCreatePageState extends ConsumerState<WorldCreatePage>
               children: [
                 Text(
                   _isEditing ? '编辑世界观' : '新建世界观',
-                  style: TextStyle(
-                    color: tokens.ink,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: ZaidangType.of(context).title,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: ZaidangSpacing.lg),
                 _buildBasicCard(),
-                const SizedBox(height: 16),
+                const SizedBox(height: ZaidangSpacing.lg),
                 _buildSummaryCard(),
-                const SizedBox(height: 16),
+                const SizedBox(height: ZaidangSpacing.lg),
               ],
             ),
           ),
@@ -668,7 +681,7 @@ class _WorldCreatePageState extends ConsumerState<WorldCreatePage>
       key: const Key('world-create-entries-card'),
       decoration: archiveCardDecoration(tokens),
       sliver: SliverPadding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        padding: const EdgeInsets.all(ZaidangSpacing.card),
         sliver: SliverMainAxisGroup(
           slivers: [
             const SliverToBoxAdapter(child: SectionLabel('词条')),
@@ -693,7 +706,7 @@ class _WorldCreatePageState extends ConsumerState<WorldCreatePage>
               proxyDecorator: (child, index, animation) => Material(
                 color: tokens.surface,
                 elevation: 4,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: ZaidangRadius.smAll,
                 child: child,
               ),
               itemBuilder: (context, index) {
@@ -701,7 +714,7 @@ class _WorldCreatePageState extends ConsumerState<WorldCreatePage>
                 final number = index + 1;
                 return Padding(
                   key: entry.key,
-                  padding: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.only(bottom: ZaidangSpacing.lg),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -710,10 +723,7 @@ class _WorldCreatePageState extends ConsumerState<WorldCreatePage>
                           Expanded(
                             child: Text(
                               '词条 $number',
-                              style: TextStyle(
-                                color: tokens.inkSecondary,
-                                fontSize: 12,
-                              ),
+                              style: ZaidangType.of(context).micro,
                             ),
                           ),
                           ReorderableDragStartListener(
@@ -789,7 +799,7 @@ class _WorldCreatePageState extends ConsumerState<WorldCreatePage>
                             ? '请填写词条标题'
                             : null,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: ZaidangSpacing.md),
                       TextFormField(
                         controller: entry.content,
                         enabled: !_busy,
@@ -865,12 +875,16 @@ class _WorldRolesTab extends ConsumerWidget {
               return centered(
                 Text(
                   '还没有角色归属这个世界观',
-                  style: TextStyle(color: tokens.inkSecondary, fontSize: 14),
+                  style: ZaidangType.of(context).body
+                      .copyWith(color: tokens.inkSecondary),
                 ),
               );
             }
             return SliverPadding(
-              padding: EdgeInsets.only(top: 8, bottom: 32 + bottomInset),
+              padding: EdgeInsets.only(
+                top: ZaidangSpacing.sm,
+                bottom: ZaidangSpacing.xxxl + bottomInset,
+              ),
               sliver: SliverList.separated(
                 itemCount: items.length,
                 separatorBuilder: (_, _) => const Divider(height: 1),

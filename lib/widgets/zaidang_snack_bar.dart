@@ -2,9 +2,17 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../theme/zaidang_spacing.dart';
 import '../theme/zaidang_tokens.dart';
+import '../theme/zaidang_type.dart';
 
 enum ZaidangSnackBarTone { info, success, error }
+
+/// 提示图标的圆形底座边长。
+const double _markSize = 32;
+
+/// 原生关闭按钮预留宽度，略大于实际值让估算偏保守。
+const double _closeButtonReserve = 56;
 
 /// 用原生消息队列展示悬浮便笺，保留关闭、计时和无障碍播报行为。
 ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showZaidangSnackBar(
@@ -16,10 +24,17 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showZaidangSnackBar(
   final messenger = ScaffoldMessenger.of(context);
   final media = MediaQuery.of(context);
   final availableWidth = media.size.width - media.padding.horizontal;
-  final snackWidth = availableWidth >= 512 ? 480.0 : availableWidth - 32;
+  final snackWidth = availableWidth >= 512
+      ? 480.0
+      : availableWidth - ZaidangSpacing.lg * 2;
   // Reserve the content padding, leading mark/gap and native close button.
-  // A little extra close-button room makes the estimate conservative.
-  final messageWidth = math.max(1.0, snackWidth - 24 - 44 - 56);
+  final messageWidth = math.max(
+    1.0,
+    snackWidth -
+        (ZaidangSpacing.lg + ZaidangSpacing.sm) -
+        (_markSize + ZaidangSpacing.md) -
+        _closeButtonReserve,
+  );
   final painter = TextPainter(
     text: TextSpan(text: message, style: _messageStyle(context)),
     textDirection: Directionality.of(context),
@@ -34,7 +49,12 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showZaidangSnackBar(
       content: ZaidangSnackBarContent(message: message, tone: tone),
       behavior: SnackBarBehavior.floating,
       width: availableWidth >= 512 ? 480 : null,
-      padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+      padding: const EdgeInsets.fromLTRB(
+        ZaidangSpacing.lg,
+        ZaidangSpacing.md,
+        ZaidangSpacing.sm,
+        ZaidangSpacing.md,
+      ),
       showCloseIcon: true,
       persist: media.accessibleNavigation || needsScrolling,
       duration:
@@ -44,19 +64,7 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showZaidangSnackBar(
   );
 }
 
-TextStyle _messageStyle(BuildContext context) {
-  final theme = Theme.of(context);
-  return (theme.snackBarTheme.contentTextStyle ??
-          theme.textTheme.bodyMedium ??
-          const TextStyle())
-      .copyWith(
-        color: ZaidangTokens.of(context).ink,
-        fontSize: 15,
-        fontWeight: FontWeight.w400,
-        height: 1.4,
-        letterSpacing: 0,
-      );
-}
+TextStyle _messageStyle(BuildContext context) => ZaidangType.of(context).body;
 
 double _maxMessageHeight(MediaQueryData media) {
   final usableHeight =
@@ -91,8 +99,8 @@ class ZaidangSnackBarContent extends StatelessWidget {
       children: [
         ExcludeSemantics(
           child: Container(
-            width: 32,
-            height: 32,
+            width: _markSize,
+            height: _markSize,
             decoration: BoxDecoration(
               color: isSuccess
                   ? tokens.accent.withValues(alpha: 0.10)
@@ -107,7 +115,7 @@ class ZaidangSnackBarContent extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: ZaidangSpacing.md),
         Expanded(
           child: ConstrainedBox(
             constraints: BoxConstraints(maxHeight: _maxMessageHeight(media)),

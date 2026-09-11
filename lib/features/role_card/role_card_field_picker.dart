@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../theme/zaidang_tokens.dart';
+import '../../theme/zaidang_spacing.dart';
+import '../../theme/zaidang_type.dart';
+import '../../widgets/section_label.dart';
 import 'role_card_content.dart';
 
 class RoleCardFieldPicker extends StatefulWidget {
@@ -23,19 +25,24 @@ class _RoleCardFieldPickerState extends State<RoleCardFieldPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = ZaidangTokens.of(context);
+    final type = ZaidangType.of(context);
     return SizedBox(
       height: MediaQuery.sizeOf(context).height * .86,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 12, 4),
+            padding: const EdgeInsets.fromLTRB(
+              ZaidangSpacing.page,
+              ZaidangSpacing.md,
+              ZaidangSpacing.md,
+              ZaidangSpacing.xs,
+            ),
             child: Wrap(
               alignment: WrapAlignment.spaceBetween,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Text('显示内容', style: Theme.of(context).textTheme.titleLarge),
+                Text('显示内容', style: type.heading),
                 TextButton(
                   key: const Key('role-card-fields-apply'),
                   onPressed: () => Navigator.of(context).pop(
@@ -51,14 +58,16 @@ class _RoleCardFieldPickerState extends State<RoleCardFieldPicker> {
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.only(bottom: 24),
+              padding: const EdgeInsets.only(bottom: ZaidangSpacing.xxl),
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                  child: Text(
-                    '只导出勾选的内容。隐藏字段不会遮盖立绘里已有的文字。',
-                    style: TextStyle(color: tokens.ink, height: 1.5),
+                  padding: const EdgeInsets.fromLTRB(
+                    ZaidangSpacing.page,
+                    0,
+                    ZaidangSpacing.page,
+                    ZaidangSpacing.md,
                   ),
+                  child: Text('只导出勾选的内容。隐藏字段不会遮盖立绘里已有的文字。', style: type.body),
                 ),
                 for (final field in const [
                   RoleCardField.cover,
@@ -73,8 +82,13 @@ class _RoleCardFieldPickerState extends State<RoleCardFieldPicker> {
                   _field(field),
                 if (widget.snapshot.customAttributes.isNotEmpty) ...[
                   const Padding(
-                    padding: EdgeInsets.fromLTRB(20, 20, 20, 4),
-                    child: Text('自定义属性'),
+                    padding: EdgeInsets.fromLTRB(
+                      ZaidangSpacing.page,
+                      ZaidangSpacing.xl,
+                      ZaidangSpacing.page,
+                      ZaidangSpacing.xs,
+                    ),
+                    child: SectionLabel('自定义属性', padding: EdgeInsets.zero),
                   ),
                   for (
                     var index = 0;

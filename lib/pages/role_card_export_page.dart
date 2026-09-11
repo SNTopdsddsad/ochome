@@ -9,7 +9,9 @@ import '../features/role_card/role_card_delivery.dart';
 import '../features/role_card/role_card_export_service.dart';
 import '../features/role_card/role_card_field_picker.dart';
 import '../features/role_card/role_card_renderer.dart';
+import '../theme/zaidang_spacing.dart';
 import '../theme/zaidang_tokens.dart';
+import '../theme/zaidang_type.dart';
 import '../widgets/zaidang_snack_bar.dart';
 
 class RoleCardExportPage extends StatefulWidget {
@@ -33,6 +35,10 @@ class RoleCardExportPage extends StatefulWidget {
 }
 
 class _RoleCardExportPageState extends State<RoleCardExportPage> {
+  /// 紧凑布局下预览区高度的夹取范围，按 3:4 卡面随宽度缩放。
+  static const double _compactPreviewMinHeight = 240;
+  static const double _compactPreviewMaxHeight = 520;
+
   late RoleCardSelection _selection = RoleCardSelection.defaults(
     widget.snapshot,
   );
@@ -271,8 +277,11 @@ class _RoleCardExportPageState extends State<RoleCardExportPage> {
                     _header(),
                     SizedBox(
                       height: math.min(
-                        520,
-                        math.max(240, constraints.maxWidth * 4 / 3),
+                        _compactPreviewMaxHeight,
+                        math.max(
+                          _compactPreviewMinHeight,
+                          constraints.maxWidth * 4 / 3,
+                        ),
                       ),
                       child: _preview(),
                     ),
@@ -297,9 +306,12 @@ class _RoleCardExportPageState extends State<RoleCardExportPage> {
   }
 
   Widget _header() => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+    padding: const EdgeInsets.symmetric(
+      horizontal: ZaidangSpacing.page,
+      vertical: ZaidangSpacing.sm,
+    ),
     child: Wrap(
-      spacing: 20,
+      spacing: ZaidangSpacing.xl,
       alignment: WrapAlignment.spaceBetween,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
@@ -320,17 +332,17 @@ class _RoleCardExportPageState extends State<RoleCardExportPage> {
     if (document == null) {
       return Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(ZaidangSpacing.xxl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.description_outlined, size: 36),
-              const SizedBox(height: 16),
+              const SizedBox(height: ZaidangSpacing.lg),
               Text(
                 _error == null ? '请选择要展示的内容' : _errorMessage(_error!),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: ZaidangSpacing.md),
               TextButton(onPressed: _prepare, child: const Text('重试')),
             ],
           ),
@@ -343,7 +355,10 @@ class _RoleCardExportPageState extends State<RoleCardExportPage> {
       itemCount: document.pageCount,
       onPageChanged: (value) => setState(() => _page = value),
       itemBuilder: (context, index) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: ZaidangSpacing.page,
+          vertical: ZaidangSpacing.sm,
+        ),
         child: Tooltip(
           message: '点按放大预览',
           child: GestureDetector(
@@ -360,7 +375,7 @@ class _RoleCardExportPageState extends State<RoleCardExportPage> {
 
   Widget _pagination() {
     final document = _document;
-    if (document == null) return const SizedBox(height: 8);
+    if (document == null) return const SizedBox(height: ZaidangSpacing.sm);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -398,18 +413,23 @@ class _RoleCardExportPageState extends State<RoleCardExportPage> {
     final canExport = !_loading && !_busy && _document != null;
     final tokens = ZaidangTokens.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+      padding: const EdgeInsets.fromLTRB(
+        ZaidangSpacing.page,
+        ZaidangSpacing.md,
+        ZaidangSpacing.page,
+        ZaidangSpacing.lg,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (_busy) ...[
             LinearProgressIndicator(value: _fraction),
-            const SizedBox(height: 8),
-            Text(_progress, style: TextStyle(color: tokens.ink)),
-            const SizedBox(height: 12),
+            const SizedBox(height: ZaidangSpacing.sm),
+            Text(_progress, style: ZaidangType.of(context).body),
+            const SizedBox(height: ZaidangSpacing.md),
           ],
           const Text('使用当前编辑内容，导出不会保存角色修改。'),
-          const SizedBox(height: 12),
+          const SizedBox(height: ZaidangSpacing.md),
           LayoutBuilder(
             builder: (context, constraints) {
               final buttons = <Widget>[
@@ -447,7 +467,7 @@ class _RoleCardExportPageState extends State<RoleCardExportPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     for (var i = 0; i < buttons.length; i++) ...[
-                      if (i > 0) const SizedBox(height: 10),
+                      if (i > 0) const SizedBox(height: ZaidangSpacing.md),
                       buttons[i],
                     ],
                   ],
@@ -456,7 +476,7 @@ class _RoleCardExportPageState extends State<RoleCardExportPage> {
               return Row(
                 children: [
                   for (var i = 0; i < buttons.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 12),
+                    if (i > 0) const SizedBox(width: ZaidangSpacing.md),
                     Expanded(child: buttons[i]),
                   ],
                 ],

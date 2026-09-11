@@ -5,6 +5,7 @@ import '../data/models/role_desc_revision.dart';
 import '../data/providers/role_desc_revisions_provider.dart';
 import '../data/providers/role_repository_provider.dart';
 import '../theme/zaidang_tokens.dart';
+import '../theme/zaidang_type.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
 import '../widgets/zaidang_snack_bar.dart';
 
@@ -27,7 +28,8 @@ class RoleDescHistoryPage extends ConsumerWidget {
             return Center(
               child: Text(
                 '还没有修改记录',
-                style: TextStyle(color: tokens.inkSecondary, fontSize: 14),
+                style: ZaidangType.of(context).body
+                    .copyWith(color: tokens.inkSecondary),
               ),
             );
           }
@@ -70,7 +72,7 @@ class RoleDescHistoryPage extends ConsumerWidget {
             child: SingleChildScrollView(
               child: SelectableText(
                 revision.content.isEmpty ? '（空）' : revision.content,
-                style: TextStyle(color: tokens.ink, height: 1.5),
+                style: ZaidangType.of(context).body,
               ),
             ),
           ),
@@ -143,9 +145,7 @@ class _RevisionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = ZaidangTokens.of(context);
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       title: Text(_formatTime(revision.createdAt)),
       subtitle: Text(
         _preview(revision.content),
@@ -153,10 +153,7 @@ class _RevisionTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       trailing: isCurrent
-          ? Text(
-              '当前',
-              style: TextStyle(color: tokens.inkSecondary, fontSize: 13),
-            )
+          ? Text('当前', style: ZaidangType.of(context).caption)
           : null,
       onTap: onOpen,
     );

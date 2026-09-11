@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../theme/zaidang_spacing.dart';
 import '../../../theme/zaidang_tokens.dart';
+import '../../../theme/zaidang_type.dart';
 import '../backup_models.dart';
 import 'backup_shared.dart';
 
@@ -115,9 +117,11 @@ class _BackupJobPanelState extends State<BackupJobPanel> {
     final fraction = measured && total != null && total > 0 && done != null
         ? (done / total).clamp(0.0, 1.0)
         : null;
+    final type = ZaidangType.of(context);
+    final secondary = backupSecondaryColor(context);
     return Container(
       key: const Key('backup-job-panel'),
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: ZaidangSpacing.lg),
       decoration: BoxDecoration(
         border: Border.symmetric(horizontal: BorderSide(color: tokens.border)),
       ),
@@ -126,24 +130,14 @@ class _BackupJobPanelState extends State<BackupJobPanel> {
         children: [
           Semantics(
             liveRegion: true,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
-            ),
+            child: Text(label, style: type.subheading),
           ),
           if (description != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              description,
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.6,
-                color: backupSecondaryColor(context),
-              ),
-            ),
+            const SizedBox(height: ZaidangSpacing.sm),
+            Text(description, style: type.caption.copyWith(color: secondary)),
           ],
           if (!job.isTerminal && !job.requiresConfirmation) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: ZaidangSpacing.lg),
             LinearProgressIndicator(
               key: const Key('backup-stage-progress'),
               value: fraction,
@@ -153,13 +147,10 @@ class _BackupJobPanelState extends State<BackupJobPanel> {
                   : '${(fraction * 100).floor()}%',
             ),
             if (fraction != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: ZaidangSpacing.sm),
               Text(
                 '${job.currentItem == null ? '本阶段' : '当前文件'} ${backupBytes(done)} / ${backupBytes(total)}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: backupSecondaryColor(context),
-                ),
+                style: type.micro.copyWith(color: secondary),
               ),
             ],
           ],
@@ -178,11 +169,11 @@ class _BackupJobPanelState extends State<BackupJobPanel> {
             ),
           if (job.requiresConfirmation || job.canRetry || job.canCancel)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.only(top: ZaidangSpacing.sm),
               child: Wrap(
                 alignment: WrapAlignment.end,
-                spacing: 16,
-                runSpacing: 8,
+                spacing: ZaidangSpacing.lg,
+                runSpacing: ZaidangSpacing.sm,
                 children: [
                   if (job.canCancel)
                     TextButton(

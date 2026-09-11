@@ -2,7 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../theme/zaidang_radius.dart';
+import '../../theme/zaidang_spacing.dart';
 import '../../theme/zaidang_tokens.dart';
+import '../../theme/zaidang_type.dart';
 import '../cover_file_view.dart';
 
 /// 吸顶时保留识别信息（圆形头像 + 名字），长名字截断，不挤占两侧操作按钮。
@@ -39,10 +42,10 @@ class PinnedIdentity extends StatelessWidget {
         key: boxKey,
         decoration: BoxDecoration(
           color: tokens.bg.withValues(alpha: 0.94),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: ZaidangRadius.smAll,
         ),
         child: Padding(
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(ZaidangSpacing.xs),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -64,17 +67,13 @@ class PinnedIdentity extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: ZaidangSpacing.sm),
               Flexible(
                 child: Text(
                   name.isEmpty ? emptyName : name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: tokens.ink,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: ZaidangType.of(context).subheading,
                 ),
               ),
             ],

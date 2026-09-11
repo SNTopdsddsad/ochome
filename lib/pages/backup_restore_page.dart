@@ -12,7 +12,9 @@ import '../features/backup/backup_models.dart';
 import '../features/backup/backup_protocol.dart';
 import '../features/backup/widgets/backup_job_panel.dart';
 import '../features/backup/widgets/backup_shared.dart';
+import '../theme/zaidang_spacing.dart';
 import '../theme/zaidang_tokens.dart';
+import '../theme/zaidang_type.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
 import '../widgets/zaidang_snack_bar.dart';
 import '../widgets/storage_error_details.dart';
@@ -314,6 +316,7 @@ class _BackupHomeState extends State<_BackupHome> {
   @override
   Widget build(BuildContext context) {
     final tokens = ZaidangTokens.of(context);
+    final type = ZaidangType.of(context);
     final secondary = backupSecondaryColor(context);
     final recoveryOnly = _coordinator.storage.isRecoveryOnly;
     final job = _job;
@@ -330,10 +333,7 @@ class _BackupHomeState extends State<_BackupHome> {
       canPop: !_switching && !recoveryOnly,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            '备份与恢复',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-          ),
+          title: const Text('备份与恢复'),
           centerTitle: true,
           automaticallyImplyLeading: !_switching && !recoveryOnly,
           actions: [
@@ -355,12 +355,9 @@ class _BackupHomeState extends State<_BackupHome> {
                 color: tokens.accent,
               ),
             ),
-            const SizedBox(height: 24),
-            const Text(
-              '备份到 iCloud',
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: ZaidangSpacing.xxl),
+            Text('备份到 iCloud', style: type.hero),
+            const SizedBox(height: ZaidangSpacing.xxl),
             if (_coordinator.recoveryNotice != null)
               BackupDisclosure(
                 title: '查看上次操作说明',
@@ -421,29 +418,28 @@ class _BackupHomeState extends State<_BackupHome> {
                       },
                 child: const Text('返回备份'),
               ),
-            const SizedBox(height: 48),
-            const Text(
-              '云端备份',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: ZaidangSpacing.xxxl),
+            Text('云端备份', style: type.subheading),
+            const SizedBox(height: ZaidangSpacing.sm),
             if (_cloudError != null && _history != null)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  vertical: ZaidangSpacing.sm,
+                ),
                 child: Text(
                   '暂显示上次读取的备份',
-                  style: TextStyle(fontSize: 13, color: secondary),
+                  style: type.caption.copyWith(color: secondary),
                 ),
               ),
             if (_loading)
               const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: ZaidangSpacing.lg),
                 child: LinearProgressIndicator(),
               ),
             if (!_loading && _history == null) ...[
               const Divider(height: 1),
               const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
+                padding: EdgeInsets.symmetric(vertical: ZaidangSpacing.xxl),
                 child: Text('暂时无法读取备份列表'),
               ),
               if (recoveryOnly || showJob)
@@ -456,16 +452,18 @@ class _BackupHomeState extends State<_BackupHome> {
                 _history != null &&
                 _history!.snapshots.isEmpty) ...[
               const Divider(height: 1),
-              const SizedBox(height: 24),
-              const Text('还没有云端备份', style: TextStyle(fontSize: 16)),
-              const SizedBox(height: 24),
+              const SizedBox(height: ZaidangSpacing.xxl),
+              Text('还没有云端备份', style: type.body),
+              const SizedBox(height: ZaidangSpacing.xxl),
               const Divider(height: 1),
             ],
             for (final backup
                 in _history?.snapshots ?? const <BackupDescriptor>[]) ...[
               const Divider(height: 1),
               ListTile(
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: ZaidangSpacing.lg,
+                ),
                 title: Text(
                   backupDateLabel(
                     backup.createdAtUtc,
@@ -473,16 +471,13 @@ class _BackupHomeState extends State<_BackupHome> {
                         backup.createdAtUtc.toLocal().year !=
                         DateTime.now().year,
                   ),
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: type.subheading,
                 ),
                 subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 4),
+                  padding: const EdgeInsets.only(top: ZaidangSpacing.xs),
                   child: Text(
                     '${backup.deviceName} · ${backupBytes(backup.totalBytes)}',
-                    style: TextStyle(fontSize: 13, color: secondary),
+                    style: type.caption.copyWith(color: secondary),
                   ),
                 ),
                 trailing: Icon(Icons.chevron_right, color: secondary, size: 20),
@@ -494,7 +489,7 @@ class _BackupHomeState extends State<_BackupHome> {
             ],
             if (_history?.snapshots.isNotEmpty ?? false)
               const Divider(height: 1),
-            const SizedBox(height: 16),
+            const SizedBox(height: ZaidangSpacing.lg),
             if (cleanupPending)
               Align(
                 alignment: Alignment.centerLeft,
@@ -507,7 +502,7 @@ class _BackupHomeState extends State<_BackupHome> {
                 ),
               ),
             if (!recoveryOnly && !Navigator.of(context).canPop()) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: ZaidangSpacing.xl),
               TextButton(
                 onPressed: _switching
                     ? null

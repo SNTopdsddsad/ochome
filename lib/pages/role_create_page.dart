@@ -10,13 +10,17 @@ import '../data/providers/role_repository_provider.dart';
 import '../data/providers/world_repository_provider.dart';
 import '../data/providers/worlds_provider.dart';
 import '../data/services/cover_image_picker.dart';
+import '../theme/zaidang_radius.dart';
+import '../theme/zaidang_spacing.dart';
 import '../theme/zaidang_tokens.dart';
+import '../theme/zaidang_type.dart';
 import '../widgets/archive_editor/archive_card.dart';
 import '../widgets/archive_editor/glass_buttons.dart';
 import '../widgets/archive_editor/immersive_cover.dart';
 import '../widgets/archive_editor/pinned_identity.dart';
 import '../widgets/cover_file_view.dart';
 import '../widgets/role_list_tile.dart';
+import '../widgets/section_label.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
 import '../widgets/zaidang_snack_bar.dart';
 import '../features/role_card/role_card_content.dart';
@@ -84,11 +88,17 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
 
   bool get _isEditing => widget.role != null;
 
+  /// 聚焦字段时滚动到可见区所留的余量；编辑态顶部还要让开吸顶工具栏。
+  static const double _fieldScrollInset = 80;
+  static const double _fieldScrollTopInset = 128;
+
   EdgeInsets get _fieldScrollPadding => EdgeInsets.fromLTRB(
-    80,
-    _isEditing ? MediaQuery.viewPaddingOf(context).top + 128 : 80,
-    80,
-    80,
+    _fieldScrollInset,
+    _isEditing
+        ? MediaQuery.viewPaddingOf(context).top + _fieldScrollTopInset
+        : _fieldScrollInset,
+    _fieldScrollInset,
+    _fieldScrollInset,
   );
 
   Future<void> _openRoleCardExport() async {
@@ -357,10 +367,16 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                 ),
                 if (worlds.isEmpty)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(
+                      ZaidangSpacing.lg,
+                      ZaidangSpacing.sm,
+                      ZaidangSpacing.lg,
+                      ZaidangSpacing.lg,
+                    ),
                     child: Text(
                       '还没有世界观',
-                      style: TextStyle(color: tokens.inkSecondary),
+                      style: ZaidangType.of(context).body
+                          .copyWith(color: tokens.inkSecondary),
                     ),
                   ),
                 for (final world in worlds)
@@ -383,7 +399,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                     onTap: () =>
                         Navigator.of(context).pop(_WorldChoice(world.id)),
                   ),
-                const SizedBox(height: 8),
+                const SizedBox(height: ZaidangSpacing.sm),
               ],
             ),
           ),
@@ -418,7 +434,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
       child: InkWell(
         key: const Key('role-world-row'),
         onTap: _saving ? null : _pickWorld,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: ZaidangRadius.smAll,
         child: InputDecorator(
           decoration: const InputDecoration(
             labelText: '世界观',
@@ -429,10 +445,8 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: assigned ? tokens.ink : tokens.inkSecondary,
-              fontSize: 16,
-            ),
+            style: ZaidangType.of(context).bodyLarge
+                .copyWith(color: assigned ? tokens.ink : tokens.inkSecondary),
           ),
         ),
       ),
@@ -501,14 +515,14 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                   ),
                 ),
                 Positioned(
-                  top: topInset + 8,
-                  left: 16,
-                  right: 16,
+                  top: topInset + ZaidangSpacing.sm,
+                  left: ZaidangSpacing.lg,
+                  right: ZaidangSpacing.lg,
                   child: SizedBox(
                     height: glassButtonSize,
                     child: NavigationToolbar(
                       centerMiddle: true,
-                      middleSpacing: 12,
+                      middleSpacing: ZaidangSpacing.md,
                       leading: GlassIconButton(
                         icon: Icons.arrow_back_ios_new,
                         iconSize: 16,
@@ -568,7 +582,12 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final horizontal = archiveEditorHorizontalPadding(context);
     return SliverPadding(
-      padding: EdgeInsets.fromLTRB(horizontal, 8, horizontal, 32 + bottomInset),
+      padding: EdgeInsets.fromLTRB(
+        horizontal,
+        ZaidangSpacing.sm,
+        horizontal,
+        ZaidangSpacing.xxxl + bottomInset,
+      ),
       sliver: SliverMainAxisGroup(
         slivers: [
           SliverToBoxAdapter(
@@ -578,15 +597,11 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                 Wrap(
                   alignment: WrapAlignment.spaceBetween,
                   crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 16,
+                  spacing: ZaidangSpacing.lg,
                   children: [
                     Text(
                       _isEditing ? '编辑角色' : '新建角色',
-                      style: TextStyle(
-                        color: tokens.ink,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: ZaidangType.of(context).title,
                     ),
                     TextButton.icon(
                       key: const Key('role-card-export'),
@@ -598,16 +613,16 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: ZaidangSpacing.lg),
                 _buildBasicCard(),
-                const SizedBox(height: 16),
+                const SizedBox(height: ZaidangSpacing.lg),
               ],
             ),
           ),
           _buildCustomAttributes(tokens),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.only(top: 16),
+              padding: const EdgeInsets.only(top: ZaidangSpacing.lg),
               child: _buildDescCard(),
             ),
           ),
@@ -666,7 +681,9 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                   unselectedLabelColor: tokens.inkSecondary,
                   indicatorColor: tokens.accent,
                   dividerColor: tokens.border,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: ZaidangSpacing.sm,
+                  ),
                   tabs: const [
                     Tab(text: '详情'),
                     Tab(text: '资产'),
@@ -757,7 +774,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
             return null;
           },
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: ZaidangSpacing.md),
         FieldRow(
           left: _field(
             controller: _sexController,
@@ -770,13 +787,13 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
             hint: '十七、外表 20、不详',
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: ZaidangSpacing.md),
         _field(
           controller: _birthdayController,
           label: '生日',
           hint: '三月三日、第三历春、未知',
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: ZaidangSpacing.md),
         FieldRow(
           left: _field(
             controller: _raceController,
@@ -789,7 +806,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
             hint: '学生、骑士、无所属',
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: ZaidangSpacing.md),
         _buildWorldRow(),
       ],
     ),
@@ -894,7 +911,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
       key: const Key('role-create-custom-attributes-card'),
       decoration: archiveCardDecoration(tokens),
       sliver: SliverPadding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        padding: const EdgeInsets.all(ZaidangSpacing.card),
         sliver: SliverMainAxisGroup(
           slivers: [
             const SliverToBoxAdapter(child: SectionLabel('自定义属性')),
@@ -922,7 +939,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
               proxyDecorator: (child, index, animation) => Material(
                 color: tokens.surface,
                 elevation: 4,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: ZaidangRadius.smAll,
                 child: child,
               ),
               itemBuilder: (context, index) {
@@ -930,7 +947,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                 final number = index + 1;
                 return Padding(
                   key: attribute.key,
-                  padding: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.only(bottom: ZaidangSpacing.lg),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -939,10 +956,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                           Expanded(
                             child: Text(
                               '属性 $number',
-                              style: TextStyle(
-                                color: tokens.inkSecondary,
-                                fontSize: 12,
-                              ),
+                              style: ZaidangType.of(context).micro,
                             ),
                           ),
                           ReorderableDragStartListener(
@@ -1021,7 +1035,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                             ? '请填写属性名称'
                             : null,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: ZaidangSpacing.md),
                       TextFormField(
                         controller: attribute.content,
                         enabled: !_saving,
@@ -1080,21 +1094,11 @@ class _DescSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = ZaidangTokens.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: ZaidangSpacing.sm),
       child: Row(
         children: [
-          Expanded(
-            child: Text(
-              '设定',
-              style: TextStyle(
-                color: tokens.inkSecondary,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+          const Expanded(child: SectionLabel('设定', padding: EdgeInsets.zero)),
           if (showHistory)
             TextButton(
               onPressed: onHistoryTap,

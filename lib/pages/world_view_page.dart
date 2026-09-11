@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../data/models/world.dart';
 import '../data/providers/worlds_provider.dart';
 import '../theme/zaidang_tokens.dart';
+import '../theme/zaidang_type.dart';
 import '../widgets/role_list_tile.dart';
 
 /// 世界观页：纸面上的设定集列表，与 OC 页同构。
@@ -33,7 +34,8 @@ class _WorldViewPageState extends ConsumerState<WorldViewPage>
             return Center(
               child: Text(
                 '还没有世界观',
-                style: TextStyle(color: tokens.inkSecondary, fontSize: 14),
+                style: ZaidangType.of(context).body
+                    .copyWith(color: tokens.inkSecondary),
               ),
             );
           }
@@ -71,7 +73,6 @@ class _WorldTile extends StatelessWidget {
     final summary = world.summary.trim().split('\n').first;
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       leading: RoleCoverThumb(
         path: world.coverImg,
         placeholderIcon: Icons.public_outlined,

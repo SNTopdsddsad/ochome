@@ -7,7 +7,9 @@ import '../features/backup/backup_models.dart';
 import '../features/backup/backup_protocol.dart';
 import '../features/backup/widgets/backup_job_panel.dart';
 import '../features/backup/widgets/backup_shared.dart';
+import '../theme/zaidang_spacing.dart';
 import '../theme/zaidang_tokens.dart';
+import '../theme/zaidang_type.dart';
 
 /// A frozen contents index; never joins a historical backup to current role data.
 class BackupContentsPage extends StatefulWidget {
@@ -205,10 +207,7 @@ class _BackupContentsPageState extends State<BackupContentsPage> {
       appBar: AppBar(
         automaticallyImplyLeading: !_activationInProgress,
         centerTitle: true,
-        title: Text(
-          widget.title,
-          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-        ),
+        title: Text(widget.title),
       ),
       body: FutureBuilder<SnapshotContents>(
         future: _contents,
@@ -236,25 +235,25 @@ class _BackupContentsPageState extends State<BackupContentsPage> {
           final roles = contents.roles;
           final files = contents.files;
           final pages = (roles.length / _pageSize).ceil().clamp(1, 100000);
+          final type = ZaidangType.of(context);
           return BackupBody(
             children: [
               if (descriptor != null) ...[
                 Text(
                   backupDateLabel(descriptor.createdAtUtc),
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: type.hero,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: ZaidangSpacing.sm),
                 Text(
                   '${descriptor.createdAtUtc.toLocal().year} 年 · 来自 ${descriptor.deviceName}',
-                  style: TextStyle(color: backupSecondaryColor(context)),
+                  style: type.body.copyWith(
+                    color: backupSecondaryColor(context),
+                  ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: ZaidangSpacing.xxl),
               ],
               Divider(height: 1, color: ZaidangTokens.of(context).border),
-              const SizedBox(height: 18),
+              const SizedBox(height: ZaidangSpacing.xl),
               _BackupFacts(
                 roleCount: contents.summary.roleCount,
                 fileCount: contents.summary.originalFileCount,
@@ -262,15 +261,15 @@ class _BackupContentsPageState extends State<BackupContentsPage> {
                     descriptor?.totalBytes ??
                     contents.summary.knownLogicalDataBytes,
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: ZaidangSpacing.xl),
               Divider(height: 1, color: ZaidangTokens.of(context).border),
               BackupDisclosure(
                 key: const Key('backup-contents-disclosure'),
                 title: '查看备份内容',
                 children: [
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
+                    spacing: ZaidangSpacing.sm,
+                    runSpacing: ZaidangSpacing.sm,
                     children: [
                       for (final (index, label) in [(0, '角色资料'), (1, '文件分类')])
                         ChoiceChip(
@@ -283,17 +282,19 @@ class _BackupContentsPageState extends State<BackupContentsPage> {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: ZaidangSpacing.md),
                   if (_tab == 0) ...[
                     if (roles.isEmpty)
                       const Padding(
-                        padding: EdgeInsets.all(24),
+                        padding: EdgeInsets.all(ZaidangSpacing.xxl),
                         child: Center(child: Text('这份资料中没有角色')),
                       ),
                     for (final role
                         in roles.skip(_page * _pageSize).take(_pageSize))
                       ListTile(
-                        contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: ZaidangSpacing.xs,
+                        ),
                         leading: const Icon(Icons.person_outline),
                         title: Text(role.name),
                         subtitle: Text(
@@ -335,7 +336,7 @@ class _BackupContentsPageState extends State<BackupContentsPage> {
                 ],
               ),
               if (_job case final job? when _hasActionableJob) ...[
-                const SizedBox(height: 32),
+                const SizedBox(height: ZaidangSpacing.xxxl),
                 BackupJobPanel(
                   job: job,
                   onCancel: _jobActionBusy || widget.onCancelJob == null
@@ -352,7 +353,7 @@ class _BackupContentsPageState extends State<BackupContentsPage> {
               if (_error != null)
                 BackupNotice(_error!, icon: Icons.error_outline),
               if (widget.onPrepareRestore != null && !_hasActionableJob) ...[
-                const SizedBox(height: 28),
+                const SizedBox(height: ZaidangSpacing.xxxl),
                 FilledButton(
                   key: const Key('backup-prepare-restore'),
                   onPressed: _starting ? null : _prepareRestore,
@@ -379,15 +380,18 @@ class _BackupFacts extends StatelessWidget {
   final int? bytes;
 
   @override
-  Widget build(BuildContext context) => Wrap(
-    spacing: 24,
-    runSpacing: 10,
-    children: [
-      Text('$roleCount 个角色', style: const TextStyle(fontSize: 15)),
-      Text('$fileCount 个文件', style: const TextStyle(fontSize: 15)),
-      Text(backupBytes(bytes), style: const TextStyle(fontSize: 15)),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final style = ZaidangType.of(context).body;
+    return Wrap(
+      spacing: ZaidangSpacing.xxl,
+      runSpacing: ZaidangSpacing.md,
+      children: [
+        Text('$roleCount 个角色', style: style),
+        Text('$fileCount 个文件', style: style),
+        Text(backupBytes(bytes), style: style),
+      ],
+    );
+  }
 }
 
 class _BackupRoleContents extends StatefulWidget {
@@ -419,15 +423,15 @@ class _BackupRoleContentsState extends State<_BackupRoleContents> {
           ),
           if (role.customAttributeNamesInOrder.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: ZaidangSpacing.md),
               child: Text(role.customAttributeNamesInOrder.join(' · ')),
             ),
           const Divider(),
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(vertical: ZaidangSpacing.md),
             child: Text(
               '立绘与资产 · ${_files.length} 份',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              style: ZaidangType.of(context).subheading,
             ),
           ),
           _BackupFileSummary(files: _files),
@@ -452,7 +456,7 @@ class _BackupFileSummary extends StatelessWidget {
     }
     if (counts.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 16),
+        padding: EdgeInsets.symmetric(vertical: ZaidangSpacing.lg),
         child: Text('暂无文件'),
       );
     }

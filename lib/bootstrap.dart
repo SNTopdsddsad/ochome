@@ -3,7 +3,9 @@ import 'package:flutter/foundation.dart';
 
 import 'app.dart';
 import 'data/services/data_storage.dart';
+import 'theme/zaidang_spacing.dart';
 import 'theme/zaidang_theme.dart';
+import 'theme/zaidang_type.dart';
 import 'widgets/storage_error_details.dart';
 
 /// Resolve/recover the data root before any business database provider opens it.
@@ -44,26 +46,23 @@ class _AppStorageBootstrapState extends State<AppStorageBootstrap> {
             child: Center(
               child: SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(ZaidangSpacing.xxl),
                   child: snapshot.hasError
                       ? Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(Icons.folder_off_outlined, size: 36),
-                            const SizedBox(height: 18),
-                            const Text(
+                            const SizedBox(height: ZaidangSpacing.xl),
+                            Text(
                               '暂时无法打开本机资料',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: ZaidangType.of(context).heading,
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: ZaidangSpacing.md),
                             const Text(
                               '原文件会保留。请检查可用空间，并确认没有另一份应用正在使用这些资料。',
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: ZaidangSpacing.xl),
                             StorageErrorDetails(error: snapshot.error),
                             FilledButton(
                               onPressed: () => setState(
@@ -77,7 +76,7 @@ class _AppStorageBootstrapState extends State<AppStorageBootstrap> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             CircularProgressIndicator(),
-                            SizedBox(height: 18),
+                            SizedBox(height: ZaidangSpacing.xl),
                             Text('正在检查本机资料…'),
                           ],
                         ),

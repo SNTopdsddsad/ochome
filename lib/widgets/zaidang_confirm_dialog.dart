@@ -2,7 +2,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../theme/zaidang_radius.dart';
+import '../theme/zaidang_spacing.dart';
 import '../theme/zaidang_tokens.dart';
+import '../theme/zaidang_type.dart';
 
 /// 显示创作便笺确认框。只有明确点击主操作才返回 true。
 Future<bool> showZaidangConfirmDialog({
@@ -73,21 +76,17 @@ class _ZaidangConfirmDialogState extends State<ZaidangConfirmDialog> {
   @override
   Widget build(BuildContext context) {
     final tokens = ZaidangTokens.of(context);
+    final type = ZaidangType.of(context);
     final theme = Theme.of(context);
-    final bodyStyle = theme.textTheme.bodyMedium!.copyWith(
-      color: tokens.ink,
-      fontSize: 15,
-      fontWeight: FontWeight.w400,
-      height: 1.8,
-      letterSpacing: 0,
-    );
-    final actionStyle = theme.textTheme.labelLarge!.copyWith(
-      fontSize: 15,
-      fontWeight: FontWeight.w500,
-      height: 1.5,
-      letterSpacing: 0,
-    );
-    final inset = MediaQuery.sizeOf(context).width < 320 ? 16.0 : 24.0;
+    // 便笺正文刻意留更松的行距，其余字号字重仍来自 body。
+    final bodyStyle = type.body.copyWith(height: 1.8);
+    final actionStyle = type.label;
+    final inset = MediaQuery.sizeOf(context).width < 320
+        ? ZaidangSpacing.lg
+        : ZaidangSpacing.xxl;
+    // 按钮内边距 12，取双倍作为文字可用宽高的扣减量。
+    const buttonInset = ZaidangSpacing.md * 2;
+    const actionGap = ZaidangSpacing.md;
 
     return Dialog(
       key: const Key('zaidang-confirm-dialog'),
@@ -96,7 +95,7 @@ class _ZaidangConfirmDialogState extends State<ZaidangConfirmDialog> {
       elevation: 4,
       shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.12),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: ZaidangRadius.lgAll,
         side: BorderSide(color: tokens.border),
       ),
       constraints: const BoxConstraints(maxWidth: 380),
@@ -109,7 +108,9 @@ class _ZaidangConfirmDialogState extends State<ZaidangConfirmDialog> {
         width: 380,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final padding = constraints.maxWidth < 300 ? 20.0 : 24.0;
+            final padding = constraints.maxWidth < 300
+                ? ZaidangSpacing.xl
+                : ZaidangSpacing.xxl;
             final contentWidth = math.max(
               1.0,
               constraints.maxWidth - padding * 2,
@@ -128,7 +129,7 @@ class _ZaidangConfirmDialogState extends State<ZaidangConfirmDialog> {
               return size;
             }
 
-            final halfLabelWidth = (contentWidth - 12) / 2 - 24;
+            final halfLabelWidth = (contentWidth - actionGap) / 2 - buttonInset;
             final stackActions =
                 labelSize(widget.cancelLabel, double.infinity).width >
                     halfLabelWidth ||
@@ -136,13 +137,15 @@ class _ZaidangConfirmDialogState extends State<ZaidangConfirmDialog> {
                     halfLabelWidth;
             final buttonWidth = stackActions
                 ? contentWidth
-                : (contentWidth - 12) / 2;
-            double buttonHeight(String label) =>
-                math.max(48, labelSize(label, buttonWidth - 24).height + 24);
+                : (contentWidth - actionGap) / 2;
+            double buttonHeight(String label) => math.max(
+              48,
+              labelSize(label, buttonWidth - buttonInset).height + buttonInset,
+            );
             final cancelHeight = buttonHeight(widget.cancelLabel);
             final confirmHeight = buttonHeight(widget.confirmLabel);
             final actionsHeight = stackActions
-                ? cancelHeight + confirmHeight + 12
+                ? cancelHeight + confirmHeight + actionGap
                 : math.max(cancelHeight, confirmHeight);
             final actions = _buildActions(
               tokens,
@@ -154,24 +157,15 @@ class _ZaidangConfirmDialogState extends State<ZaidangConfirmDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _NotebookMark(showSparkle: widget.showSparkle),
-                const SizedBox(height: 22),
+                const SizedBox(height: ZaidangSpacing.xxl),
                 Semantics(
                   namesRoute: true,
                   header: true,
-                  child: Text(
-                    widget.title,
-                    style: theme.textTheme.titleLarge!.copyWith(
-                      color: tokens.ink,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500,
-                      height: 1.5,
-                      letterSpacing: 0,
-                    ),
-                  ),
+                  child: Text(widget.title, style: type.heading),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: ZaidangSpacing.md),
                 Text(widget.body, style: bodyStyle),
-                const SizedBox(height: 8),
+                const SizedBox(height: ZaidangSpacing.sm),
                 Text(widget.consequence, style: bodyStyle),
               ],
             );
@@ -183,11 +177,20 @@ class _ZaidangConfirmDialogState extends State<ZaidangConfirmDialog> {
                 constraints.maxHeight < actionsHeight + padding * 2 + 126;
             if (scrollWholeSheet) {
               return SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(padding, 28, padding, padding),
+                padding: EdgeInsets.fromLTRB(
+                  padding,
+                  ZaidangSpacing.xxxl,
+                  padding,
+                  padding,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [content, const SizedBox(height: 26), actions],
+                  children: [
+                    content,
+                    const SizedBox(height: ZaidangSpacing.xxl),
+                    actions,
+                  ],
                 ),
               );
             }
@@ -195,9 +198,9 @@ class _ZaidangConfirmDialogState extends State<ZaidangConfirmDialog> {
               // The rotated notebook extends above and to the left of its
               // layout box. Put those gutters inside the scroll viewport.
               padding: EdgeInsets.fromLTRB(
-                padding - 4,
-                18,
-                padding - 4,
+                padding - ZaidangSpacing.xs,
+                ZaidangSpacing.xl,
+                padding - ZaidangSpacing.xs,
                 padding,
               ),
               child: Column(
@@ -206,13 +209,20 @@ class _ZaidangConfirmDialogState extends State<ZaidangConfirmDialog> {
                 children: [
                   Flexible(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(4, 10, 4, 0),
+                      padding: const EdgeInsets.fromLTRB(
+                        ZaidangSpacing.xs,
+                        ZaidangSpacing.md,
+                        ZaidangSpacing.xs,
+                        0,
+                      ),
                       child: content,
                     ),
                   ),
-                  const SizedBox(height: 26),
+                  const SizedBox(height: ZaidangSpacing.xxl),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: ZaidangSpacing.xs,
+                    ),
                     child: actions,
                   ),
                 ],
@@ -229,9 +239,7 @@ class _ZaidangConfirmDialogState extends State<ZaidangConfirmDialog> {
     TextStyle textStyle, {
     required bool stackActions,
   }) {
-    final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(15),
-    );
+    const shape = RoundedRectangleBorder(borderRadius: ZaidangRadius.mdAll);
     final cancel = TextButton(
       key: const Key('zaidang-confirm-cancel'),
       autofocus: true,
@@ -242,7 +250,7 @@ class _ZaidangConfirmDialogState extends State<ZaidangConfirmDialog> {
         side: BorderSide(color: tokens.border),
         shape: shape,
         minimumSize: const Size(0, 48),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(ZaidangSpacing.md),
         visualDensity: VisualDensity.standard,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         textStyle: textStyle,
@@ -261,7 +269,7 @@ class _ZaidangConfirmDialogState extends State<ZaidangConfirmDialog> {
         backgroundColor: tokens.ink,
         shape: shape,
         minimumSize: const Size(0, 48),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(ZaidangSpacing.md),
         visualDensity: VisualDensity.standard,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         textStyle: textStyle,
@@ -272,13 +280,17 @@ class _ZaidangConfirmDialogState extends State<ZaidangConfirmDialog> {
       return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [cancel, const SizedBox(height: 12), confirm],
+        children: [
+          cancel,
+          const SizedBox(height: ZaidangSpacing.md),
+          confirm,
+        ],
       );
     }
     return Row(
       children: [
         Expanded(child: cancel),
-        const SizedBox(width: 12),
+        const SizedBox(width: ZaidangSpacing.md),
         Expanded(child: confirm),
       ],
     );
@@ -306,7 +318,7 @@ class _NotebookMark extends StatelessWidget {
               decoration: BoxDecoration(
                 color: tokens.bg,
                 border: Border.all(color: tokens.border),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: ZaidangRadius.mdAll,
               ),
               child: Icon(Icons.edit_note_rounded, color: tokens.ink, size: 26),
             ),

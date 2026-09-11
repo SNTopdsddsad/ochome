@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../data/providers/roles_provider.dart';
 import '../theme/zaidang_tokens.dart';
+import '../theme/zaidang_type.dart';
 import '../widgets/role_list_tile.dart';
 
 /// OC 页：纸面上的角色档案列表。立绘是主体，火漆红只给添加按钮。
@@ -32,7 +33,8 @@ class _RoleListPageState extends ConsumerState<RoleListPage>
             return Center(
               child: Text(
                 '还没有角色',
-                style: TextStyle(color: tokens.inkSecondary, fontSize: 14),
+                style: ZaidangType.of(context).body
+                    .copyWith(color: tokens.inkSecondary),
               ),
             );
           }
