@@ -41,6 +41,20 @@ class DriftRoleAssetRepository implements RoleAssetRepository {
   Future<List<RoleAsset>> listForRole(int roleId) async =>
       _map(await _query(roleId).get());
 
+  @override
+  Stream<Map<int, int>> watchAssetCounts() {
+    final roleId = _db.roleAssets.roleId;
+    final count = _db.roleAssets.id.count();
+    final query = _db.selectOnly(_db.roleAssets)
+      ..addColumns([roleId, count])
+      ..groupBy([roleId]);
+    return query.watch().map(
+      (rows) => Map.unmodifiable({
+        for (final row in rows) row.read(roleId)!: row.read(count)!,
+      }),
+    );
+  }
+
   List<RoleAsset> _map(List<db.RoleAsset> rows) => List.unmodifiable(
     rows.map(
       (row) => RoleAsset(

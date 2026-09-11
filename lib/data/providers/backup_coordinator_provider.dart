@@ -39,6 +39,7 @@ final backupCoordinatorProvider = FutureProvider<BackupCoordinator>((
       // events, which cannot arrive until those subscriptions are cancelled.
       ref.invalidate(rolesProvider);
       ref.invalidate(roleAssetsProvider);
+      ref.invalidate(roleAssetCountsProvider);
       ref.invalidate(roleDescRevisionsProvider);
       ref.invalidate(roleRelationshipsProvider);
       ref.invalidate(worldsProvider);

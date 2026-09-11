@@ -5,12 +5,15 @@ import 'package:go_router/go_router.dart';
 import '../data/models/world.dart';
 import '../data/providers/worlds_provider.dart';
 import '../theme/zaidang_tokens.dart';
-import '../theme/zaidang_type.dart';
-import '../widgets/role_list_tile.dart';
+import '../widgets/archive_list_card.dart';
+import '../widgets/archive_list_view.dart';
 
-/// 世界观页：纸面上的设定集列表，与 OC 页同构。
+/// 世界观页：纸面上的设定集卡列表，与 OC 页同构。
 class WorldViewPage extends ConsumerStatefulWidget {
-  const WorldViewPage({super.key});
+  const WorldViewPage({super.key, this.query = ''});
+
+  /// 档案首页的搜索词原文；过滤时忽略首尾空白与大小写，空串表示不过滤。
+  final String query;
 
   @override
   ConsumerState<WorldViewPage> createState() => _WorldViewPageState();
@@ -28,25 +31,17 @@ class _WorldViewPageState extends ConsumerState<WorldViewPage>
     final tokens = ZaidangTokens.of(context);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: worlds.when(
-        data: (items) {
-          if (items.isEmpty) {
-            return Center(
-              child: Text(
-                '还没有世界观',
-                style: ZaidangType.of(context).body
-                    .copyWith(color: tokens.inkSecondary),
-              ),
-            );
-          }
-          return ListView.separated(
-            itemCount: items.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              return _WorldTile(world: items[index]);
-            },
-          );
-        },
+        data: (items) => ArchiveListView<World>(
+          items: items,
+          query: widget.query,
+          searchFields: _searchFields,
+          emptyHint: '还没有世界观',
+          noMatchHint: '没有匹配的世界观',
+          itemBuilder: (context, world) =>
+              _WorldCard(key: Key('world-card-${world.id}'), world: world),
+        ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
           child: Text('加载失败：$error', style: TextStyle(color: tokens.ink)),
@@ -63,24 +58,26 @@ class _WorldViewPageState extends ConsumerState<WorldViewPage>
   }
 }
 
-class _WorldTile extends StatelessWidget {
-  const _WorldTile({required this.world});
+/// 名称、简介和词条标题 / 内容都参与匹配。
+Iterable<String> _searchFields(World world) => [
+  world.name,
+  world.summary,
+  for (final entry in world.entries) ...[entry.title, entry.content],
+];
+
+class _WorldCard extends StatelessWidget {
+  const _WorldCard({super.key, required this.world});
 
   final World world;
 
   @override
   Widget build(BuildContext context) {
-    final summary = world.summary.trim().split('\n').first;
-
-    return ListTile(
-      leading: RoleCoverThumb(
-        path: world.coverImg,
-        placeholderIcon: Icons.public_outlined,
-      ),
-      title: Text(world.name),
-      subtitle: summary.isEmpty
-          ? null
-          : Text(summary, maxLines: 1, overflow: TextOverflow.ellipsis),
+    return ArchiveListCard(
+      coverImg: world.coverImg,
+      placeholderIcon: Icons.public_outlined,
+      title: world.name,
+      summary: world.summary,
+      meta: '${world.entries.length} 个词条',
       onTap: () {
         context.push('/worlds/${world.id}', extra: world);
       },

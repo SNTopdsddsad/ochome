@@ -11,6 +11,7 @@ import '../data/providers/worlds_provider.dart';
 import '../data/services/cover_image_picker.dart';
 import '../theme/zaidang_radius.dart';
 import '../theme/zaidang_spacing.dart';
+import '../theme/zaidang_system_ui.dart';
 import '../theme/zaidang_tokens.dart';
 import '../theme/zaidang_type.dart';
 import '../widgets/archive_editor/archive_card.dart';
@@ -303,22 +304,10 @@ class _WorldCreatePageState extends ConsumerState<WorldCreatePage>
     final tokens = ZaidangTokens.of(context);
     final mediaPadding = MediaQuery.paddingOf(context);
     final topInset = mediaPadding.top;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final overlayStyle = (_coverImg.isNotEmpty || isDark)
-        ? SystemUiOverlayStyle.light.copyWith(
-            statusBarColor: Colors.transparent,
-            systemNavigationBarColor: tokens.bg,
-            systemNavigationBarIconBrightness: isDark
-                ? Brightness.light
-                : Brightness.dark,
-          )
-        : SystemUiOverlayStyle.dark.copyWith(
-            statusBarColor: Colors.transparent,
-            systemNavigationBarColor: tokens.bg,
-            systemNavigationBarIconBrightness: isDark
-                ? Brightness.light
-                : Brightness.dark,
-          );
+    final overlayStyle = zaidangSystemUiOverlayStyle(
+      context,
+      onDarkBackdrop: _coverImg.isNotEmpty,
+    );
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: overlayStyle,

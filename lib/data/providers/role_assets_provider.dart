@@ -19,6 +19,14 @@ final roleAssetsProvider = StreamProvider.autoDispose
       return ref.watch(roleAssetRepositoryProvider).watchForRole(roleId);
     });
 
+/// 角色 id → 资产数；供首页列表一次订阅，没有资产的角色不在表里。
+final roleAssetCountsProvider = StreamProvider.autoDispose<Map<int, int>>((
+  ref,
+) {
+  if (ref.watch(databaseSwitchProvider)) return const Stream.empty();
+  return ref.watch(roleAssetRepositoryProvider).watchAssetCounts();
+});
+
 final roleAssetPickerProvider = Provider<RoleAssetPicker>(
   (ref) => RoleAssetPicker(),
 );
