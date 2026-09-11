@@ -19,9 +19,10 @@ import '../widgets/archive_editor/archive_card.dart';
 import '../widgets/archive_editor/glass_buttons.dart';
 import '../widgets/archive_editor/immersive_cover.dart';
 import '../widgets/archive_editor/pinned_identity.dart';
+import '../widgets/archive_editor/role_identity_header.dart';
+import '../utils/text_lines.dart';
 import '../widgets/cover_file_view.dart';
 import '../widgets/role_list_tile.dart';
-import '../widgets/section_label.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
 import '../widgets/zaidang_snack_bar.dart';
 import '../features/role_card/role_card_content.dart';
@@ -65,6 +66,9 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
   late final TextEditingController _occupationController;
   late final TextEditingController _descController;
 
+  /// 身份头展示所依赖的字段，合并成一个可监听对象，避免每次 build 重新订阅。
+  late final Listenable _identityListenable;
+
   final _scrollController = ScrollController();
   late final TabController _detailTabs;
   ScrollPosition? _detailsScrollPosition;
@@ -92,6 +96,10 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
   /// 聚焦字段时滚动到可见区所留的余量；编辑态顶部还要让开吸顶工具栏。
   static const double _fieldScrollInset = 80;
   static const double _fieldScrollTopInset = 128;
+
+  /// 角色简介文本框右下角引号装饰的尺寸与透明度。
+  static const double _quoteMarkSize = 28;
+  static const double _quoteMarkAlpha = 0.3;
 
   EdgeInsets get _fieldScrollPadding => EdgeInsets.fromLTRB(
     _fieldScrollInset,
@@ -151,14 +159,20 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
     _raceController = TextEditingController(text: role?.race ?? '');
     _occupationController = TextEditingController(text: role?.occupation ?? '');
     _descController = TextEditingController(text: role?.desc ?? '');
+    _identityListenable = Listenable.merge([
+      _nameController,
+      _sexController,
+      _raceController,
+      _occupationController,
+      _descController,
+    ]);
     _coverImg = role?.coverImg ?? '';
     _worldId = role?.worldId;
     _attributes.addAll(
       (role?.customAttributes ?? []).map(_CustomAttributeDraft.fromAttribute),
     );
-    _nameController.addListener(_onCallingCardChanged);
-    _raceController.addListener(_onCallingCardChanged);
-    _occupationController.addListener(_onCallingCardChanged);
+    // 名字还要喂给吸顶的 PinnedIdentity，所以保留页面级重建；身份头自己监听其余字段。
+    _nameController.addListener(_onNameChanged);
     _refreshCoverReadable();
   }
 
@@ -167,7 +181,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
     _attributesKey.currentState?.cancelReorder();
   }
 
-  void _onCallingCardChanged() {
+  void _onNameChanged() {
     if (mounted) {
       setState(() {});
     }
@@ -175,9 +189,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
 
   @override
   void dispose() {
-    _nameController.removeListener(_onCallingCardChanged);
-    _raceController.removeListener(_onCallingCardChanged);
-    _occupationController.removeListener(_onCallingCardChanged);
+    _nameController.removeListener(_onNameChanged);
     _nameController.dispose();
     _sexController.dispose();
     _ageController.dispose();
@@ -436,20 +448,62 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
         key: const Key('role-world-row'),
         onTap: _saving ? null : _pickWorld,
         borderRadius: ZaidangRadius.smAll,
-        child: InputDecorator(
-          decoration: const InputDecoration(
-            labelText: '世界观',
-            suffixIcon: Icon(Icons.expand_more),
-          ),
-          isEmpty: false,
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: ZaidangType.of(context).bodyLarge
-                .copyWith(color: assigned ? tokens.ink : tokens.inkSecondary),
+        child: ArchiveFieldCell(
+          icon: Icons.public_outlined,
+          label: '世界观',
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: ZaidangSpacing.xs),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: ZaidangType.of(context).bodyLarge.copyWith(
+                      color: assigned ? tokens.ink : tokens.inkSecondary,
+                    ),
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: tokens.inkSecondary),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// 立绘下方的纸面身份头：只监听参与展示的字段，输入时不重建整页。
+  PreferredSizeWidget _buildIdentityHeader(double height) {
+    return PreferredSize(
+      preferredSize: Size.fromHeight(height),
+      child: ListenableBuilder(
+        listenable: _identityListenable,
+        builder: (context, _) {
+          final locked = _saving || _tabBusy;
+          return RoleIdentityHeader(
+            name: _nameController.text,
+            emptyName: _isEditing ? '未命名角色' : '新建角色',
+            tags: [
+              _raceController.text.trim(),
+              _occupationController.text.trim(),
+              _sexController.text.trim(),
+            ].where((text) => text.isNotEmpty).toList(),
+            quote: firstLine(_descController.text),
+            coverImg: _coverImg,
+            hasCover: _coverReadable,
+            supportDirectory: widget.supportDirectory,
+            onPortraitTap: locked
+                ? null
+                : _coverReadable
+                ? _openCoverPreview
+                : _pickCover,
+            onChangeCover: locked ? null : _pickCover,
+            onExport: locked || _exportOpen ? null : _openRoleCardExport,
+            height: height,
+          );
+        },
       ),
     );
   }
@@ -479,6 +533,11 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
       context,
       onDarkBackdrop: _coverImg.isNotEmpty,
     );
+    final headerHeight = RoleIdentityHeader.heightFor(
+      MediaQuery.textScalerOf(context),
+    );
+    // 身份头在立绘之下多占的高度；收起阈值要一起后移。
+    final headerExtent = headerHeight - RoleIdentityHeader.portraitOverlap;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: overlayStyle,
@@ -497,7 +556,12 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                   removeRight: true,
                   child: AbsorbPointer(
                     absorbing: _saving || _tabBusy,
-                    child: _buildRoleScroll(context, overlayStyle, topInset),
+                    child: _buildRoleScroll(
+                      context,
+                      overlayStyle,
+                      topInset,
+                      headerHeight,
+                    ),
                   ),
                 ),
                 Positioned(
@@ -521,7 +585,10 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                               animation: _scrollController,
                               builder: (context, child) {
                                 final collapseOffset =
-                                    immersiveCoverHeight - topInset - 60;
+                                    immersiveCoverHeight +
+                                    headerExtent -
+                                    topInset -
+                                    60;
                                 final offset = _scrollController.hasClients
                                     ? _scrollController.offset
                                     : 0.0;
@@ -549,7 +616,6 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                           : null,
                       trailing: GlassSaveButton(
                         saving: _saving,
-                        onPhoto: _coverImg.isNotEmpty,
                         onPressed: _tabBusy ? null : _submit,
                       ),
                     ),
@@ -577,32 +643,9 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
       sliver: SliverMainAxisGroup(
         slivers: [
           SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: ZaidangSpacing.lg,
-                  children: [
-                    Text(
-                      _isEditing ? '编辑角色' : '新建角色',
-                      style: ZaidangType.of(context).title,
-                    ),
-                    TextButton.icon(
-                      key: const Key('role-card-export'),
-                      onPressed: _saving || _exportOpen
-                          ? null
-                          : _openRoleCardExport,
-                      icon: const Icon(Icons.style_outlined, size: 18),
-                      label: const Text('导出角色卡'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: ZaidangSpacing.lg),
-                _buildBasicCard(),
-                const SizedBox(height: ZaidangSpacing.lg),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: ZaidangSpacing.lg),
+              child: _buildBasicCard(),
             ),
           ),
           _buildCustomAttributes(tokens),
@@ -621,14 +664,11 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
     BuildContext context,
     SystemUiOverlayStyle overlayStyle,
     double topInset,
+    double headerHeight,
   ) {
     Widget cover({PreferredSizeWidget? tabs}) => ImmersiveCover(
       path: _coverImg,
       title: _nameController.text.trim(),
-      subtitle: [
-        _raceController.text.trim(),
-        _occupationController.text.trim(),
-      ].where((text) => text.isNotEmpty).join(' · '),
       overlayStyle: overlayStyle,
       hasCover: _coverReadable,
       supportDirectory: widget.supportDirectory,
@@ -636,6 +676,10 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
       onPreview: _saving ? null : _openCoverPreview,
       bottom: tabs,
       toolbarHeight: topInset + 60,
+      // 角色页把立绘本身当头图：不模糊、不压暗，只在底部渐隐进纸面。
+      backdropBlur: ImmersiveCover.noBlur,
+      paperHeader: _buildIdentityHeader(headerHeight),
+      paperHeaderOverlap: RoleIdentityHeader.portraitOverlap,
     );
     if (!_isEditing) {
       return CustomScrollView(
@@ -665,7 +709,11 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                   tabAlignment: TabAlignment.start,
                   labelColor: tokens.accent,
                   unselectedLabelColor: tokens.inkSecondary,
-                  indicatorColor: tokens.accent,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  indicator: UnderlineTabIndicator(
+                    borderSide: BorderSide(color: tokens.accent, width: 3),
+                    borderRadius: ZaidangRadius.smAll,
+                  ),
                   dividerColor: tokens.border,
                   padding: const EdgeInsets.symmetric(
                     horizontal: ZaidangSpacing.sm,
@@ -748,45 +796,62 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SectionLabel('基本信息'),
-        _field(
-          controller: _nameController,
-          label: '名字',
-          hint: '角色怎么称呼',
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return '请填写名字';
-            }
-            return null;
-          },
+        const ArchiveCardHeader(
+          icon: Icons.description_outlined,
+          title: '基础设定',
+          caption: '关于这个角色',
         ),
-        const SizedBox(height: ZaidangSpacing.md),
         FieldRow(
-          left: _field(
+          left: _cellField(
+            fieldKey: const Key('role-field-name'),
+            icon: Icons.person_outline,
+            controller: _nameController,
+            label: '名字',
+            hint: '角色怎么称呼',
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return '请填写名字';
+              }
+              return null;
+            },
+          ),
+          right: _cellField(
+            fieldKey: const Key('role-field-sex'),
+            icon: Icons.wc_outlined,
             controller: _sexController,
             label: '性别',
             hint: '女 / 非二元 / 不明',
           ),
-          right: _field(
+        ),
+        const SizedBox(height: ZaidangSpacing.md),
+        FieldRow(
+          left: _cellField(
+            fieldKey: const Key('role-field-age'),
+            icon: Icons.calendar_today_outlined,
             controller: _ageController,
             label: '年龄',
             hint: '十七、外表 20、不详',
           ),
-        ),
-        const SizedBox(height: ZaidangSpacing.md),
-        _field(
-          controller: _birthdayController,
-          label: '生日',
-          hint: '三月三日、第三历春、未知',
+          right: _cellField(
+            fieldKey: const Key('role-field-birthday'),
+            icon: Icons.cake_outlined,
+            controller: _birthdayController,
+            label: '生日',
+            hint: '三月三日、第三历春、未知',
+          ),
         ),
         const SizedBox(height: ZaidangSpacing.md),
         FieldRow(
-          left: _field(
+          left: _cellField(
+            fieldKey: const Key('role-field-race'),
+            icon: Icons.eco_outlined,
             controller: _raceController,
             label: '种族',
             hint: '人类、兽人、吸血鬼',
           ),
-          right: _field(
+          right: _cellField(
+            fieldKey: const Key('role-field-occupation'),
+            icon: Icons.badge_outlined,
             controller: _occupationController,
             label: '身份',
             hint: '学生、骑士、无所属',
@@ -798,26 +863,74 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
     ),
   );
 
-  Widget _buildDescCard() => ArchiveCard(
-    key: const Key('role-create-desc-card'),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _DescSectionHeader(
-          showHistory: _isEditing,
-          onHistoryTap: _saving ? null : _openDescHistory,
-        ),
-        _field(
-          controller: _descController,
-          hint: '性格、外貌、背景都可以写在这里',
-          minLines: 5,
-          maxLines: 10,
-          textInputAction: TextInputAction.newline,
-        ),
-      ],
-    ),
-  );
+  Widget _buildDescCard() {
+    final tokens = ZaidangTokens.of(context);
+    return ArchiveCard(
+      key: const Key('role-create-desc-card'),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const ArchiveCardHeader(
+            icon: Icons.history_edu_outlined,
+            title: '角色简介',
+            caption: '性格、外貌、背景',
+          ),
+          Stack(
+            children: [
+              TextFormField(
+                key: const Key('role-field-desc'),
+                controller: _descController,
+                decoration: InputDecoration(
+                  hintText: '性格、外貌、背景都可以写在这里',
+                  contentPadding: const EdgeInsets.fromLTRB(
+                    ZaidangSpacing.lg,
+                    ZaidangSpacing.lg,
+                    ZaidangSpacing.xxxl + ZaidangSpacing.sm,
+                    ZaidangSpacing.lg,
+                  ),
+                ),
+                minLines: 5,
+                maxLines: 10,
+                textInputAction: TextInputAction.newline,
+                keyboardType: TextInputType.multiline,
+                scrollPadding: _fieldScrollPadding,
+              ),
+              // 右下角的火漆红引号只是装饰，不挡输入也不进语义树。
+              Positioned(
+                right: ZaidangSpacing.md,
+                bottom: ZaidangSpacing.md,
+                child: IgnorePointer(
+                  child: ExcludeSemantics(
+                    child: Icon(
+                      Icons.format_quote,
+                      size: _quoteMarkSize,
+                      color: tokens.accent.withValues(alpha: _quoteMarkAlpha),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (_isEditing)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: ZaidangSpacing.xs),
+                child: TextButton(
+                  onPressed: _saving ? null : _openDescHistory,
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    minimumSize: const Size(44, 44),
+                  ),
+                  child: const Text('修改历史'),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
   void _addAttribute() {
     if (_saving) return;
@@ -900,7 +1013,12 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
         padding: const EdgeInsets.all(ZaidangSpacing.card),
         sliver: SliverMainAxisGroup(
           slivers: [
-            const SliverToBoxAdapter(child: SectionLabel('自定义属性')),
+            const SliverToBoxAdapter(
+              child: ArchiveCardHeader(
+                icon: Icons.bookmark_border,
+                title: '自定义属性',
+              ),
+            ),
             SliverReorderableList(
               key: _attributesKey,
               itemCount: _attributes.length,
@@ -1047,54 +1165,27 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
     );
   }
 
-  Widget _field({
+  /// 基础设定里的单个字段格：图标 + 标签由格子画，输入框本身无边框。
+  Widget _cellField({
+    required Key fieldKey,
+    required IconData icon,
     required TextEditingController controller,
-    String? label,
+    required String label,
     required String hint,
-    int minLines = 1,
-    int maxLines = 1,
-    TextInputAction textInputAction = TextInputAction.next,
     String? Function(String?)? validator,
   }) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(labelText: label, hintText: hint),
-      minLines: minLines,
-      maxLines: maxLines,
-      textInputAction: textInputAction,
-      keyboardType: maxLines > 1 ? TextInputType.multiline : TextInputType.text,
-      scrollPadding: _fieldScrollPadding,
-      validator: validator,
-    );
-  }
-}
-
-class _DescSectionHeader extends StatelessWidget {
-  const _DescSectionHeader({
-    required this.showHistory,
-    required this.onHistoryTap,
-  });
-
-  final bool showHistory;
-  final VoidCallback? onHistoryTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: ZaidangSpacing.sm),
-      child: Row(
-        children: [
-          const Expanded(child: SectionLabel('设定', padding: EdgeInsets.zero)),
-          if (showHistory)
-            TextButton(
-              onPressed: onHistoryTap,
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                minimumSize: const Size(44, 44),
-              ),
-              child: const Text('修改历史'),
-            ),
-        ],
+    return ArchiveFieldCell(
+      icon: icon,
+      label: label,
+      child: TextFormField(
+        key: fieldKey,
+        controller: controller,
+        decoration: archiveCellInputDecoration(context, hint: hint),
+        style: ZaidangType.of(context).bodyLarge,
+        textInputAction: TextInputAction.next,
+        keyboardType: TextInputType.text,
+        scrollPadding: _fieldScrollPadding,
+        validator: validator,
       ),
     );
   }

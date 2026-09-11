@@ -396,7 +396,6 @@ class _WorldCreatePageState extends ConsumerState<WorldCreatePage>
                           ],
                           GlassSaveButton(
                             saving: _saving,
-                            onPhoto: _coverImg.isNotEmpty,
                             onPressed: _busy ? null : _submit,
                           ),
                         ],
