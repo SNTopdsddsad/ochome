@@ -29,11 +29,12 @@ lib/
   theme/
     zaidang_tokens.dart     ZaidangTokens ThemeExtension (light/dark)
     zaidang_theme.dart      zaidangLightTheme()/zaidangDarkTheme() built from tokens
+    zaidang_system_ui.dart  zaidangSystemUiOverlayStyle() for AppBar-less pages
   pages/                    one screen or tab body per file
     home_shell.dart         HomeShell: NavigationBar over StatefulShellRoute
-    archive_page.dart       ArchivePage: OC / 世界观 tabs
-    role_list_page.dart     RoleListPage (keep-alive list)
-    world_view_page.dart
+    archive_page.dart       ArchivePage: NestedScrollView header (title + search + segmented OC / 世界观), owns TabController
+    role_list_page.dart     RoleListPage(query) (keep-alive card list)
+    world_view_page.dart    WorldViewPage(query)
     mine_page.dart
     role_create_page.dart   RoleCreatePage: create + edit, hosts tabs in edit mode
     role_assets_tab.dart    RoleAssetsTab
@@ -47,6 +48,10 @@ lib/
     zaidang_confirm_dialog.dart      showZaidangConfirmDialog
     zaidang_snack_bar.dart           showZaidangSnackBar + tones
     cover_file_view.dart             dataset-relative image view
+    archive_list_view.dart           home list: hints, search filter, spacing, FAB inset
+    archive_list_card.dart           home list card (cover + name + tags + summary + meta)
+    archive_tag.dart                 paper chip used for card tags
+    role_list_tile.dart              compact role row for the world editor's 角色 tab
     storage_error_details.dart       expandable raw error for startup failures
     role_asset_rename_dialog.dart
     role_relationship_editor_sheet.dart

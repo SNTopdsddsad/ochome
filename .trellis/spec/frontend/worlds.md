@@ -7,7 +7,7 @@ Read this when changing `WorldViewPage`, `WorldCreatePage`, the shared editor wi
 ## 2. Signatures
 
 ```dart
-WorldViewPage()                                   // archive 世界观 tab, list + FAB
+WorldViewPage({String query = ''})                // archive 世界观 tab, card list + FAB
 WorldCreatePage({World? world, CoverImagePicker? picker,
                  Future<Directory> Function()? supportDirectory})
 
@@ -22,21 +22,36 @@ GlassSaveButton({saving, onPhoto, onPressed})
 ArchiveCard / archiveCardDecoration / FieldRow / KeepAliveDetails
 archiveEditorHorizontalPadding(context)
 
+// lib/widgets/archive_tag.dart — 纸底细描边标签, used by the home list card
+ArchiveTag(label)
+
 // lib/widgets/section_label.dart — shared 分区标签 (sectionLabel role)
 SectionLabel(text, {padding = EdgeInsets.only(bottom: ZaidangSpacing.sm)})
 
-// lib/widgets/role_list_tile.dart
+// lib/widgets/archive_list_view.dart — home list shared by OC and 世界观
+ArchiveListView<T>({items, query, searchFields, emptyHint, noMatchHint, itemBuilder})
+ArchiveListView.bottomInset                        // 96, FAB clearance
+
+// lib/widgets/archive_list_card.dart — home list card shared by OC and 世界观
+ArchiveListCard({coverImg, title, onTap, placeholderIcon = Icons.person_outline,
+                 tags = const [], summary = '', String? meta})
+ArchiveListCard.firstLine(String text)             // trimmed first line, CRLF-safe
+
+// lib/widgets/role_list_tile.dart — compact row, still used by the world editor's 角色 tab
 RoleListTile({role})                               // pushes /roles/:id with extra
 RoleCoverThumb({path, placeholderIcon = Icons.person_outline})
 ```
 
-Providers: `worldRepositoryProvider` (keepAlive), `worldsProvider` (stream, gated by `databaseSwitchProvider`), `rolesInWorldProvider(worldId)` (stream family).
+Providers: `worldRepositoryProvider` (keepAlive), `worldsProvider` (stream, gated by `databaseSwitchProvider`), `rolesInWorldProvider(worldId)` (stream family). The OC list additionally watches `roleAssetCountsProvider` (one `Map<int, int>` stream for the whole list; see [Role assets (backend)](../backend/role-assets.md#asset-counts)).
 
 ## 3. Contracts
 
 ### List (`WorldViewPage`)
 
-- Mirrors `RoleListPage`: `ConsumerStatefulWidget` + keep-alive, `ListView.separated`, 56 px rounded cover thumb (`Icons.public_outlined` placeholder), title = name, subtitle = first line of 简介 (omitted when blank). Empty copy is `还没有世界观`; FAB tooltip `添加世界观`.
+- Mirrors `RoleListPage`: `ConsumerStatefulWidget` + keep-alive whose `data:` branch is an `ArchiveListView<World>`. The list view owns the empty / no-match hints (`body` in `inkSecondary`), the `ListView.separated` chrome (`ZaidangSpacing.page` sides, `ZaidangSpacing.sm` top, `ZaidangSpacing.md` gaps, `ArchiveListView.bottomInset` = 96 px for the FAB) and `keyboardDismissBehavior: onDrag`. Pages only supply `items`, `query`, `searchFields`, the two hints and an `itemBuilder`; do not re-implement padding or hints per page.
+- Cards are `ArchiveListCard`s; the item root (`_WorldCard` / `_RoleCard`) carries `Key('world-card-<id>')` / `Key('role-card-<id>')` so element reuse during filtering follows the entity, not the index. Card = 120 px wide cover column (`Icons.public_outlined` placeholder on `bg`) + `heading` name + first line of 简介 wrapped in `「」` (`caption` size but **`ink`** colour — `inkSecondary` on `surface` is only 3.8:1; omitted when blank) + `micro` meta `N 个词条` with a trailing chevron. Pages pass the raw multi-line text; `ArchiveListCard.firstLine` trims, splits on `\r\n` / `\n` and takes the first non-empty-after-trim line. Empty copy is `还没有世界观`; FAB tooltip `添加世界观`.
+- `RoleListPage` renders the same card with `tags` = non-empty 种族 / 身份 / 性别, `summary` = raw 设定, and `meta` = `N 份资产`. The page watches `roleAssetCountsProvider` **once** and passes `counts[role.id] ?? 0` into each `_RoleCard` (a plain `StatelessWidget`); while the map is still `null` the card shows only the chevron. Never subscribe per card (`roleAssetsProvider(role.id)` in a list is an N+1 of full asset rows). Tests that render roles on the home must still override `roleAssetRepositoryProvider` with `FakeRoleAssetRepository()`.
+- `query` is the raw search text; `ArchiveListView` trims and lower-cases it once and matches case-insensitively by substring against `searchFields(item)`: worlds match on name, 简介 and every entry title / content; roles match on name, 种族, 身份, 性别, 设定 and custom attribute name / content. Whitespace-only queries do not filter. An empty repository shows `还没有世界观` / `还没有角色`; a non-empty repository with no match shows `没有匹配的世界观` / `没有匹配的角色`.
 - Tap pushes `/worlds/:id` with the `World` as `extra`; FAB pushes `/worlds/new`. Each archive tab owns its own FAB — never two on screen.
 
 ### Editor (`WorldCreatePage`)
@@ -78,7 +93,11 @@ Providers: `worldRepositoryProvider` (keepAlive), `worldsProvider` (stream, gate
 
 ## 6. Tests Required
 
-- `test/pages/world_view_page_test.dart`: empty state, row copy, route + extra, stream refresh.
+- `test/pages/world_view_page_test.dart`: empty state, card copy (`「简介」`, `N 个词条`), route + extra, stream refresh, `query` matching on name / summary / entries and the `没有匹配的世界观` copy.
+- `test/widgets/archive_list_card_test.dart`: `firstLine` (CRLF, blank, surrounding spaces), full card copy + icons, omitted tags / summary / meta, `onTap`, quote colour `ink` in light and dark.
+- `test/widgets/archive_list_view_test.dart`: empty hint colour, padding / gap / `bottomInset` / `onDrag`, query trim + case + any-field matching, no-match hint.
+- `test/widget_test.dart`: home header follows the selected tab, role card copy + `0 份资产`, search filter / clear through `archive-search` and `archive-search-clear` (incl. whitespace-only), landscape + keyboard without overflow, header scroll-away + keyboard dismissal, `AnnotatedRegion` icon brightness.
+- `test/data/role_assets_test.dart` covers `watchAssetCounts`; `test/data/backup_provider_integration_test.dart` listens to `roleAssetCountsProvider` across a restore.
 - `test/pages/world_create_page_test.dart`: create with ordered entries, validation, failed-save draft retention, tabs + member list + role push, empty 角色 state, delete cancel/confirm in light and dark (ink delete icon), cover pick → `更换封面` and persisted path.
 - `test/pages/role_create_page_world_test.dart`: default 未归属, pick and save, edit preselect + 不归属, dismiss keeps value, deleted world → null, empty-world hint.
 - `test/pages/home_shell_test.dart` asserts the 世界观 tab copy/FAB and overrides `worldRepositoryProvider` alongside the role fake.

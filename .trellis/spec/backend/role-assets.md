@@ -33,6 +33,28 @@
 - Role deletion cascades metadata. Only referenced files enter v3 backups;
   unreferenced local copies are not made into cloud assets.
 
+## Asset counts
+
+```dart
+Stream<Map<int, int>> watchAssetCounts();   // roleId -> count, unmodifiable
+```
+
+One grouped query (`SELECT role_id, COUNT(id) … GROUP BY role_id`) feeds the home
+list's `N 份资产` meta through `roleAssetCountsProvider`
+(`StreamProvider.autoDispose`, gated by `databaseSwitchProvider`, invalidated in
+`closeDatabase`). Roles without assets are absent from the map — readers default
+with `counts[id] ?? 0`. Do not open a `watchForRole` stream per list row: that
+is N Drift streams fetching full rows to compute a length, all re-running on any
+asset write.
+
+| Event | Expected map |
+|---|---|
+| No assets | `{}` |
+| Import 2 for A, 1 for B | `{A: 2, B: 1}`; C (no assets) absent |
+| Delete one of A's | `{A: 1, B: 1}` |
+| Delete role B (cascade) | `{A: 1}` |
+| Mutation attempt on the emitted map | `UnsupportedError` |
+
 ## Backup and restore
 
 The production contract is [Backup and Restore](./backup-restore.md). Format v3
@@ -192,7 +214,8 @@ video and verifies first-frame color, aspect ratio and portrait rotation.
 
 `test/data/role_assets_test.dart`: four kinds, role isolation, duplicate names,
 temporary source removal, failed-copy/database rollback, scoped deletion,
-missing files, unsafe paths and v7 migration preserving existing content.
+missing files, unsafe paths, grouped asset counts following import / delete /
+cascade, and v7 migration preserving existing content.
 `test/data/icloud_backup_service_test.dart`: full asset round trip, restoration
 without manifest/listing, truncated files, both-directory rollback, old backup
 compatibility and unchanged-file upload skipping.

@@ -71,6 +71,24 @@ class ZaidangTokens {
 
 Dark `accent` is desaturated and lifted (`#D96C5A`), not an invert of `#C2402A`.
 
+### System UI overlay
+
+```dart
+// lib/theme/zaidang_system_ui.dart
+SystemUiOverlayStyle zaidangSystemUiOverlayStyle(
+  BuildContext context, {
+  bool onDarkBackdrop = false,   // true when a cover / photo sits under the status bar
+});
+```
+
+Returns `SystemUiOverlayStyle.dark` (dark icons) on light paper, `.light` when
+`onDarkBackdrop` or the theme is dark, always with `statusBarColor` transparent,
+`systemNavigationBarColor = tokens.bg` and nav-bar icon brightness following the
+theme. Pages without an `AppBar` (`ArchivePage`, `RoleCreatePage`,
+`WorldCreatePage`) wrap their `Scaffold` in `AnnotatedRegion` with this value;
+`ImmersiveCover` keeps its own collapse-aware region. Tested in
+`test/theme/zaidang_system_ui_test.dart`.
+
 ### Type, spacing and radius scales
 
 ```dart
@@ -152,7 +170,10 @@ Brand extras that ship with A (do not invent a second accent):
 |---------|--------|
 | Scaffold | `bg` |
 | Card / dialog / input fill | `surface` + `border` |
-| AppBar | List/settings: `bg` or `surface`, title `ink`, **no** `inversePrimary`. Create/edit: **no AppBar** — blurred full-bleed cover, glass back/save, bottom-left 3:4 calling-card portrait, paper cap into the form. |
+| AppBar | Settings/backup: `bg` or `surface`, title `ink`, **no** `inversePrimary`. Archive home: **no AppBar** — `hero` header `我的` + accent ` OC` / `世界观` (the one sanctioned accent word in a title, a brand moment like the sparkle), `caption` subtitle, `surface` search field and segmented control with `ZaidangRadius.mdAll`. On scroll the hero title shrinks to `heading` size and pins under the status bar on a frosted strip (`BackdropFilter` blur 12 + `bg` at 0.72 + hairline `border`) — the same glass recipe as the editor buttons; the scale comes from `heading.fontSize / hero.fontSize`, never a literal. Create/edit: **no AppBar** — blurred full-bleed cover, glass back/save, bottom-left 3:4 calling-card portrait, paper cap into the form. |
+| Home list card (`ArchiveListCard`) | `surface` fill + `border` hairline, `ZaidangRadius.mdAll`; cover `ZaidangRadius.smAll`; name `heading`, summary `caption` **in `ink`** (it is the card's body copy; `inkSecondary` on `surface` is 3.8:1 in light) wrapped in `「」`, meta `micro` in `inkSecondary`. Tags are paper chips (`bg` fill, `border`, `micro` ink text) — no per-category hues. |
+| Home background | Light: `assets/images/role_bg.webp` (WebP q85, ~33 KB) under a transparent Scaffold. Dark: plain `bg`, no image. Bundle decorative art as WebP, not multi-MB PNG. |
+| System UI overlay | Every page without an `AppBar` wraps its `Scaffold` in `AnnotatedRegion<SystemUiOverlayStyle>` with `zaidangSystemUiOverlayStyle(context, onDarkBackdrop: …)` from `lib/theme/zaidang_system_ui.dart`: transparent status bar, dark icons on light paper, light icons in dark mode or when `onDarkBackdrop` (a cover under the status bar) is true, system nav bar = `bg` with icons following the theme. Do not hand-roll the `copyWith` chain again — the home, role editor and world editor all call this helper. |
 | AppBar 保存 | `accent` text; disabled = `inkSecondary` |
 | List title / subtitle | `ink` / `inkSecondary` |
 | Empty state | `inkSecondary` |
@@ -326,7 +347,7 @@ darkTheme: zaidangTheme(ZaidangTokens.dark),
 ## Don't
 
 - Don't use `ColorScheme.fromSeed` (explicitly forbidden in the note).
-- Don't paint titles or body with `accent`.
+- Don't paint titles or body with `accent`. The only exception is the archive header's ` OC` / `世界观` word; do not extend it to card names or other page titles.
 - Don't use accent red for delete / irreversible actions.
 - Don't fill the AppBar or scaffold with accent (breaks the 5–10% rule).
 - Don't use SiYuan Note's own `daylight` / `midnight` CSS as ochome tokens.
