@@ -11,7 +11,6 @@ import 'package:ochome/pages/archive_page.dart';
 import 'package:ochome/pages/role_create_page.dart';
 import 'package:ochome/pages/role_list_page.dart';
 import 'package:ochome/theme/zaidang_tokens.dart';
-import 'package:ochome/widgets/archive_editor/immersive_cover.dart';
 import 'package:ochome/widgets/archive_editor/role_identity_header.dart';
 import 'package:ochome/widgets/archive_list_card.dart';
 
@@ -227,8 +226,8 @@ void main() {
     expect(hero.left, 0);
     expect(hero.top, 0);
     // 大头像骑在立绘与纸面的交界上。
-    expect(portrait.top, lessThan(immersiveCoverHeight));
-    expect(portrait.bottom, greaterThan(immersiveCoverHeight));
+    expect(portrait.top, lessThan(_roleCoverHeight));
+    expect(portrait.bottom, greaterThan(_roleCoverHeight));
     expect(basicCard.top, greaterThan(hero.bottom));
     expect(basicCard.left, greaterThan(hero.left));
     expect(basicCard.right, lessThan(hero.right));
@@ -467,12 +466,15 @@ void main() {
   });
 }
 
+/// 角色页的紧凑图片区高度，世界观页仍使用共享默认值。
+const double _roleCoverHeight = 280;
+
 /// 立绘 + 纸面身份头的总高度（身份头随字号缩放）。
 double _heroHeight(WidgetTester tester) {
   final scaler = MediaQuery.textScalerOf(
     tester.element(find.byType(RoleCreatePage)),
   );
-  return immersiveCoverHeight +
+  return _roleCoverHeight +
       RoleIdentityHeader.heightFor(scaler) -
       RoleIdentityHeader.portraitOverlap;
 }
