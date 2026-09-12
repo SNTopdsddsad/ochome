@@ -18,21 +18,33 @@ class VideoThumbnailHandler(messenger: BinaryMessenger) {
 
     init {
         channel.setMethodCallHandler { call, result ->
-            if (call.method != "firstFrame") {
-                result.notImplemented()
-            } else {
-                val source = call.argument<String>("videoPath")
-                val destination = call.argument<String>("thumbnailPath")
-                val size = call.argument<Int>("maxDimension") ?: 320
-                if (source == null || destination == null || size !in 1..1024 ||
-                    !File(source).isAbsolute || !File(destination).isAbsolute) {
-                    result.success(false)
-                } else {
-                    worker.execute {
-                        val success = firstFrame(source, destination, size)
-                        main.post { result.success(success) }
+            when (call.method) {
+                "firstFrame" -> {
+                    val source = call.argument<String>("videoPath")
+                    val destination = call.argument<String>("thumbnailPath")
+                    val size = call.argument<Int>("maxDimension") ?: 320
+                    if (source == null || destination == null || size !in 1..1024 ||
+                        !File(source).isAbsolute || !File(destination).isAbsolute) {
+                        result.success(false)
+                    } else {
+                        worker.execute {
+                            val success = firstFrame(source, destination, size)
+                            main.post { result.success(success) }
+                        }
                     }
                 }
+                "duration" -> {
+                    val source = call.argument<String>("videoPath")
+                    if (source == null || !File(source).isAbsolute) {
+                        result.success(null)
+                    } else {
+                        worker.execute {
+                            val duration = durationMilliseconds(source)
+                            main.post { result.success(duration) }
+                        }
+                    }
+                }
+                else -> result.notImplemented()
             }
         }
     }
@@ -67,6 +79,20 @@ class VideoThumbnailHandler(messenger: BinaryMessenger) {
         } finally {
             if (scaled !== original) scaled?.recycle()
             original?.recycle()
+            try { retriever.release() } catch (_: Exception) { }
+        }
+    }
+
+    private fun durationMilliseconds(source: String): Long? {
+        val retriever = MediaMetadataRetriever()
+        return try {
+            retriever.setDataSource(source)
+            retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                ?.toLongOrNull()
+                ?.takeIf { it > 0L }
+        } catch (_: Exception) {
+            null
+        } finally {
             try { retriever.release() } catch (_: Exception) { }
         }
     }
