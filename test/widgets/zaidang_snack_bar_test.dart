@@ -47,7 +47,7 @@ void main() {
   testWidgets('close control dismisses feedback without navigating away', (
     tester,
   ) async {
-    await _pump(tester);
+    await _pump(tester, accessibleNavigation: true);
     final controller = showZaidangSnackBar(
       tester.element(find.text('页面内容')),
       '无法保存，请重试。',
@@ -98,6 +98,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(message), findsOneWidget);
       expect(tester.takeException(), isNull);
+      expect(tester.widget<SnackBar>(find.byType(SnackBar)).persist, isTrue);
       final scroller = find.descendant(
         of: find.byType(SnackBar),
         matching: find.byType(SingleChildScrollView),
@@ -112,25 +113,49 @@ void main() {
     },
   );
 
-  testWidgets(
-    'accessible navigation keeps feedback until the user dismisses it',
-    (tester) async {
-      await _pump(tester, accessibleNavigation: true);
-      showZaidangSnackBar(tester.element(find.text('页面内容')), '已保存角色卡');
-      await tester.pumpAndSettle();
-      await tester.pump(const Duration(seconds: 8));
-      await tester.pumpAndSettle();
-      expect(find.text('已保存角色卡'), findsOneWidget);
-      await tester.tap(
-        find.descendant(
-          of: find.byType(SnackBar),
-          matching: find.byIcon(Icons.close),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.byType(SnackBar), findsNothing);
-    },
-  );
+  for (final testCase in [
+    (
+      label: 'default info',
+      tone: ZaidangSnackBarTone.info,
+      duration: null,
+      expected: const Duration(seconds: 4),
+    ),
+    (
+      label: 'default error',
+      tone: ZaidangSnackBarTone.error,
+      duration: null,
+      expected: const Duration(seconds: 5),
+    ),
+    (
+      label: 'custom duration',
+      tone: ZaidangSnackBarTone.success,
+      duration: const Duration(seconds: 2),
+      expected: const Duration(seconds: 2),
+    ),
+  ]) {
+    testWidgets(
+      '${testCase.label} auto-dismisses with accessible navigation enabled',
+      (tester) async {
+        await _pump(tester, accessibleNavigation: true);
+        final controller = showZaidangSnackBar(
+          tester.element(find.text('页面内容')),
+          '已保存角色卡',
+          tone: testCase.tone,
+          duration: testCase.duration,
+        );
+        await tester.pumpAndSettle();
+        final snack = tester.widget<SnackBar>(find.byType(SnackBar));
+        expect(snack.persist, isFalse);
+        expect(snack.duration, testCase.expected);
+        await tester.pump(testCase.expected - const Duration(seconds: 1));
+        expect(find.byType(SnackBar), findsOneWidget);
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pumpAndSettle();
+        expect(find.byType(SnackBar), findsNothing);
+        expect(await controller.closed, SnackBarClosedReason.timeout);
+      },
+    );
+  }
 
   testWidgets(
     'desktop feedback is capped instead of spanning the whole window',
