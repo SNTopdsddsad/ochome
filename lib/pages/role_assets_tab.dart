@@ -14,11 +14,13 @@ import '../theme/zaidang_spacing.dart';
 import '../theme/zaidang_tokens.dart';
 import '../theme/zaidang_type.dart';
 import '../widgets/role_asset_rename_dialog.dart';
+import '../widgets/role_asset_card.dart';
+import '../widgets/role_asset_tags_dialog.dart';
 import '../widgets/zaidang_confirm_dialog.dart';
 import '../widgets/zaidang_snack_bar.dart';
 import 'cover_preview_page.dart';
 
-enum _AssetAction { rename, delete }
+enum _AssetAction { rename, tags, delete }
 
 /// 使用父级 NestedScrollView 的纵向控制器，与详情共享立绘和吸顶标签。
 class RoleAssetsTab extends ConsumerStatefulWidget {
@@ -207,6 +209,16 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
             ),
           ),
           PopupMenuItem(
+            value: _AssetAction.tags,
+            child: Row(
+              children: [
+                Icon(Icons.label_outline, size: 20),
+                SizedBox(width: ZaidangSpacing.md),
+                Text('编辑标签'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
             value: _AssetAction.delete,
             child: Row(
               children: [
@@ -242,6 +254,31 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
           );
           if (changed == true && mounted) {
             showZaidangSnackBar(context, '资产已重命名');
+          }
+        case _AssetAction.tags:
+          final changed = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => RoleAssetTagsDialog(
+              name: asset.name,
+              tags: asset.tags,
+              canSave: () => mounted && _enabled,
+              onSave: (tags) async {
+                if (!mounted || !_enabled) {
+                  throw StateError('页面已停止编辑，请重新打开再试');
+                }
+                await ref
+                    .read(roleAssetRepositoryProvider)
+                    .updateTags(
+                      roleId: widget.roleId,
+                      assetId: asset.id,
+                      tags: tags,
+                    );
+              },
+            ),
+          );
+          if (changed == true && mounted) {
+            showZaidangSnackBar(context, '标签已更新');
           }
         case _AssetAction.delete:
           await _deleteAsset(asset);
@@ -325,32 +362,36 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
                     padding: EdgeInsets.only(bottom: ZaidangSpacing.md),
                     child: LinearProgressIndicator(),
                   ),
-                Wrap(
-                  spacing: ZaidangSpacing.sm,
-                  runSpacing: ZaidangSpacing.xs,
-                  children: [
-                    for (final kind in [null, ...RoleAssetKind.values])
-                      ChoiceChip(
-                        label: Text(kind?.label ?? '全部'),
-                        selected: _filter == kind,
-                        backgroundColor: tokens.bg,
-                        selectedColor: tokens.accent.withValues(alpha: 0.08),
-                        side: BorderSide(
-                          color: _filter == kind
-                              ? tokens.accent.withValues(alpha: 0.25)
-                              : tokens.border,
+                SingleChildScrollView(
+                  key: const PageStorageKey('role-asset-filters'),
+                  scrollDirection: Axis.horizontal,
+                  primary: false,
+                  child: Row(
+                    spacing: ZaidangSpacing.sm,
+                    children: [
+                      for (final kind in [null, ...RoleAssetKind.values])
+                        ChoiceChip(
+                          label: Text(kind?.label ?? '全部'),
+                          selected: _filter == kind,
+                          backgroundColor: tokens.bg,
+                          selectedColor: tokens.accent.withValues(alpha: 0.08),
+                          side: BorderSide(
+                            color: _filter == kind
+                                ? tokens.accent.withValues(alpha: 0.25)
+                                : tokens.border,
+                          ),
+                          labelStyle: TextStyle(
+                            color: _filter == kind
+                                ? tokens.accent
+                                : tokens.inkSecondary,
+                          ),
+                          showCheckmark: false,
+                          onSelected: _canAct
+                              ? (_) => setState(() => _filter = kind)
+                              : null,
                         ),
-                        labelStyle: TextStyle(
-                          color: _filter == kind
-                              ? tokens.accent
-                              : tokens.inkSecondary,
-                        ),
-                        showCheckmark: false,
-                        onSelected: _canAct
-                            ? (_) => setState(() => _filter = kind)
-                            : null,
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -396,7 +437,7 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(
                   inset,
-                  ZaidangSpacing.sm,
+                  0,
                   inset,
                   ZaidangSpacing.xxl + MediaQuery.paddingOf(context).bottom,
                 ),
@@ -404,39 +445,25 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final asset = items[index];
-                    return ListTile(
-                      key: ValueKey('role-asset-${asset.id}'),
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: ZaidangSpacing.sm,
-                      ),
-                      leading: _AssetThumbnail(
+                    return Padding(
+                      padding: index == items.length - 1
+                          ? EdgeInsets.zero
+                          : const EdgeInsets.only(bottom: ZaidangSpacing.sm),
+                      child: RoleAssetCard(
+                        key: ValueKey('role-asset-${asset.id}'),
                         asset: asset,
-                        repository: ref.read(roleAssetRepositoryProvider),
-                        videoThumbnails: ref.read(
-                          videoThumbnailServiceProvider,
-                        ),
-                      ),
-                      title: Text(
-                        asset.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(
-                        '${asset.kind.label} · ${_formatBytes(asset.bytes)}',
-                      ),
-                      onTap: _canAct ? () => _openAsset(asset, all) : null,
-                      trailing: Builder(
-                        builder: (context) => IconButton(
-                          tooltip: '更多操作：${asset.name}',
-                          icon: Icon(
-                            Icons.more_horiz,
-                            size: 20,
-                            semanticLabel: '更多操作：${asset.name}',
+                        thumbnail: _AssetThumbnail(
+                          key: ValueKey(asset.relativePath),
+                          asset: asset,
+                          repository: ref.read(roleAssetRepositoryProvider),
+                          videoThumbnails: ref.read(
+                            videoThumbnailServiceProvider,
                           ),
-                          onPressed: _canAct
-                              ? () => _showAssetActions(asset, context)
-                              : null,
                         ),
+                        onTap: _canAct ? () => _openAsset(asset, all) : null,
+                        onMore: _canAct
+                            ? (anchor) => _showAssetActions(asset, anchor)
+                            : null,
                       ),
                     );
                   },
@@ -474,17 +501,9 @@ class _RoleAssetsTabState extends ConsumerState<RoleAssetsTab>
   }
 }
 
-String _formatBytes(int bytes) {
-  if (bytes < 1024) return '$bytes B';
-  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-  if (bytes < 1024 * 1024 * 1024) {
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-  }
-  return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
-}
-
 class _AssetThumbnail extends StatefulWidget {
   const _AssetThumbnail({
+    super.key,
     required this.asset,
     required this.repository,
     required this.videoThumbnails,
@@ -498,74 +517,127 @@ class _AssetThumbnail extends StatefulWidget {
 }
 
 class _AssetThumbnailState extends State<_AssetThumbnail> {
+  /// 大预览的占位图和播放徽记尺寸；解码宽度按实际显示大小与屏幕密度计算。
+  static const double _placeholderIconSize = 40;
+  static const double _playIconSize = 18;
   late final Future<File?>? _file = switch (widget.asset.kind) {
     RoleAssetKind.image => widget.repository.fileFor(widget.asset),
     RoleAssetKind.video => _videoCover(),
     _ => null,
   };
+  late final Future<Duration?>? _duration =
+      widget.asset.kind == RoleAssetKind.video ? _videoDuration() : null;
 
   Future<File?> _videoCover() async {
     final video = await widget.repository.fileFor(widget.asset);
     return widget.videoThumbnails.thumbnailFor(video);
   }
 
+  Future<Duration?> _videoDuration() async {
+    final video = await widget.repository.fileFor(widget.asset);
+    return widget.videoThumbnails.durationFor(video);
+  }
+
+  String _durationLabel(Duration duration) {
+    final seconds = duration.inSeconds;
+    final hours = seconds ~/ 3600;
+    final minutes = (seconds ~/ 60) % 60;
+    final tail =
+        '${minutes.toString().padLeft(2, '0')}:'
+        '${(seconds % 60).toString().padLeft(2, '0')}';
+    return hours == 0 ? tail : '$hours:$tail';
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = ZaidangTokens.of(context);
     final placeholder = ColoredBox(
-      color: tokens.surface,
+      color: tokens.bg,
       child: Center(
-        child: Icon(switch (widget.asset.kind) {
-          RoleAssetKind.image => Icons.image_outlined,
-          RoleAssetKind.video => Icons.movie_outlined,
-          RoleAssetKind.audio => Icons.audio_file_outlined,
-          RoleAssetKind.document => Icons.description_outlined,
-        }, color: tokens.inkSecondary),
+        child: Icon(
+          roleAssetKindIcon(widget.asset.kind),
+          size: _placeholderIconSize,
+          color: tokens.accent.withValues(alpha: 0.7),
+        ),
       ),
     );
     return ClipRRect(
       borderRadius: ZaidangRadius.smAll,
-      child: SizedBox.square(
-        dimension: 52,
-        child: _file == null
-            ? placeholder
-            : FutureBuilder<File?>(
+      child: LayoutBuilder(
+        builder: (context, constraints) => Stack(
+          fit: StackFit.expand,
+          children: [
+            if (_file == null)
+              placeholder
+            else
+              FutureBuilder<File?>(
                 future: _file,
                 builder: (context, snapshot) => snapshot.hasData
-                    ? Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.file(
-                            snapshot.data!,
-                            fit: BoxFit.cover,
-                            cacheWidth: 156,
-                            errorBuilder: (_, _, _) => placeholder,
-                          ),
-                          if (widget.asset.kind == RoleAssetKind.video)
-                            Positioned(
-                              right: 3,
-                              bottom: 3,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: ZaidangTokens.dark.bg.withValues(
-                                    alpha: 0.8,
-                                  ),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Padding(
-                                  padding: EdgeInsets.all(ZaidangSpacing.xxs),
-                                  child: Icon(
-                                    Icons.play_arrow,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
+                    ? Image.file(
+                        snapshot.data!,
+                        fit: BoxFit.cover,
+                        cacheWidth:
+                            (constraints.maxWidth *
+                                    MediaQuery.devicePixelRatioOf(context))
+                                .ceil(),
+                        errorBuilder: (_, _, _) => placeholder,
                       )
                     : placeholder,
               ),
+            if (widget.asset.kind == RoleAssetKind.video)
+              Positioned(
+                left: ZaidangSpacing.xs,
+                right: ZaidangSpacing.xs,
+                bottom: ZaidangSpacing.xs,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: ZaidangTokens.dark.bg.withValues(alpha: 0.8),
+                        borderRadius: ZaidangRadius.smAll,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: ZaidangSpacing.xs,
+                          vertical: ZaidangSpacing.xxs,
+                        ),
+                        child: FutureBuilder<Duration?>(
+                          future: _duration,
+                          builder: (context, snapshot) => Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const ExcludeSemantics(
+                                child: Icon(
+                                  Icons.play_arrow,
+                                  size: _playIconSize,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              if (snapshot.hasData) ...[
+                                const SizedBox(width: ZaidangSpacing.xxs),
+                                Text(
+                                  _durationLabel(snapshot.data!),
+                                  key: ValueKey(
+                                    'role-asset-duration-${widget.asset.id}',
+                                  ),
+                                  semanticsLabel:
+                                      '视频时长 ${_durationLabel(snapshot.data!)}',
+                                  style: ZaidangType.of(context).micro
+                                      .copyWith(color: Colors.white),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
