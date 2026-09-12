@@ -37,6 +37,7 @@ class ImmersiveCover extends StatelessWidget {
     this.supportDirectory,
     this.bottom,
     this.toolbarHeight = 60,
+    this.coverHeight = immersiveCoverHeight,
     this.paperHeader,
     this.paperHeaderOverlap = 0,
     this.backdropBlur = defaultBackdropBlur,
@@ -59,6 +60,9 @@ class ImmersiveCover extends StatelessWidget {
   final Future<Directory> Function()? supportDirectory;
   final PreferredSizeWidget? bottom;
   final double toolbarHeight;
+
+  /// 展开时的图片区高度，不包含身份头与页签。
+  final double coverHeight;
 
   /// 头图下方纸面上的身份头；高度计入展开高度。收起时它贴着页签整体上移、
   /// 立绘从底部被裁短，最后 100px 淡出让位给吸顶身份。
@@ -101,12 +105,10 @@ class ImmersiveCover extends StatelessWidget {
       automaticallyImplyLeading: false,
       toolbarHeight: bottom == null ? 0 : toolbarHeight,
       collapsedHeight: bottom == null
-          ? immersiveCoverHeight + paperHeaderExtent
+          ? coverHeight + paperHeaderExtent
           : toolbarHeight,
       expandedHeight:
-          immersiveCoverHeight +
-          paperHeaderExtent +
-          (bottom?.preferredSize.height ?? 0),
+          coverHeight + paperHeaderExtent + (bottom?.preferredSize.height ?? 0),
       bottom: bottom,
       systemOverlayStyle: overlayStyle,
       // 吸顶后 FlexibleSpaceBar 会淡出头图，必须由 Material 遮住下方滚动内容。
@@ -131,7 +133,7 @@ class ImmersiveCover extends StatelessWidget {
             // 身份头贴着页签、立绘填满剩余高度：收起时先从底部裁掉立绘（顶对齐留住脸），
             // 身份头整体上移后再淡出；下拉回弹时立绘拉高、身份头随之下移。
             final photoHeight = paperHeader == null
-                ? immersiveCoverHeight
+                ? coverHeight
                 : (constraints.maxHeight - paperHeaderExtent).clamp(
                     0.0,
                     double.infinity,

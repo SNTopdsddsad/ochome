@@ -97,6 +97,9 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
   static const double _fieldScrollInset = 80;
   static const double _fieldScrollTopInset = 128;
 
+  /// 角色图片区收紧，给身份头和首屏资料留出更多空间。
+  static const double _coverHeight = 280;
+
   /// 角色简介文本框右下角引号装饰的尺寸与透明度。
   static const double _quoteMarkSize = 28;
   static const double _quoteMarkAlpha = 0.3;
@@ -585,10 +588,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
                               animation: _scrollController,
                               builder: (context, child) {
                                 final collapseOffset =
-                                    immersiveCoverHeight +
-                                    headerExtent -
-                                    topInset -
-                                    60;
+                                    _coverHeight + headerExtent - topInset - 60;
                                 final offset = _scrollController.hasClients
                                     ? _scrollController.offset
                                     : 0.0;
@@ -676,6 +676,7 @@ class _RoleCreatePageState extends ConsumerState<RoleCreatePage>
       onPreview: _saving ? null : _openCoverPreview,
       bottom: tabs,
       toolbarHeight: topInset + 60,
+      coverHeight: _coverHeight,
       // 角色页把立绘本身当头图：不模糊、不压暗，只在底部渐隐进纸面。
       backdropBlur: ImmersiveCover.noBlur,
       paperHeader: _buildIdentityHeader(headerHeight),
