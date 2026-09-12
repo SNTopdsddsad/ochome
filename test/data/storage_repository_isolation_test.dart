@@ -102,6 +102,10 @@ void main() {
         throwsStateError,
       );
       await expectLater(
+        assets.updateTags(roleId: roleId, assetId: 1, tags: ['later']),
+        throwsStateError,
+      );
+      await expectLater(
         assets.delete(roleId: roleId, assetId: 1),
         throwsStateError,
       );

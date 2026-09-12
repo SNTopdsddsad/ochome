@@ -252,6 +252,75 @@ void main() {
     },
   );
 
+  test(
+    'tags are normalized, persisted immediately and isolated by role',
+    () async {
+      final other = await _createRole(roles, '另一个角色');
+      await assets.importFiles(role.id, [
+        _file('clip.mov', [1, 2]),
+      ]);
+      await assets.importFiles(other.id, [
+        _file('other.mov', [3]),
+      ]);
+      final before = (await assets.listForRole(role.id)).single;
+      final changed = assets
+          .watchForRole(role.id)
+          .firstWhere((items) => items.single.tags.length == 2);
+
+      await assets.updateTags(
+        roleId: role.id,
+        assetId: before.id,
+        tags: ['  演出  ', '官方图', '演出'],
+      );
+
+      final updated = (await changed).single;
+      expect(updated.tags, ['演出', '官方图']);
+      expect(updated.name, before.name);
+      expect(updated.kind, before.kind);
+      expect(updated.relativePath, before.relativePath);
+      expect(updated.bytes, before.bytes);
+      expect(updated.createdAt, before.createdAt);
+      expect((await assets.listForRole(other.id)).single.tags, isEmpty);
+      expect(
+        (await DriftRoleAssetRepository(database).listForRole(role.id))
+            .single
+            .tags,
+        ['演出', '官方图'],
+      );
+    },
+  );
+
+  test('tag updates reject invalid ownership and unchanged values perform no write', () async {
+    final other = await _createRole(roles, '另一个角色');
+    await assets.importFiles(role.id, [
+      _file('notes.pdf', [1]),
+    ]);
+    final asset = (await assets.listForRole(role.id)).single;
+    await assets.updateTags(roleId: role.id, assetId: asset.id, tags: ['文档']);
+    await database.customStatement('''
+        CREATE TRIGGER reject_asset_tag_update BEFORE UPDATE OF tags ON role_asset
+        BEGIN SELECT RAISE(ABORT, 'simulated tag failure'); END
+      ''');
+    await assets.updateTags(
+      roleId: role.id,
+      assetId: asset.id,
+      tags: ['  文档  ', '文档'],
+    );
+    await expectLater(
+      assets.updateTags(roleId: other.id, assetId: asset.id, tags: ['其他']),
+      throwsA(isA<StateError>()),
+    );
+    await expectLater(
+      assets.updateTags(roleId: role.id, assetId: -1, tags: ['其他']),
+      throwsA(isA<StateError>()),
+    );
+    await expectLater(
+      assets.updateTags(roleId: role.id, assetId: asset.id, tags: ['其他']),
+      throwsA(anything),
+    );
+    expect((await assets.listForRole(role.id)).single.tags, ['文档']);
+  });
+
   test('same-name rename performs no write and failed writes leave metadata and file usable', () async {
     await assets.importFiles(role.id, [
       _file('notes.pdf', [1]),
@@ -410,10 +479,71 @@ void main() {
     await assetRepository.importFiles(7, [
       _file('asset.pdf', [1]),
     ]);
-    expect(await assetRepository.listForRole(7), hasLength(1));
+    final imported = await assetRepository.listForRole(7);
+    expect(imported, hasLength(1));
+    expect(imported.single.tags, isEmpty);
     await repository.delete(7);
     expect(await assetRepository.listForRole(7), isEmpty);
   });
+
+  test(
+    'v10 migration adds one tags column and preserves existing assets',
+    () async {
+      final file = File(p.join(support.path, 'v10.sqlite'));
+      final raw = sqlite3.open(file.path);
+      raw.execute('''
+      CREATE TABLE role (
+        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+        name TEXT NOT NULL, sex TEXT NOT NULL, age TEXT NOT NULL,
+        birthday TEXT NOT NULL, race TEXT NOT NULL, occupation TEXT NOT NULL,
+        desc TEXT NOT NULL, coverimg TEXT NOT NULL,
+        custom_attributes TEXT NOT NULL DEFAULT '[]'
+      );
+      CREATE TABLE role_asset (
+        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+        role_id INTEGER NOT NULL REFERENCES role(id) ON DELETE CASCADE,
+        name TEXT NOT NULL, kind TEXT NOT NULL,
+        relative_path TEXT NOT NULL UNIQUE, bytes INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX role_asset_role_id ON role_asset(role_id);
+    ''');
+      raw.execute(
+        "INSERT INTO role VALUES (7, '旧 OC', '', '', '', '', '', '', '', '[]')",
+      );
+      raw.execute(
+        "INSERT INTO role_asset VALUES (3, 7, 'old.pdf', 'document', "
+        "'role_assets/old.pdf', 4, 1700000000)",
+      );
+      raw.userVersion = 10;
+      raw.close();
+      await database.close();
+      final upgraded = AppDatabase(NativeDatabase(file));
+      database = upgraded;
+      final repository = DriftRoleAssetRepository(
+        upgraded,
+        supportDirectory: () async => support,
+      );
+
+      final preserved = (await repository.listForRole(7)).single;
+      expect(preserved.id, 3);
+      expect(preserved.name, 'old.pdf');
+      expect(preserved.tags, isEmpty);
+      final columns = await upgraded
+          .customSelect("PRAGMA table_info('role_asset')")
+          .get();
+      expect(
+        columns.where((row) => row.read<String>('name') == 'tags'),
+        hasLength(1),
+      );
+      expect(
+        columns
+            .singleWhere((row) => row.read<String>('name') == 'tags')
+            .data['dflt_value'],
+        "'[]'",
+      );
+    },
+  );
 }
 
 Future<Role> _createRole(DriftRoleRepository repository, String name) =>

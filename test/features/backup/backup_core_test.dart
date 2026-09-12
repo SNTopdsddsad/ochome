@@ -2,9 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:ochome/data/database/app_database.dart';
-
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ochome/data/database/app_database.dart';
+import 'package:ochome/data/repositories/drift_role_asset_repository.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
@@ -878,6 +879,70 @@ void main() {
       inspectBackupDatabase(File(p.join(root.path, 'ochome.sqlite'))),
       throwsFormatException,
     );
+    final job = await backup();
+    expect(job.phase, BackupPhase.failed);
+    expect(cloud.active, isEmpty);
+  });
+
+  test('asset tags survive a snapshot restore', () async {
+    final live = AppDatabase.forStorage(
+      storage,
+      executor: NativeDatabase(
+        File(p.join(storage.activeDirectory.path, AppDatabase.sqliteFileName)),
+      ),
+    );
+    final assets = DriftRoleAssetRepository(live);
+    final asset = (await assets.listForRole(1)).single;
+    await assets.updateTags(
+      roleId: 1,
+      assetId: asset.id,
+      tags: ['  设定 ', '世界观'],
+    );
+    await live.close();
+
+    final descriptor = (await backup()).descriptor!;
+    final local = sqlite3.open(
+      p.join(storage.activeDirectory.path, AppDatabase.sqliteFileName),
+    );
+    local.execute("UPDATE role_asset SET tags = '[\"本机修改\"]'");
+    local.close();
+    await coordinator.prepareRestore(BackupSource.snapshot(descriptor));
+    final ready = await waitForJob(
+      coordinator,
+      (job) => job.requiresConfirmation || job.isTerminal,
+    );
+    expect(ready.requiresConfirmation, isTrue, reason: ready.error?.message);
+    await coordinator.confirmRestore(ready.operationId);
+
+    final restored = sqlite3.open(
+      p.join(storage.activeDirectory.path, AppDatabase.sqliteFileName),
+      mode: OpenMode.readOnly,
+    );
+    try {
+      expect(
+        restored.select('SELECT tags FROM role_asset').single['tags'],
+        '["设定","世界观"]',
+      );
+    } finally {
+      restored.close();
+    }
+  });
+
+  test('database business validation rejects malformed asset tags', () async {
+    final live = AppDatabase.forStorage(
+      storage,
+      executor: NativeDatabase(
+        File(p.join(storage.activeDirectory.path, AppDatabase.sqliteFileName)),
+      ),
+    );
+    await live.customStatement(
+      "UPDATE role_asset SET tags = '[\"重复\",\"重复\"]'",
+    );
+    await live.close();
+    final database = File(
+      p.join(storage.activeDirectory.path, AppDatabase.sqliteFileName),
+    );
+    await expectLater(inspectBackupDatabase(database), throwsFormatException);
     final job = await backup();
     expect(job.phase, BackupPhase.failed);
     expect(cloud.active, isEmpty);

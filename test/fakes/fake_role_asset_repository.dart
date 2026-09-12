@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:file_selector/file_selector.dart';
 import 'package:ochome/data/models/role_asset.dart';
 import 'package:ochome/data/models/role_asset_name.dart';
+import 'package:ochome/data/models/role_asset_tags.dart';
 import 'package:ochome/data/repositories/role_asset_repository.dart';
 
 class FakeRoleAssetRepository implements RoleAssetRepository {
@@ -15,11 +16,14 @@ class FakeRoleAssetRepository implements RoleAssetRepository {
   final Map<int, File> files = {};
   Completer<void>? pendingImport;
   Completer<void>? pendingRename;
+  Completer<void>? pendingUpdateTags;
   bool failRename = false;
+  bool failUpdateTags = false;
   bool failImport = false;
   bool failOpen = false;
   int importCalls = 0;
   int renameCalls = 0;
+  int updateTagsCalls = 0;
 
   @override
   Future<List<RoleAsset>> listForRole(int roleId) async =>
@@ -100,6 +104,36 @@ class FakeRoleAssetRepository implements RoleAssetRepository {
       relativePath: asset.relativePath,
       bytes: asset.bytes,
       createdAt: asset.createdAt,
+      tags: asset.tags,
+    );
+    changes.add(null);
+  }
+
+  @override
+  Future<void> updateTags({
+    required int roleId,
+    required int assetId,
+    required List<String> tags,
+  }) async {
+    updateTagsCalls++;
+    final normalized = normalizeRoleAssetTags(tags);
+    if (pendingUpdateTags != null) await pendingUpdateTags!.future;
+    if (failUpdateTags) throw StateError('模拟标签保存失败');
+    final index = items.indexWhere(
+      (item) => item.id == assetId && item.roleId == roleId,
+    );
+    if (index == -1) throw StateError('资产不存在或不属于此角色');
+    final asset = items[index];
+    if (_sameTags(asset.tags, normalized)) return;
+    items[index] = RoleAsset(
+      id: asset.id,
+      roleId: asset.roleId,
+      name: asset.name,
+      kind: asset.kind,
+      relativePath: asset.relativePath,
+      bytes: asset.bytes,
+      createdAt: asset.createdAt,
+      tags: normalized,
     );
     changes.add(null);
   }
@@ -117,4 +151,12 @@ class FakeRoleAssetRepository implements RoleAssetRepository {
   }
 
   Future<void> dispose() => changes.close();
+}
+
+bool _sameTags(List<String> left, List<String> right) {
+  if (left.length != right.length) return false;
+  for (var index = 0; index < left.length; index++) {
+    if (left[index] != right[index]) return false;
+  }
+  return true;
 }
