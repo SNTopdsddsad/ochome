@@ -17,12 +17,105 @@ import 'package:ochome/data/services/role_asset_opener.dart';
 import 'package:ochome/data/services/video_thumbnail_service.dart';
 import 'package:ochome/pages/role_create_page.dart';
 import 'package:ochome/pages/cover_preview_page.dart';
+import 'package:ochome/widgets/role_asset_card.dart';
+import 'package:ochome/widgets/role_asset_tag.dart';
+import 'package:ochome/widgets/role_asset_tags_dialog.dart';
 import 'package:ochome/theme/zaidang_theme.dart';
 
 import '../fakes/fake_role_asset_repository.dart';
 import '../fakes/fake_role_repository.dart';
 
 void main() {
+  testWidgets(
+    'asset tags save immediately while keeping the role draft and block navigation during a pending write',
+    (tester) async {
+      final assets = FakeRoleAssetRepository([
+        _asset(1, '设定.pdf', RoleAssetKind.document),
+      ]);
+      addTearDown(assets.dispose);
+      final roles = FakeRoleRepository([_role]);
+      await _open(tester, assets, roles: roles);
+      final name = find.byKey(const Key('role-field-name'));
+      await tester.ensureVisible(name);
+      await tester.enterText(name, '还没保存的名字');
+      await tester.pumpAndSettle();
+      await _assetsCollapsed(tester);
+      await _assetAction(tester, '设定.pdf', '编辑标签');
+      await tester.enterText(
+        find.byKey(const Key('role-asset-tag-input')),
+        '设定',
+      );
+      await tester.tap(find.byKey(const Key('role-asset-tags-save')));
+      await tester.pumpAndSettle();
+      expect(assets.items.single.tags, ['设定']);
+      expect(assets.updateTagsCalls, 1);
+      expect(find.widgetWithText(RoleAssetTag, '设定'), findsOneWidget);
+
+      await _assetAction(tester, '设定.pdf', '编辑标签');
+      await tester.enterText(
+        find.byKey(const Key('role-asset-tag-input')),
+        '官方图',
+      );
+      await tester.tap(find.byKey(const Key('role-asset-tags-cancel')));
+      await tester.pumpAndSettle();
+      expect(assets.items.single.tags, ['设定']);
+      expect(assets.updateTagsCalls, 1);
+
+      assets.pendingUpdateTags = Completer<void>();
+      await _assetAction(tester, '设定.pdf', '编辑标签');
+      await tester.enterText(
+        find.byKey(const Key('role-asset-tag-input')),
+        '世界观',
+      );
+      await tester.tap(find.byKey(const Key('role-asset-tags-save')));
+      await tester.pump();
+      expect(tester.widget<TextButton>(_roleSave()).onPressed, isNull);
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(find.byType(RoleAssetTagsDialog), findsOneWidget);
+      assets.pendingUpdateTags!.complete();
+      await tester.pumpAndSettle();
+      expect(assets.items.single.tags, ['设定', '世界观']);
+      expect((await roles.list()).single.name, '白鸦');
+      await tester.tap(find.widgetWithText(Tab, '详情'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(TextFormField, '还没保存的名字'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'duration is shown without a thumbnail and unknown duration never becomes a zero label',
+    (tester) async {
+      for (final duration in [
+        const Duration(hours: 1, minutes: 2, seconds: 3),
+        null,
+      ]) {
+        final assets = FakeRoleAssetRepository([
+          _asset(1, 'video.mp4', RoleAssetKind.video),
+        ]);
+        await _open(tester, assets, videoThumbnails: _DurationOnly(duration));
+        await _assetsCollapsed(tester);
+        final row = find.widgetWithText(RoleAssetCard, 'video.mp4');
+        expect(
+          find.descendant(of: row, matching: find.byIcon(Icons.play_arrow)),
+          findsOneWidget,
+        );
+        if (duration != null) {
+          expect(find.text('1:02:03'), findsOneWidget);
+        } else {
+          expect(
+            find.byKey(const ValueKey('role-asset-duration-1')),
+            findsNothing,
+          );
+        }
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await assets.dispose();
+      }
+    },
+  );
+
   for (final dark in [false, true]) {
     testWidgets(
       '${dark ? 'dark' : 'light'} pinned header hides content scrolling under either tab',
@@ -204,7 +297,8 @@ void main() {
         final menuSemantics = tester
             .getSemantics(_assetMenu(original.name))
             .getSemanticsData();
-        expect(menuSemantics.label, contains('更多操作：${original.name}'));
+        expect(menuSemantics.tooltip, '更多操作：${original.name}');
+        expect(menuSemantics.label, isEmpty);
         expect(menuSemantics.flagsCollection.isButton, isTrue);
         expect(menuSemantics.hasAction(ui.SemanticsAction.tap), isTrue);
         semantics.dispose();
@@ -234,10 +328,13 @@ void main() {
         expect(assets.renameCalls, 1);
         expect(assets.items.single.name, '白鸦·参考.v2.PDF');
         expect(assets.items.single.relativePath, original.relativePath);
-        expect(find.widgetWithText(ListTile, '白鸦·参考.v2.PDF'), findsOneWidget);
+        expect(
+          find.widgetWithText(RoleAssetCard, '白鸦·参考.v2.PDF'),
+          findsOneWidget,
+        );
         expect(scroll.position.pixels, closeTo(offset, 1));
         expect((await roles.list()).single.name, '白鸦');
-        await tester.tap(find.widgetWithText(ListTile, '白鸦·参考.v2.PDF'));
+        await tester.tap(find.widgetWithText(RoleAssetCard, '白鸦·参考.v2.PDF'));
         await tester.pumpAndSettle();
         expect(opener.opened.single.path, endsWith(original.relativePath));
         expect(opener.displayNames.single, '白鸦·参考.v2.PDF');
@@ -273,7 +370,7 @@ void main() {
           await tester.tap(find.byKey(const Key('role-asset-rename-save')));
           await tester.pumpAndSettle();
           currentName = '$baseName$extension';
-          await tester.tap(find.widgetWithText(ListTile, currentName));
+          await tester.tap(find.widgetWithText(RoleAssetCard, currentName));
           await tester.pumpAndSettle();
           expect(opener.displayNames.last, currentName);
           expect(opener.opened.last.path, endsWith(original.relativePath));
@@ -297,8 +394,8 @@ void main() {
       final roles = _PendingRoles();
       await _open(tester, assets, opener: opener, roles: roles);
       await _assetsCollapsed(tester);
-      final row = find.widgetWithText(ListTile, 'clip.mp4');
-      final open = tester.widget<ListTile>(row).onTap!;
+      final row = find.widgetWithText(RoleAssetCard, 'clip.mp4');
+      final open = tester.widget<RoleAssetCard>(row).onTap!;
       final roleSave = tester.widget<TextButton>(_roleSave()).onPressed!;
       open();
       roleSave();
@@ -522,15 +619,15 @@ void main() {
       ]) {
         await tester.tap(find.widgetWithText(ChoiceChip, label));
         await tester.pumpAndSettle();
-        expect(find.widgetWithText(ListTile, name), findsOneWidget);
-        expect(find.byType(ListTile), findsOneWidget);
-        await tester.tap(find.widgetWithText(ListTile, name));
+        expect(find.widgetWithText(RoleAssetCard, name), findsOneWidget);
+        expect(find.byType(RoleAssetCard), findsOneWidget);
+        await tester.tap(find.widgetWithText(RoleAssetCard, name));
         await tester.pumpAndSettle();
         expect(opener.opened.last.path, endsWith(name));
       }
       await tester.tap(find.widgetWithText(ChoiceChip, '图片'));
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(ListTile, '立绘.png'), findsOneWidget);
+      expect(find.widgetWithText(RoleAssetCard, '立绘.png'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -544,7 +641,7 @@ void main() {
       final opener = _Opener();
       await _open(tester, assets, opener: opener);
       await _assetsCollapsed(tester);
-      await tester.tap(find.widgetWithText(ListTile, 'README'));
+      await tester.tap(find.widgetWithText(RoleAssetCard, 'README'));
       await tester.pumpAndSettle();
       expect(opener.opened, hasLength(1));
       await _assetAction(tester, 'README', '重命名');
@@ -552,7 +649,7 @@ void main() {
       await tester.enterText(field, '参考.v2.png');
       await tester.tap(find.byKey(const Key('role-asset-rename-save')));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ListTile, '参考.v2.png'));
+      await tester.tap(find.widgetWithText(RoleAssetCard, '参考.v2.png'));
       await tester.pumpAndSettle();
       expect(opener.opened, hasLength(2));
       expect(opener.opened.last.path, opener.opened.first.path);
@@ -605,7 +702,7 @@ void main() {
         ),
       );
       await _assets(tester);
-      final row = find.widgetWithText(ListTile, '动作.mp4');
+      final row = find.widgetWithText(RoleAssetCard, '动作.mp4');
       final image = tester.widget<Image>(
         find.descendant(of: row, matching: find.byType(Image)),
       );
@@ -618,6 +715,7 @@ void main() {
         findsOneWidget,
       );
       expect(thumbnails.sources.single.path, video.path);
+      expect(find.text('03:24'), findsOneWidget);
       await tester.tap(row);
       await tester.pumpAndSettle();
       expect(opener.opened.single.path, video.path);
@@ -682,7 +780,7 @@ void main() {
     final opener = _Opener()..fail = true;
     await _open(tester, assets, opener: opener);
     await _assetsCollapsed(tester);
-    await tester.tap(find.widgetWithText(ListTile, 'notes.pdf'));
+    await tester.tap(find.widgetWithText(RoleAssetCard, 'notes.pdf'));
     await tester.pumpAndSettle();
     expect(find.textContaining('没有可打开此文件的应用'), findsOneWidget);
     await _assetAction(tester, 'notes.pdf', '删除');
@@ -728,14 +826,17 @@ void main() {
         ),
       );
       await _assets(tester);
-      await tester.tap(find.widgetWithText(ListTile, 'portrait.png'));
+      await tester.tap(find.widgetWithText(RoleAssetCard, 'portrait.png'));
       await tester.pumpAndSettle();
       expect(find.byType(CoverPreviewPage), findsOneWidget);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       expect(find.byType(CoverPreviewPage), findsNothing);
       expect(find.byType(RoleCreatePage), findsOneWidget);
-      expect(find.widgetWithText(ListTile, 'portrait.png'), findsOneWidget);
+      expect(
+        find.widgetWithText(RoleAssetCard, 'portrait.png'),
+        findsOneWidget,
+      );
       expect(
         tester
             .widget<TextButton>(find.widgetWithText(TextButton, '保存'))
@@ -941,4 +1042,19 @@ class _VideoThumbnails extends VideoThumbnailService {
     sources.add(video);
     return cover;
   }
+
+  @override
+  Future<Duration?> durationFor(File video) async =>
+      const Duration(minutes: 3, seconds: 24);
+}
+
+class _DurationOnly extends VideoThumbnailService {
+  _DurationOnly(this.duration);
+  final Duration? duration;
+
+  @override
+  Future<File?> thumbnailFor(File video) async => null;
+
+  @override
+  Future<Duration?> durationFor(File video) async => duration;
 }
