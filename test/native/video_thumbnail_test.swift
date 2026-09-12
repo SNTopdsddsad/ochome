@@ -15,6 +15,10 @@ struct VideoThumbnailTest {
     for rotated in [false, true] {
       let source = root.appendingPathComponent(rotated ? "portrait.mov" : "landscape.mov")
       try makeVideo(source, rotated: rotated)
+      guard let duration = VideoMetadata.durationMilliseconds(source: source) else {
+        fatalError("Readable video must have a duration")
+      }
+      precondition((1_990...2_010).contains(duration), "Duration must come from the media timeline")
       let destination = source.appendingPathExtension("jpg")
       try VideoThumbnailFrame.write(source: source, destination: destination, maxDimension: 32)
       guard let imageSource = CGImageSourceCreateWithURL(destination as CFURL, nil),
@@ -37,7 +41,8 @@ struct VideoThumbnailTest {
       try VideoThumbnailFrame.write(source: broken, destination: root.appendingPathComponent("broken.jpg"), maxDimension: 32)
       fatalError("Broken video must fail")
     } catch { }
-    print("PASS: first frame, aspect ratio, portrait rotation, source retention and invalid video")
+    precondition(VideoMetadata.durationMilliseconds(source: broken) == nil)
+    print("PASS: first frame, duration, aspect ratio, portrait rotation, source retention and invalid video")
   }
 
   static func makeVideo(_ url: URL, rotated: Bool) throws {

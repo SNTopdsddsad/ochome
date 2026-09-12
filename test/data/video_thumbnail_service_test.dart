@@ -150,4 +150,123 @@ void main() {
       expect(await service.thumbnailFor(video), isNull);
     },
   );
+
+  test(
+    'reads positive native duration and caches it across service instances',
+    () async {
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        calls.add(call);
+        expect(call.method, 'duration');
+        expect(call.arguments['videoPath'], video.absolute.path);
+        return 24500;
+      });
+
+      expect(
+        await service.durationFor(video),
+        const Duration(milliseconds: 24500),
+      );
+      final recreated = VideoThumbnailService(
+        channel: channel,
+        cacheDirectory: () async => root,
+      );
+      expect(
+        await recreated.durationFor(video),
+        const Duration(milliseconds: 24500),
+      );
+      expect(calls, hasLength(1));
+    },
+  );
+
+  test('concurrent duration requests share one native read', () async {
+    final started = Completer<void>();
+    final release = Completer<void>();
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      calls.add(call);
+      started.complete();
+      await release.future;
+      return 3723004;
+    });
+
+    final requests = List.generate(8, (_) => service.durationFor(video));
+    await started.future;
+    release.complete();
+    expect(
+      await Future.wait(requests),
+      everyElement(const Duration(milliseconds: 3723004)),
+    );
+    expect(calls, hasLength(1));
+  });
+
+  test('changed video invalidates its cached duration', () async {
+    var milliseconds = 1000;
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      calls.add(call);
+      return milliseconds;
+    });
+
+    expect(await service.durationFor(video), const Duration(seconds: 1));
+    milliseconds = 2000;
+    await video.writeAsBytes([1, 2, 3, 4]);
+    expect(await service.durationFor(video), const Duration(seconds: 2));
+    expect(calls, hasLength(2));
+  });
+
+  test('cache failure does not hide a duration read from the video', () async {
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      calls.add(call);
+      return 4500;
+    });
+    final withoutCache = VideoThumbnailService(
+      channel: channel,
+      cacheDirectory: () async =>
+          throw const FileSystemException('cache unavailable'),
+    );
+
+    expect(
+      await withoutCache.durationFor(video),
+      const Duration(milliseconds: 4500),
+    );
+    expect(calls, hasLength(1));
+  });
+
+  test(
+    'unknown and broken durations return null without inventing zero',
+    () async {
+      for (final response in <int?>[null, 0, -1]) {
+        final candidate = File('${root.path}/duration-$response.mp4');
+        await candidate.writeAsBytes([1]);
+        messenger.setMockMethodCallHandler(channel, (_) async => response);
+        expect(await service.durationFor(candidate), isNull);
+      }
+      final broken = File('${root.path}/broken.mp4');
+      await broken.writeAsBytes([1]);
+      messenger.setMockMethodCallHandler(channel, (_) async {
+        throw PlatformException(code: 'unsupportedVideo');
+      });
+      expect(await service.durationFor(broken), isNull);
+    },
+  );
+
+  test(
+    'failed thumbnail extraction does not hide readable video duration',
+    () async {
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        calls.add(call);
+        if (call.method == 'duration') return 3240;
+        await File(call.arguments['thumbnailPath'] as String).writeAsBytes([0]);
+        return false;
+      });
+
+      final results = await Future.wait<Object?>([
+        service.thumbnailFor(video),
+        service.durationFor(video),
+      ]);
+      expect(results[0], isNull);
+      expect(results[1], const Duration(milliseconds: 3240));
+      expect(
+        calls.map((call) => call.method),
+        containsAll(['firstFrame', 'duration']),
+      );
+    },
+  );
 }
