@@ -56,7 +56,9 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showZaidangSnackBar(
         ZaidangSpacing.md,
       ),
       showCloseIcon: true,
-      persist: media.accessibleNavigation || needsScrolling,
+      // Android 上部分无障碍服务会宽泛地开启 accessibleNavigation。
+      // 只有必须滚动才能读完的内容才保持到手动关闭。
+      persist: needsScrolling,
       duration:
           duration ??
           Duration(seconds: tone == ZaidangSnackBarTone.error ? 5 : 4),
