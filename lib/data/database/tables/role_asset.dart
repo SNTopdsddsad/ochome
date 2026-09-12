@@ -15,4 +15,5 @@ class RoleAssets extends Table {
   TextColumn get relativePath => text().unique()();
   IntColumn get bytes => integer()();
   DateTimeColumn get createdAt => dateTime()();
+  TextColumn get tags => text().withDefault(const Constant('[]'))();
 }

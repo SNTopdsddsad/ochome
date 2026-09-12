@@ -72,6 +72,7 @@ class RoleAsset {
     required this.relativePath,
     required this.bytes,
     required this.createdAt,
+    this.tags = const [],
   });
 
   final int id;
@@ -81,4 +82,5 @@ class RoleAsset {
   final String relativePath;
   final int bytes;
   final DateTime createdAt;
+  final List<String> tags;
 }

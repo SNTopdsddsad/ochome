@@ -1389,6 +1389,16 @@ class $RoleAssetsTable extends RoleAssets
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _tagsMeta = const VerificationMeta('tags');
+  @override
+  late final GeneratedColumn<String> tags = GeneratedColumn<String>(
+    'tags',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1398,6 +1408,7 @@ class $RoleAssetsTable extends RoleAssets
     relativePath,
     bytes,
     createdAt,
+    tags,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1465,6 +1476,12 @@ class $RoleAssetsTable extends RoleAssets
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('tags')) {
+      context.handle(
+        _tagsMeta,
+        tags.isAcceptableOrUnknown(data['tags']!, _tagsMeta),
+      );
+    }
     return context;
   }
 
@@ -1502,6 +1519,10 @@ class $RoleAssetsTable extends RoleAssets
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      tags: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tags'],
+      )!,
     );
   }
 
@@ -1519,6 +1540,7 @@ class RoleAsset extends DataClass implements Insertable<RoleAsset> {
   final String relativePath;
   final int bytes;
   final DateTime createdAt;
+  final String tags;
   const RoleAsset({
     required this.id,
     required this.roleId,
@@ -1527,6 +1549,7 @@ class RoleAsset extends DataClass implements Insertable<RoleAsset> {
     required this.relativePath,
     required this.bytes,
     required this.createdAt,
+    required this.tags,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1538,6 +1561,7 @@ class RoleAsset extends DataClass implements Insertable<RoleAsset> {
     map['relative_path'] = Variable<String>(relativePath);
     map['bytes'] = Variable<int>(bytes);
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['tags'] = Variable<String>(tags);
     return map;
   }
 
@@ -1550,6 +1574,7 @@ class RoleAsset extends DataClass implements Insertable<RoleAsset> {
       relativePath: Value(relativePath),
       bytes: Value(bytes),
       createdAt: Value(createdAt),
+      tags: Value(tags),
     );
   }
 
@@ -1566,6 +1591,7 @@ class RoleAsset extends DataClass implements Insertable<RoleAsset> {
       relativePath: serializer.fromJson<String>(json['relativePath']),
       bytes: serializer.fromJson<int>(json['bytes']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      tags: serializer.fromJson<String>(json['tags']),
     );
   }
   @override
@@ -1579,6 +1605,7 @@ class RoleAsset extends DataClass implements Insertable<RoleAsset> {
       'relativePath': serializer.toJson<String>(relativePath),
       'bytes': serializer.toJson<int>(bytes),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'tags': serializer.toJson<String>(tags),
     };
   }
 
@@ -1590,6 +1617,7 @@ class RoleAsset extends DataClass implements Insertable<RoleAsset> {
     String? relativePath,
     int? bytes,
     DateTime? createdAt,
+    String? tags,
   }) => RoleAsset(
     id: id ?? this.id,
     roleId: roleId ?? this.roleId,
@@ -1598,6 +1626,7 @@ class RoleAsset extends DataClass implements Insertable<RoleAsset> {
     relativePath: relativePath ?? this.relativePath,
     bytes: bytes ?? this.bytes,
     createdAt: createdAt ?? this.createdAt,
+    tags: tags ?? this.tags,
   );
   RoleAsset copyWithCompanion(RoleAssetsCompanion data) {
     return RoleAsset(
@@ -1610,6 +1639,7 @@ class RoleAsset extends DataClass implements Insertable<RoleAsset> {
           : this.relativePath,
       bytes: data.bytes.present ? data.bytes.value : this.bytes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      tags: data.tags.present ? data.tags.value : this.tags,
     );
   }
 
@@ -1622,14 +1652,15 @@ class RoleAsset extends DataClass implements Insertable<RoleAsset> {
           ..write('kind: $kind, ')
           ..write('relativePath: $relativePath, ')
           ..write('bytes: $bytes, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('tags: $tags')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, roleId, name, kind, relativePath, bytes, createdAt);
+      Object.hash(id, roleId, name, kind, relativePath, bytes, createdAt, tags);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1640,7 +1671,8 @@ class RoleAsset extends DataClass implements Insertable<RoleAsset> {
           other.kind == this.kind &&
           other.relativePath == this.relativePath &&
           other.bytes == this.bytes &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.tags == this.tags);
 }
 
 class RoleAssetsCompanion extends UpdateCompanion<RoleAsset> {
@@ -1651,6 +1683,7 @@ class RoleAssetsCompanion extends UpdateCompanion<RoleAsset> {
   final Value<String> relativePath;
   final Value<int> bytes;
   final Value<DateTime> createdAt;
+  final Value<String> tags;
   const RoleAssetsCompanion({
     this.id = const Value.absent(),
     this.roleId = const Value.absent(),
@@ -1659,6 +1692,7 @@ class RoleAssetsCompanion extends UpdateCompanion<RoleAsset> {
     this.relativePath = const Value.absent(),
     this.bytes = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.tags = const Value.absent(),
   });
   RoleAssetsCompanion.insert({
     this.id = const Value.absent(),
@@ -1668,6 +1702,7 @@ class RoleAssetsCompanion extends UpdateCompanion<RoleAsset> {
     required String relativePath,
     required int bytes,
     required DateTime createdAt,
+    this.tags = const Value.absent(),
   }) : roleId = Value(roleId),
        name = Value(name),
        kind = Value(kind),
@@ -1682,6 +1717,7 @@ class RoleAssetsCompanion extends UpdateCompanion<RoleAsset> {
     Expression<String>? relativePath,
     Expression<int>? bytes,
     Expression<DateTime>? createdAt,
+    Expression<String>? tags,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1691,6 +1727,7 @@ class RoleAssetsCompanion extends UpdateCompanion<RoleAsset> {
       if (relativePath != null) 'relative_path': relativePath,
       if (bytes != null) 'bytes': bytes,
       if (createdAt != null) 'created_at': createdAt,
+      if (tags != null) 'tags': tags,
     });
   }
 
@@ -1702,6 +1739,7 @@ class RoleAssetsCompanion extends UpdateCompanion<RoleAsset> {
     Value<String>? relativePath,
     Value<int>? bytes,
     Value<DateTime>? createdAt,
+    Value<String>? tags,
   }) {
     return RoleAssetsCompanion(
       id: id ?? this.id,
@@ -1711,6 +1749,7 @@ class RoleAssetsCompanion extends UpdateCompanion<RoleAsset> {
       relativePath: relativePath ?? this.relativePath,
       bytes: bytes ?? this.bytes,
       createdAt: createdAt ?? this.createdAt,
+      tags: tags ?? this.tags,
     );
   }
 
@@ -1738,6 +1777,9 @@ class RoleAssetsCompanion extends UpdateCompanion<RoleAsset> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (tags.present) {
+      map['tags'] = Variable<String>(tags.value);
+    }
     return map;
   }
 
@@ -1750,7 +1792,8 @@ class RoleAssetsCompanion extends UpdateCompanion<RoleAsset> {
           ..write('kind: $kind, ')
           ..write('relativePath: $relativePath, ')
           ..write('bytes: $bytes, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('tags: $tags')
           ..write(')'))
         .toString();
   }
@@ -3656,6 +3699,7 @@ typedef $$RoleAssetsTableCreateCompanionBuilder = RoleAssetsCompanion Function({
   required String relativePath,
   required int bytes,
   required DateTime createdAt,
+  Value<String> tags,
 });
 typedef $$RoleAssetsTableUpdateCompanionBuilder = RoleAssetsCompanion Function({
   Value<int> id,
@@ -3665,6 +3709,7 @@ typedef $$RoleAssetsTableUpdateCompanionBuilder = RoleAssetsCompanion Function({
   Value<String> relativePath,
   Value<int> bytes,
   Value<DateTime> createdAt,
+  Value<String> tags,
 });
 
 final class $$RoleAssetsTableReferences
@@ -3725,6 +3770,11 @@ class $$RoleAssetsTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tags => $composableBuilder(
+    column: $table.tags,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3791,6 +3841,11 @@ class $$RoleAssetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get tags => $composableBuilder(
+    column: $table.tags,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$RolesTableOrderingComposer get roleId {
     final $$RolesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -3843,6 +3898,9 @@ class $$RoleAssetsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get tags =>
+      $composableBuilder(column: $table.tags, builder: (column) => column);
 
   $$RolesTableAnnotationComposer get roleId {
     final $$RolesTableAnnotationComposer composer = $composerBuilder(
@@ -3903,6 +3961,7 @@ class $$RoleAssetsTableTableManager
                 Value<String> relativePath = const Value.absent(),
                 Value<int> bytes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<String> tags = const Value.absent(),
               }) => RoleAssetsCompanion(
                 id: id,
                 roleId: roleId,
@@ -3911,6 +3970,7 @@ class $$RoleAssetsTableTableManager
                 relativePath: relativePath,
                 bytes: bytes,
                 createdAt: createdAt,
+                tags: tags,
               ),
           createCompanionCallback:
               ({
@@ -3921,6 +3981,7 @@ class $$RoleAssetsTableTableManager
                 required String relativePath,
                 required int bytes,
                 required DateTime createdAt,
+                Value<String> tags = const Value.absent(),
               }) => RoleAssetsCompanion.insert(
                 id: id,
                 roleId: roleId,
@@ -3929,6 +3990,7 @@ class $$RoleAssetsTableTableManager
                 relativePath: relativePath,
                 bytes: bytes,
                 createdAt: createdAt,
+                tags: tags,
               ),
           withReferenceMapper: (p0) => p0
               .map(

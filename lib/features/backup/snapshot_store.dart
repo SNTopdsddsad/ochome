@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
 import '../../data/database/app_database.dart';
+import '../../data/models/role_asset_tags.dart';
 import '../../data/services/data_storage.dart';
 import '../../data/services/file_fingerprint_store.dart';
 import '../../data/services/sqlite_snapshotter.dart';
@@ -150,6 +151,9 @@ Future<DatabaseInventory> inspectBackupDatabase(File file) {
             throw const FormatException('资产记录不完整');
           }
           BackupJson.integer(row['created_at']);
+          if (db.userVersion >= 11) {
+            decodeRoleAssetTags(BackupJson.string(row['tags'], empty: true));
+          }
           assets.add(
             SnapshotContentFile(
               relativePath: relativePath,
@@ -165,7 +169,8 @@ Future<DatabaseInventory> inspectBackupDatabase(File file) {
       }
       // v9 had two parallel layouts (world / relationship); only v10 guarantees
       // the relationship table, so probe the schema instead of the version.
-      final hasRelationships = db.userVersion >= 10 ||
+      final hasRelationships =
+          db.userVersion >= 10 ||
           db
               .select(
                 "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'role_relationship'",

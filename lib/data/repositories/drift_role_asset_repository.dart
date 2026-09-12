@@ -6,6 +6,7 @@ import 'package:file_selector/file_selector.dart';
 import '../database/app_database.dart' as db;
 import '../models/role_asset.dart';
 import '../models/role_asset_name.dart';
+import '../models/role_asset_tags.dart';
 import '../services/local_file_store.dart';
 import '../services/data_storage.dart';
 import '../services/role_asset_store.dart';
@@ -65,6 +66,7 @@ class DriftRoleAssetRepository implements RoleAssetRepository {
         relativePath: row.relativePath,
         bytes: row.bytes,
         createdAt: row.createdAt,
+        tags: decodeRoleAssetTags(row.tags),
       ),
     ),
   );
@@ -141,6 +143,31 @@ class DriftRoleAssetRepository implements RoleAssetRepository {
           .write(db.RoleAssetsCompanion(name: Value(name)));
     }),
   );
+
+  @override
+  Future<void> updateTags({
+    required int roleId,
+    required int assetId,
+    required List<String> tags,
+  }) {
+    final encoded = encodeRoleAssetTags(tags);
+    return _db.mutate(
+      () => _db.transaction(() async {
+        final asset =
+            await (_db.select(_db.roleAssets)..where(
+                  (table) =>
+                      table.id.equals(assetId) & table.roleId.equals(roleId),
+                ))
+                .getSingleOrNull();
+        if (asset == null) throw StateError('资产不存在或不属于此角色');
+        if (asset.tags == encoded) return;
+        await (_db.update(_db.roleAssets)..where(
+              (table) => table.id.equals(assetId) & table.roleId.equals(roleId),
+            ))
+            .write(db.RoleAssetsCompanion(tags: Value(encoded)));
+      }),
+    );
+  }
 
   @override
   Future<File> fileFor(RoleAsset asset) async {

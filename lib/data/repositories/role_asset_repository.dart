@@ -21,6 +21,14 @@ abstract interface class RoleAssetRepository {
     required int assetId,
     required String baseName,
   });
+
+  /// Replaces the ordered tags after trimming, deduplication and validation.
+  Future<void> updateTags({
+    required int roleId,
+    required int assetId,
+    required List<String> tags,
+  });
+
   Future<void> delete({required int roleId, required int assetId});
   Future<File> fileFor(RoleAsset asset);
 }

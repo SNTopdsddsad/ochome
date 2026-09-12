@@ -40,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
       : storage!.mutate(action, expectedEpoch: storageEpoch);
 
   /// 表结构版本。增删列后必须递增并补 migration。
-  static const int currentSchemaVersion = 10;
+  static const int currentSchemaVersion = 11;
 
   static const String sqliteFileName = 'ochome.sqlite';
 
@@ -110,6 +110,11 @@ class AppDatabase extends _$AppDatabase {
         if (!await _hasIndex('role_relationship_to_role_id')) {
           await migrator.createIndex(roleRelationshipToRoleId);
         }
+      }
+      // Older branches create role_asset from the latest table definition,
+      // which already contains tags. Only add the column when it is absent.
+      if (from < 11 && !await _hasColumn('role_asset', 'tags')) {
+        await migrator.addColumn(roleAssets, roleAssets.tags);
       }
     },
     beforeOpen: (details) async {
