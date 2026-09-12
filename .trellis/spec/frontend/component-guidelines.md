@@ -427,9 +427,12 @@ presentation; the helper owns queue, width and timing policy.
 - Clear stale queued messages before showing the latest one. Short messages
   normally last 4 seconds, errors 5; a caller can supply `duration`.
 - In Flutter 3.47, a close icon alone does not prevent timeout. Set `persist`
-  when `accessibleNavigation` is enabled or the scaled message needs scrolling.
-  The helper measures with the same text style/scaler and a conservative text
-  width; do not estimate fit by ASCII character count.
+  only when the scaled message needs scrolling. Short notices retain their
+  normal/default or caller-supplied timeout even with `accessibleNavigation`:
+  Android automation services can enable this flag without the user asking for
+  permanent feedback. Keep native live-region announcements and the close
+  control. The helper measures with the same text style/scaler and a conservative
+  text width; do not estimate fit by ASCII character count.
 - The full Text remains in the widget/semantics tree. Very long content scrolls
   within a bounded height; never silently apply `maxLines`/ellipsis to the
   notification. Persistent notices can be closed with the native close control.
@@ -438,8 +441,8 @@ presentation; the helper owns queue, width and timing policy.
   the operation completes.
 
 `test/widgets/zaidang_snack_bar_test.dart` covers light/dark surface readability,
-close behavior, latest-message replacement, long text and accessible reading
-without timeout, and desktop width. Existing save/export/backup tests retain
+close behavior, latest-message replacement, persistent long text, short-message
+timeouts with accessible navigation, and desktop width. Existing save/export/backup tests retain
 their data/result assertions.
 
 For visual QA, Flutter widget tests set `debugDisableShadows=true`, which draws

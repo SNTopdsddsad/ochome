@@ -10,10 +10,13 @@ the top Save action still saves the role form and returns to the preceding page.
 ## Scroll contract
 
 - Use `NestedScrollView` with one pinned, collapsible cover `SliverAppBar`.
-  The photo stays `immersiveCoverHeight` (352) tall; below it, inside the same
+  The role photo uses `ImmersiveCover.coverHeight` (280) to leave more room for
+  first-screen details; below it, inside the same
   `flexibleSpace`, sits the paper identity header (`ImmersiveCover.paperHeader`,
   see below), so the expanded height is
-  `352 + ImmersiveCover.paperHeaderExtent + 48`; its bottom contains the tabs.
+  `280 + ImmersiveCover.paperHeaderExtent + 48`; its bottom contains the tabs.
+  Role create uses the same photo height. The shared cover defaults to
+  `immersiveCoverHeight` (352) for the world editor.
   When collapsed, the cover reserves the status-bar inset plus 60 pixels for
   the existing glass controls, then 48 pixels for the tab bar.
 - Collapse order matters: the identity header is anchored to the **bottom** of
@@ -27,9 +30,11 @@ the top Save action still saves the role form and returns to the preceding page.
   chop the header while the photo stays whole.
 - In the last 24 pixels of cover collapse, reveal a 32px circular portrait and
   the current draft name centered in the toolbar using `NavigationToolbar`.
-  The threshold is `collapseOffset = immersiveCoverHeight + headerExtent -
+  The threshold is `collapseOffset = coverHeight + headerExtent -
   topInset - 60` where `headerExtent = RoleIdentityHeader.heightFor(textScaler)
-  - RoleIdentityHeader.portraitOverlap`. Keep this identity on both tabs,
+  - RoleIdentityHeader.portraitOverlap`. Use the same role photo height for
+  the sliver and this threshold so the pinned identity appears on collapse.
+  Keep this identity on all tabs,
   hide it when expanded, and ellipsize long names within the available width.
   A subtle paper background keeps the text readable over any cover image.
 - The visible cover layout owns an `AnnotatedRegion<SystemUiOverlayStyle>`:
@@ -126,9 +131,34 @@ the top Save action still saves the role form and returns to the preceding page.
 
 ## Asset interactions
 
+- `RoleAssetCard` renders a rounded `surface` card with a large square preview
+  on the left and filename (up to two lines), kind/size, local import time, and
+  saved tag pills on the right. Preview width follows 30% of the card within
+  88–112 logical pixels; the content can grow vertically with large text.
+  The original `role-asset-<id>` key now identifies this card rather than a
+  `ListTile`; use `role-asset-open-<id>` / `role-asset-more-<id>` for actions.
+  Keep the menu's 48px hit area independent of the card's open action.
+- Keep the list compact: 8px between cards, 12px horizontal / 8px vertical card
+  padding, and 4px between filename, type/size, date and tags. The filter header
+  supplies the gap before the first card; do not add another list-top inset.
+  Keep the existing preview dimensions and allow the content to grow for large
+  text and multi-line tags instead of fixing a compressed card height.
+- Tag text uses the limited coral/blue/lilac asset palette in
+  `theme/zaidang_asset_colors.dart`, with contrast checked in both themes.
+  These small metadata markers do not change the app's primary brand colors.
+  Tags are never inferred from filenames or invented to fill the reference UI.
+
 - **添加资产** offers the system photo/media picker or file picker. **全部 / 图片 /
-  视频 / 音频 / 文档** filter the role-owned list. Display saved names and sizes;
+  视频 / 音频 / 文档** filter the role-owned list. Keep the filters in a single
+  horizontally scrollable row (`PageStorageKey('role-asset-filters')`,
+  `primary: false`); narrow screens must never wrap them onto a second line.
+  Display saved names and sizes;
   names initially come from the imported files.
+- On Android, **从相册添加** explicitly opts into the plugin's Photo Picker for
+  mixed image/video multi-selection. Do not rely on its default: the pinned
+  Android implementation otherwise sends `ACTION_GET_CONTENT`, even on recent
+  Android releases, which opens a file manager. **从文件添加** keeps the generic
+  file selector. Unsupported older devices follow the plugin's system fallback.
 - Standard raster images reuse `CoverPreviewPage`, including swipe and zoom.
   Other image formats, video, audio and documents use `RoleAssetOpener` and the
   platform's file-opening UI. Surface missing files or missing apps visibly.
@@ -136,6 +166,9 @@ the top Save action still saves the role form and returns to the preceding page.
   `videoThumbnailServiceProvider`. Keep a play badge on the preview, and keep
   the tile's open action pointing to the original video. Extraction errors use
   the existing movie icon; thumbnail work must never block asset import.
+  `durationFor` runs independently from thumbnail extraction and shows real
+  `mm:ss` / `h:mm:ss` over the preview, including when the thumbnail fails.
+  Unknown duration leaves only the play icon, never a fabricated zero time.
 - Import is an all-or-nothing batch. Disable repeat actions, role Save, and
   leaving the role while import, confirmation or gallery opening is active.
   Disable asset operations while role Save is pending. Always restore controls
@@ -147,7 +180,7 @@ the top Save action still saves the role form and returns to the preceding page.
 
 ## Asset rename interaction
 
-- Each row has an accessible overflow menu with **重命名 / 删除**. Tapping the
+- Each row has an accessible overflow menu with **重命名 / 编辑标签 / 删除**. Tapping the
   row still opens the file; deletion retains its existing confirmation.
 - Prefill and select the editable basename. Show the stored extension separately
   as read-only text, preserving matching display suffix case. Files whose stored
@@ -179,6 +212,27 @@ the top Save action still saves the role form and returns to the preceding page.
   the iOS system preview header must receive the same current name. Keep the
   original file path as the data source and wait for preview dismissal before
   releasing the parent busy guard.
+
+## Asset tag editor
+
+- `RoleAssetTagsDialog(name, tags, canSave, onSave)` owns a local draft. It
+  accepts at most 8 distinct tags of 16 grapheme clusters each through the
+  shared `normalizeRoleAssetTags` helper. Adding trims whitespace and deduplicates
+  in original order; individual empty tags are not persisted.
+- Explicit Add/IME submission of blank input shows the shared validation error.
+  Save with no pending input still saves the existing draft, including clearing
+  the final tag. Preserve `FormatException` and `StateError` guidance inline;
+  use a generic retry message for unexpected errors.
+- Save includes any non-empty pending input; removing the final chip saves an
+  empty list. Cancel/unchanged drafts never call the repository. Errors remain
+  inline with the draft intact so the user can retry.
+- `RoleAssetsTab` writes via `updateTags`, with the same live enabled checks and
+  parent busy contract as rename. A pending write disables adding/removing,
+  saving and cancellation and prevents back from dismissing the editor. The
+  role form is neither submitted nor discarded. Stream updates refresh cards.
+- Tests cover card geometry and text scaling, independent menu/open actions,
+  tag contrast, pending-input save, cancel/clear/retry, stale callback gating,
+  preservation of unsaved role text, and duration with/without thumbnails.
 
 ## Validation
 

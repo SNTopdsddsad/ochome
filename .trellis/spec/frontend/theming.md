@@ -17,6 +17,12 @@
 
 **Current implementation**: `lib/theme/` holds four token files. `zaidang_tokens.dart` is the hand-written light/dark palette; `zaidang_type.dart` (`ZaidangType`, a `ThemeExtension`), `zaidang_spacing.dart` (`ZaidangSpacing`) and `zaidang_radius.dart` (`ZaidangRadius`) are the type / spacing / radius scales. `zaidang_theme.dart` maps all of them into `ThemeData` (extensions, `textTheme`, component themes). Do not reintroduce a seed palette.
 
+Asset metadata tags additionally use `zaidang_asset_colors.dart`: a limited
+coral/blue/lilac palette matching the approved asset-card reference. This is
+restricted to asset tags and their editor chips; it does not change brand or
+action colors. Select colors consistently by tag text and validate text contrast
+against the tinted surface in both themes (see [Role Assets](./role-assets.md)).
+
 ---
 
 ## 2. Signatures

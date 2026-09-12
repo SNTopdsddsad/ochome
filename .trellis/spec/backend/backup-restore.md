@@ -36,9 +36,10 @@ close/reopen the database themselves.
 
 ## 3. Data and protocol contracts
 
-- Business schema is **9** (8 + `role_relationship`, see
-  [Role Relationships](./role-relationships.md)). A protocol upgrade is not a
-  reason to increment it; only a new business table or column is.
+- Business schema is **11** (schema 10 unifies worlds and role relationships;
+  schema 11 adds asset tags, see [Role Assets](./role-assets.md)). A protocol
+  upgrade is not a reason to increment it; only a new business table or column
+  is.
 - Documents root is `Documents/ochome-backup-v3` in
   `iCloud.com.xuwudi.ochome`. Immutable files live at
   `writers/<writerId>/objects/<objectId>` and
@@ -58,7 +59,9 @@ close/reopen the database themselves.
 - Legacy root discovery is read-only and fixes the selected slot. Only definite
   `legacy_manifest_missing` / known missing-manifest signals permit no-manifest
   compatibility. Network, pending discovery and malformed existing manifests do
-  not. Schema 3–9 fixtures must preserve original fields and migrations.
+  not. Schema 3–10 fixtures must preserve original fields and migrations.
+  Schema 11 asset-tag JSON is validated as a canonical ordered string array;
+  malformed, duplicate or out-of-limit tags fail before backup/restore review.
 
 ## 4. Local storage and concurrency
 
@@ -189,6 +192,7 @@ must remain visible and no completion result may fake that readiness.
 | zero-byte document | valid when expected length is zero |
 | malformed current business DB | valid incoming restore can be reviewed with currentUnreadable, not invented zero counts |
 | malformed incoming DB/JSON/unknown version | reject, preserve local data |
+| malformed schema-11 asset tags | reject before review; preserve local data |
 | cancelled ready restore + late confirm | no activation |
 | failed close/reopen/rollback | recovery-only; no writable stale session |
 | completed activation + failed cleanup | completed with cleanupPending |

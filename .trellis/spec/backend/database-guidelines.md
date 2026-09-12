@@ -18,7 +18,7 @@
 - `PRAGMA foreign_keys = ON` runs in `beforeOpen`; all child tables declare
   `onDelete: KeyAction.cascade`, so deleting a role removes its revisions,
   assets and relationships at the SQL level.
-- `currentSchemaVersion` is `10`. The doc comment on it is the rule:
+- `currentSchemaVersion` is `11`. The doc comment on it is the rule:
   "增删列后必须递增并补 migration".
 
 Regenerate after any table or `@riverpod` change:
@@ -99,9 +99,12 @@ if (from < 10) {
   }
   ...
 }
+if (from < 11 && !await _hasColumn('role_asset', 'tags')) {
+  await m.addColumn(roleAssets, roleAssets.tags);
+}
 ```
 
-Rules that the existing blocks (v3…v10) follow:
+Rules that the existing blocks (v3…v11) follow:
 
 - Never rewrite an earlier block; append a new `if (from < N)` and bump
   `currentSchemaVersion` to `N`.
@@ -110,6 +113,9 @@ Rules that the existing blocks (v3…v10) follow:
   probes `PRAGMA table_info` / `sqlite_master` before `addColumn` /
   `createIndex` (Drift's `createTable` is already `IF NOT EXISTS`, the other
   two are not). Coordinate the next version before starting a schema branch.
+- A branch that creates a table from the latest definition may already include
+  columns added by later blocks. Schema 11 therefore probes `role_asset.tags`
+  before adding it, so upgrades from before schema 8 do not add it twice.
 - Adding a NOT NULL column to an existing table needs a DEFAULT; v4 does this
   with `customStatement('ALTER TABLE role ADD COLUMN age TEXT NOT NULL DEFAULT \'\'')`.
 - Data backfills happen in the same block as the schema change (v5 seeds the

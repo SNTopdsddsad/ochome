@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/frontend/role-assets.md", "reason": "Asset UI and busy contracts"}
+{"file": ".trellis/spec/backend/role-assets.md", "reason": "Asset ownership/persistence"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Schema migration and mutation discipline"}
+{"file": ".trellis/spec/backend/backup-restore.md", "reason": "Backup compatibility and integrity"}

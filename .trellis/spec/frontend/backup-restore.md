@@ -50,8 +50,9 @@ Recovery-only starts at /backup and prohibits navigation to business editors.
   after a frame; it expires after 30 seconds and is never persisted.
   A newly observed active-to-completed transition produces one shared brief
   snackbar and refreshes history. Repeated terminal events and persisted terminal
-  state do not replay the feedback. Accessible navigation uses the shared
-  persistent/closeable snackbar behavior.
+  state do not replay the feedback. Short completion notices follow the shared
+  auto-dismiss timeout even with accessible navigation; only scrollable long
+  notices persist, and the native close control remains available.
 - All stage, progress and diagnostic data comes from BackupJobState. A stage may
   reach 100% while overall backup waits for cloud/account confirmation.
 - Native per-file byte events are labeled current-file progress, not whole-phase bytes.

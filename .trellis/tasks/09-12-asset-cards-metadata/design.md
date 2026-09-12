@@ -1,0 +1,7 @@
+# Design
+
+- UI owner: main agent. RoleAssetCard composes preview, file metadata, tags and menu. RoleAssetsTab owns navigation and busy state; a tags dialog edits an ordered draft and writes through the repository.
+- Tag data owner: asset_tags agent. Bump schema 10 to 11; add role_asset.tags as JSON text default []; append migration with column-existence guard for earlier versions that create the newest table definition. Expose RoleAsset.tags (default empty), normalization/strict decoding, and RoleAssetRepository.updateTags({roleId, assetId, tags}). Writes use mutate + transaction and preserve other columns. Update backup inventory validation and round-trip coverage, all fakes and data specs.
+- Video owner: video_metadata agent. Keep existing thumbnailFor API and add Future<Duration?> durationFor(File video) on VideoThumbnailService. Cache metadata by immutable file identity/stat, deduplicate concurrent reads, avoid app DB writes. Add native method duration on the existing channel, returning positive integer milliseconds or null. Android uses MediaMetadataRetriever; Apple uses AVAsset. Parent calls thumbnailFor and durationFor concurrently in the card preview; test fakes can override both. Persist duration cache or explicitly support cached rereads without blocking startup.
+- Keep dependencies stable. Avoid fake tags or hardcoded runtime values. No media overwrite or cloud operations during development validation.
+- Rollback: revert source/schema changes before any production deployment; development upgrade is additive and prior fields remain intact.

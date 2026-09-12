@@ -5,12 +5,24 @@
 - Schema version **8** adds `role_asset`: id, role_id, display name (initially the original name), kind,
   relative_path, bytes and created_at. `role_id` references `role(id)` with
   cascading delete and has an index; `relative_path` is unique.
+- Schema version **11** adds `tags` as canonical JSON text with default `[]`.
+  The migration probes the column because pre-v8 upgrades create the latest
+  table definition and must not add it twice.
 - Asset metadata belongs to `RoleAssetRepository`, separate from whole-role
   updates and description history. Only saved roles may import assets.
 - Upgrade creates the new table and index without rewriting existing roles,
   covers, custom attributes or description history.
 
 ## Files
+
+- `RoleAssetPicker.pickMedia()` enables `ImagePickerAndroid.useAndroidPhotoPicker`
+  on the registered Android implementation before calling
+  `pickMultipleMedia(requestFullMetadata: false)`. The mixed-media path in
+  image_picker_android 0.8.13+21 otherwise uses `ACTION_GET_CONTENT`, regardless
+  of the handset's recent Android version. Keep non-Android implementations and
+  `pickFiles()` unchanged; cancellation returns an empty list and platform
+  failures propagate into the existing page error/busy handling. Import platform
+  APIs through explicit dependencies pinned to the already resolved versions.
 
 - Store immutable copies in Application Support `role_assets/<random-id>.<ext>`.
   Never persist picker temporary paths. Names shown in the UI are stored
@@ -62,7 +74,7 @@ uses full snapshot references, immutable file objects, exact SHA/length checks,
 account-wide latest3 and dataset activation. The previous v2 single-slot sources
 remain as compatibility fixtures only and must not be called by production UI.
 
-Read-only legacy restoration supports schema 3–9, preserving ordered attributes,
+Read-only legacy restoration supports schema 3–10, preserving ordered attributes,
 role descriptions/revisions and assets; old snapshots without asset tables imply
 an empty asset set. Unknown legacy file sizes must remain unknown in contents UI
 until actual download verification. Pins protect preview/renderer/backup reads
@@ -133,6 +145,47 @@ handling, stream updates and unchanged file
 contents/identity. The SQLite snapshot carries the renamed display name through
 backup/restore; an unchanged asset file remains eligible for upload reuse.
 
+## Tags contract
+
+```dart
+const int roleAssetTagMaxCount = 8;
+const int roleAssetTagMaxGraphemes = 16;
+List<String> normalizeRoleAssetTags(Iterable<String> tags);
+String encodeRoleAssetTags(Iterable<String> tags);
+List<String> decodeRoleAssetTags(String source);
+
+Future<void> updateTags({
+  required int roleId,
+  required int assetId,
+  required List<String> tags,
+});
+```
+
+`lib/data/models/role_asset_tags.dart` is the single validation owner. An empty
+list is valid. Normalize each tag with `trim`, preserve first-seen order and
+remove duplicates before enforcing at most 8 distinct tags. Reject an empty
+individual tag and tags longer than 16 Unicode grapheme clusters with a
+user-facing `FormatException`. Repository writes persist the canonical JSON
+array immediately, scoped by both role and asset id, through `mutate` plus a
+transaction. Missing/wrong-owner assets throw `StateError`; a canonical no-op
+does not issue an update.
+
+Database and backup reads use strict `decodeRoleAssetTags`: the payload must be
+a canonical JSON string array within the same limits. Non-string values,
+leading/trailing whitespace and duplicates are malformed stored data. Schema
+3–10 backups migrate with empty tags; schema 11 backups validate tags before
+review and preserve their order through restore.
+
+| Input or state | Contract |
+|---|---|
+| `['  演出 ', '官方图', '演出']` | Persist `['演出', '官方图']` |
+| `[]` | Valid; clears all tags |
+| Empty/whitespace-only tag | `FormatException('标签不能为空')` |
+| More than 16 grapheme clusters | `FormatException('每个标签最多 16 个字')` |
+| More than 8 distinct normalized tags | `FormatException('每份资产最多 8 个标签')` |
+| Missing asset or wrong role id | `StateError`; no other row changes |
+| Malformed schema-11 backup tags | Reject before restore review |
+
 ## Named iOS file preview
 
 ### Scope and signatures
@@ -185,30 +238,43 @@ behavior and native controller title/URL/UTI/lifecycle. Verify the actual system
 preview title with a test fixture; a mock payload alone cannot prove UIKit's
 displayed result.
 
-## Video preview cache
+## Video preview and duration cache
 
 - First frames are derived data under the system cache's `video-thumbnails-v1/`,
   separate from asset originals and backup. Existing/restored videos generate
   their previews when first displayed; no schema column is needed.
-- Cache keys include the immutable asset filename, byte count and modification
-  time. Reuse nonempty cached files and regenerate after cache eviction or a
-  source change. Coalesce requests for the same file and serialize decoding to
-  limit memory use; keep a bounded session-only failure set.
+- `VideoThumbnailService.thumbnailFor(File)` and `durationFor(File)` expose
+  independently rebuildable thumbnail and duration metadata. Cache keys include
+  the immutable asset filename, byte count and modification time. Duration uses
+  a positive-millisecond sidecar in the same cache directory, so it survives
+  service recreation without changing the asset schema or backup inventory.
+- Reuse valid cached values and regenerate after cache eviction or a source
+  change. Coalesce concurrent requests for the same file, serialize thumbnail
+  decoding to limit memory use, and keep separate bounded session-only failure
+  sets. An old cached thumbnail or a failed frame extraction must not prevent a
+  readable video from returning its duration.
 - The `com.xuwudi.ochome/video_thumbnail` channel's `firstFrame` method accepts
   absolute `videoPath` / `thumbnailPath` and `maxDimension` (320 for list covers).
   It returns a success boolean after writing a JPEG at time zero. Native code
-  decodes off the UI thread and replies on the main thread.
+  decodes off the UI thread and replies on the main thread. The channel's
+  `duration` method accepts absolute `videoPath` and returns the media timeline's
+  positive integer milliseconds, or null for missing, broken or unknown media;
+  zero must never be presented as a real duration.
 - Apple targets share `ios/Runner/VideoThumbnailHandler.swift` through an
   explicit macOS project reference. AVFoundation applies the track's preferred
-  transform and bounds both dimensions. Android uses `MediaMetadataRetriever`,
-  a scaled request on API 27+ and a proportional fallback on older APIs.
+  transform and bounds both dimensions, and reads the `AVAsset` duration.
+  Android uses `MediaMetadataRetriever`, a scaled request on API 27+ and a
+  proportional fallback on older APIs, plus `METADATA_KEY_DURATION` for time.
 - Publish the cache image only after extraction succeeds; clean partial outputs
-  on failure. Missing/unsupported media or platforms keep their generic icon.
+  on failure. Cache write failures may skip persistence but must not hide an
+  already-read duration. Missing/unsupported media or platforms keep their
+  generic icon and omit the duration badge.
 
 `test/data/video_thumbnail_service_test.dart` covers cache reuse, invalidation,
-coalescing, serialized work and failure recovery. The standalone native smoke
-test (`test/native/video_thumbnail_test.swift`) creates a red/blue two-frame
-video and verifies first-frame color, aspect ratio and portrait rotation.
+coalescing, serialized work, positive duration and independent failure recovery.
+The standalone native smoke test (`test/native/video_thumbnail_test.swift`)
+creates a two-second red/blue video and verifies duration, first-frame color,
+aspect ratio and portrait rotation.
 
 ## Validation
 
